@@ -772,7 +772,7 @@ export default function PitchPage() {
               <HStack justify="space-between">
                 <HStack>
                   <Badge colorScheme="red" px={3} py={1} borderRadius="full">
-                    🎯 PAIN POINTS
+                    PAIN POINTS
                   </Badge>
                   <Heading size="lg" color="gray.800">
                     Customer Pain Points

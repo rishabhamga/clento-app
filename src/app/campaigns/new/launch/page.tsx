@@ -367,7 +367,7 @@ export default function LaunchPage() {
               letterSpacing="-0.02em"
               animation={`${glow} 2s ease-in-out infinite`}
             >
-              🚀 Launch Your Campaign
+              Launch Your Campaign
             </Heading>
             <Text 
               fontSize="xl" 
@@ -414,7 +414,7 @@ export default function LaunchPage() {
                   py={1}
                   borderRadius="full"
                 >
-                  📊 Campaign Overview
+                  Campaign Overview
                 </Badge>
                 <Heading size="lg" color="gray.800">
                   Your Campaign at a Glance
@@ -724,7 +724,7 @@ export default function LaunchPage() {
               <CardBody>
                 <VStack spacing={4}>
                   <Text fontSize="lg" fontWeight="medium">
-                    🚀 Launching Your Campaign...
+                    Launching Your Campaign...
                   </Text>
                   <Progress
                     value={75}
@@ -774,7 +774,7 @@ export default function LaunchPage() {
               transition="all 0.3s ease"
               animation={`${glow} 4s ease-in-out infinite`}
             >
-              {isLaunching ? 'Launching Campaign...' : 'Launch Campaign 🚀'}
+                                {isLaunching ? 'Launching Campaign...' : 'Launch Campaign'}
             </GradientButton>
           </HStack>
         </VStack>

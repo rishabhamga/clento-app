@@ -174,7 +174,7 @@ export default function TargetingPage() {
               letterSpacing="-0.02em"
               animation={`${glow} 2s ease-in-out infinite`}
             >
-              🎯 Select Your Lead Source
+              Select Your Lead Source
             </Heading>
             <Text 
               fontSize="xl" 

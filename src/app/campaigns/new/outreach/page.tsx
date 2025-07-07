@@ -274,7 +274,7 @@ ${signOffs[0]},
             letterSpacing="-0.02em"
             animation={`${glow} 2s ease-in-out infinite`}
           >
-            🎯 Outreach Configuration
+            Outreach Configuration
           </Heading>
           <Text 
             fontSize="xl" 
@@ -439,7 +439,7 @@ ${signOffs[0]},
                   </Tooltip>
                 </HStack>
                 <Text fontSize="sm" color="gray.600" fontStyle="italic">
-                  💡 Click to remove • Press Enter to add
+                  Click to remove • Press Enter to add
                 </Text>
               </VStack>
             </CardBody>
@@ -656,9 +656,9 @@ ${signOffs[0]},
               <Box>
                 <Text fontWeight="semibold" mb={2}>Message Type</Text>
                 <Select defaultValue="First Email">
-                  <option value="First Email">📧 First Email</option>
-                  <option value="Follow-up Email">📧 Follow-up Email</option>
-                  <option value="LinkedIn Message">💼 LinkedIn Message</option>
+                                      <option value="First Email">First Email</option>
+                    <option value="Follow-up Email">Follow-up Email</option>
+                    <option value="LinkedIn Message">LinkedIn Message</option>
                 </Select>
               </Box>
               

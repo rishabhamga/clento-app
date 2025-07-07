@@ -121,7 +121,7 @@ const defaultTemplates: WorkflowTemplate[] = [
     id: 'linkedin-first',
     name: 'LinkedIn First',
     description: 'Start with LinkedIn connection, then follow up with email',
-    icon: '💼',
+    icon: '•',
     color: 'linkedin',
     conversionRate: '18%',
     responseRate: '34%',
@@ -158,7 +158,7 @@ const defaultTemplates: WorkflowTemplate[] = [
     id: 'email-only',
     name: 'Email Intensive',
     description: 'Three-email sequence with strategic follow-ups',
-    icon: '📧',
+    icon: '•',
     color: 'blue',
     conversionRate: '22%',
     responseRate: '28%',
@@ -193,7 +193,7 @@ const defaultTemplates: WorkflowTemplate[] = [
     id: 'aggressive-multi',
     name: 'Multi-Channel Pro',
     description: 'High-touch sequence across email and LinkedIn',
-    icon: '🎯',
+    icon: '•',
     color: 'purple',
     conversionRate: '25%',
     responseRate: '42%',
@@ -367,7 +367,7 @@ export default function WorkflowPage() {
     localStorage.setItem('campaignWorkflow', JSON.stringify(workflowData))
     
     toast({
-      title: 'Workflow saved! 🎉',
+      title: 'Workflow saved!',
       description: 'Your workflow configuration has been saved successfully.',
       status: 'success',
       duration: 3000,
@@ -425,7 +425,7 @@ export default function WorkflowPage() {
               letterSpacing="-0.02em"
               animation={`${glow} 2s ease-in-out infinite`}
             >
-              🎯 Workflow Designer
+              Workflow Designer
             </Heading>
             <Text 
               fontSize="xl" 
