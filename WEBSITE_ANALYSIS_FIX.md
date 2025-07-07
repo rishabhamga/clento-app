@@ -21,7 +21,7 @@ touch .env
 2. Add your OpenAI API key to the `.env` file:
 ```env
 OPENAI_API_KEY=sk-your_actual_openai_api_key_here
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+PUBLIC_SUPABASE_URL=your_supabase_url
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_key
 ```
 

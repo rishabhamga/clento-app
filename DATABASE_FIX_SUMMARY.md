@@ -197,7 +197,7 @@ If you still encounter issues:
    ```
 
 2. **Verify Environment Variables**
-   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `PUBLIC_SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
 
 3. **Check Browser Console**

@@ -131,7 +131,7 @@ For your project, use these values:
 
 ```bash
 # From your .env file:
-SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL}"
+SUPABASE_URL="${PUBLIC_SUPABASE_URL}"
 SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY}"
 ```
 

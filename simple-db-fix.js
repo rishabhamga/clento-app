@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js')
 
 // You'll need to set these environment variables or replace with your actual values
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL'
+const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'YOUR_SERVICE_ROLE_KEY'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
@@ -170,7 +170,7 @@ async function testDatabaseIssues() {
 if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_SERVICE_KEY === 'YOUR_SERVICE_ROLE_KEY') {
   console.log('❌ Please set your Supabase credentials:')
   console.log('Either set environment variables:')
-  console.log('export NEXT_PUBLIC_SUPABASE_URL="your_url"')
+  console.log('export PUBLIC_SUPABASE_URL="your_url"')
   console.log('export SUPABASE_SERVICE_ROLE_KEY="your_key"')
   console.log('\nOr edit this file and replace the placeholder values')
 } else {

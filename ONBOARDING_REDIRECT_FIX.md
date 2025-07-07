@@ -191,7 +191,7 @@ For users who completed analysis before the fix:
 
 ```bash
 # Set up environment variables first
-echo "NEXT_PUBLIC_SUPABASE_URL=your_supabase_url" > .env
+echo "PUBLIC_SUPABASE_URL=your_supabase_url" > .env
 echo "SUPABASE_SERVICE_ROLE_KEY=your_service_key" >> .env
 
 # Run the fix script

@@ -62,7 +62,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 See `.env.example` for all required environment variables. Key variables include:
 
-- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+- `PUBLIC_SUPABASE_URL` - Your Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous key
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Your Clerk publishable key
 - `CLERK_SECRET_KEY` - Your Clerk secret key

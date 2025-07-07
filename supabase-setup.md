@@ -149,7 +149,7 @@ CLERK_SECRET_KEY=sk_test_your_key_here
 CLERK_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 
 # Supabase Configuration (No JWT Secret Sharing Needed)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
