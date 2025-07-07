@@ -1,0 +1,111 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Implement Apollo Data Provider Integration",
+        "description": "Replace the existing PeopleDataLabs data layer with Apollo’s mixed_people/search API and expose the new filter set, pagination and data mapping to the front-end.",
+        "details": "1. Backend\n   • Create a new service module src/services/apolloProvider.ts that wraps POST https://api.apollo.io/v1/mixed_people/search.\n   • Accept a strongly-typed SearchParams object that mirrors Apollo filters (persons, companies, intent, pagination).\n   • Inject APOLLO_API_KEY via env variable; add key to secrets manager and CI.\n   • Compose request body { api_key, q_keywords, person_titles, …, page, per_page } and send with axios/fetch.\n   • On response, normalise people[] items to internal Person model (id, fullName, title, company, location, linkedinUrl, emailStatus, …).  Map company sub-object to Company model.\n   • Extract pagination {page, per_page, total_pages, total_entries} and breadcrumbs[] for UI bread-crumb feature.\n   • Gracefully surface Apollo error codes/rate-limit headers; implement exponential back-off and 429 retry after header support.\n   • Remove/retire PeopleDataLabs provider module and feature flag its usage off.\n\n2. Frontend\n   • Introduce new React context ApolloSearchContext to hold filter state, results, loading & error flags.\n   • Build reusable Filter components (MultiSelect, RangeSlider, AutoCompleteInput) for every Apollo filter group: Titles, Seniorities, Locations, Experience, Industries, Headcount, Domains, IntentTopics.\n   • Maintain existing UX: sidebar filters, chips display, clear-all, save-search.\n   • Add pagination controls using Apollo pagination meta; keep page number in URL querystring for shareable searches.\n   • Update existing Table/List views to consume the normalised Person model—no UI regression should occur.\n\n3. Validation & Security\n   • Validate outbound filter payload size (<100 items per array per Apollo spec) and incompatible filter combos.\n   • Throttle search to one request per 400 ms per user to respect free tier limits.\n   • Log request ids and errors to observability stack.\n\n4. Migration/Cleanup\n   • Remove PeopleDataLabs feature flags, env vars and documentation.\n   • Provide data-migration script for saved searches: translate PDL filters to Apollo equivalents where possible; flag unsupported ones.\n\n5. Documentation\n   • Update API docs, README and Postman collection with new /search route sample.\n   • Add run-book page for rotating APOLLO_API_KEY and monitoring rate limits.",
+        "testStrategy": "Unit Tests\n1. Mocked axios layer returning fixture responses; assert correct request body construction for common filter sets.\n2. Validate mapping: given sample Apollo response, expect correct Person & Company objects.\n3. Verify error handling: simulate 4xx, 429 with Retry-After, 5xx.\n\nIntegration Tests\n4. Spin up staging env with real Apollo sandbox key; perform live query and assert ≥1 person item and pagination meta.\n\nFrontend Component Tests\n5. Jest/React-Testing-Library: render filter sidebar, select seniority & title, expect context state update and API call once.\n6. Paginate to page 3; assert querystring update and correct rows rendered.\n\nE2E (Cypress / Playwright)\n7. Complete search flow: open People page, apply 3 filters, navigate to page 2, refresh browser, ensure state persists.\n\nRegression\n8. Run visual regression on People list to confirm no layout changes.\n\nSecurity\n9. Audit logs for leaked API key in network layer — should be sent only in request header, never stored in client bundle.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configure Apollo API Key & Base HTTP Client",
+            "description": "Add APOLLO_API_KEY to secrets manager, CI pipelines and local .env files, then create a reusable axios instance that automatically appends the key to every request and surfaces rate-limit headers.",
+            "dependencies": [],
+            "details": "• Secrets: Store APOLLO_API_KEY in AWS/GCP secrets manager.\n• CI: Inject the secret into build/test jobs via env var.\n• Runtime: Load with dotenv-config in src/config/env.ts and expose via process.env.\n• HTTP client: src/lib/apolloHttp.ts → export axios.create({ baseURL: 'https://api.apollo.io/v1', headers:{ 'Content-Type':'application/json' } }).\n• Request interceptor: Append { api_key: APOLLO_API_KEY } into POST body.\n• Response interceptor: Capture x-ratelimit-remaining/reset headers and attach to response.meta for later logging.\n• TypeScript typings for rate-limit headers and generic Apollo envelope.",
+            "status": "done",
+            "testStrategy": "Unit: jest test that env var is read & missing key throws. Integration: hit /v1/health (or mocked endpoint) asserting api_key param is present and x-ratelimit headers are parsed."
+          },
+          {
+            "id": 2,
+            "title": "Implement ApolloProvider Search Service Module",
+            "description": "Create src/services/apolloProvider.ts exposing searchPeople(params: SearchParams): Promise<SearchResult> that wraps POST /mixed_people/search, maps filters to request body and normalises the response to internal models.",
+            "dependencies": [
+              1
+            ],
+            "details": "• Define SearchParams interface mirroring Apollo docs (keywords, person_titles, company_headcount, page, per_page…).\n• Build RequestBody creator that flattens params to expected snake_case keys.\n• Call axios instance from subtask 1.\n• Normalise people[] → Person { id, fullName, title, company:{ id, name }, location, linkedinUrl, emailStatus }.\n• Extract pagination → { page, per_page, total_pages, total_entries }.\n• Preserve breadcrumbs[] for UI.\n• Export typings: Person, Company, Pagination, Breadcrumb.\n<info added on 2025-07-04T12:58:25.817Z>\n• Implemented src/lib/apollo-http.ts: axios-based client with API-key interceptor, rate-limit & retry (exponential back-off), unified error handler.  \n• Finished src/lib/data-integrations/apollo-provider.ts: full mixed_people/search integration covering person (titles, seniorities, locations, experience, has_email) and company (industries, headcount, domains, intent_topics) filters, plus automatic filter validation/clean-up.  \n• Added response mapper aligning to existing Person, Company, Pagination & Breadcrumb typings; preserves breadcrumbs array for UI.  \n• Introduced exhaustive TypeScript typings and enums in src/types/apollo.ts (all request/response shapes, filter constants, default states, custom ApolloError class).  \n• End-to-end logging and error propagation implemented; service now production-ready for consumption by API routes.\n</info added on 2025-07-04T12:58:25.817Z>",
+            "status": "done",
+            "testStrategy": "Mock Axios with nock; verify correct body mapping and that returned objects conform to internal interfaces."
+          },
+          {
+            "id": 3,
+            "title": "Add Validation, Throttling & Robust Error Handling",
+            "description": "Layer parameter validation, client-side throttle (≤1 rq/400 ms), exponential back-off and 429 retry-after support into the ApolloProvider.",
+            "dependencies": [
+              2
+            ],
+            "details": "• Validation: use zod schema; arrays length ≤100, incompatible filter combinations rejected with custom ApolloValidationError.\n• Throttling: Wrap searchPeople with lodash.throttle keyed by userId.\n• Back-off: On 429 read retry-after header, wait (header || backoffFactor^attempt * 1000ms), max 3 retries.\n• Error surfacing: Map Apollo error codes to internal Error types and include request_id for logging.\n• Logging: push { userId, request_id, status, attempt } to observability stack.\n<info added on 2025-07-04T13:03:33.775Z>\n• Integrated production-grade Apollo request validator (src/lib/utils/apollo-validator.ts) providing full schema enforcement, field-level error messaging, filter normalization/clean-up, domain & array-length guards, smart filter-combination analysis, and a non-blocking warning system for overly loose/tight queries.  \n• Added Apollo throttling manager (src/lib/utils/apollo-throttle.ts) with hierarchical rate-limits (sec/min/hr/day), priority-based request queue (high/medium/low), max-3 concurrent calls, automatic detection of 429/limit headers, jittered exponential back-off, real-time queue wait-time estimates, and emergency flush/config hot-reload.  \n• Extended observability: validator warnings, throttle metrics, queue statistics, retry counts, and wait durations are now emitted alongside { userId, request_id, status, attempt }.\n</info added on 2025-07-04T13:03:33.775Z>",
+            "status": "done",
+            "testStrategy": "Unit tests for schema validation failures; jest fake timers to assert throttle; integration test simulating 429 with retry-after header and verifying retry logic."
+          },
+          {
+            "id": 4,
+            "title": "Replace PeopleDataLabs in Backend API Routes",
+            "description": "Refactor /search controller to invoke ApolloProvider, remove PDL code paths and keep response shape unchanged for the frontend.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "• Delete src/services/pdlProvider.ts; keep behind git tag for rollback.\n• Feature flag OFF: remove checks around usePDL.\n• Controller: import { searchPeople } from apolloProvider; pass query params → SearchParams.\n• Ensure response JSON { people, pagination, breadcrumbs } identical keys as before.\n• Update route tests & OpenAPI spec.\n• Update CI linter rules to forbid PDL imports.\n<info added on 2025-07-04T13:09:18.523Z>\n• /api/leads/search/route.ts fully migrated to Apollo provider: added UI-to-Apollo filter transformer, request validation & throttling middleware, granular error codes with detailed logging, request-timing capture, rate-limit/queue metadata, breadcrumbs, and validation-warning support.\n\n• /api/campaigns/search-leads/route.ts now uses real Apollo client (mock removed); includes backward-compatibility filter transformer, validation & throttling, Apollo-to-Legacy Lead mapper, and enhanced error handling/logging.\n\n• Extended shared Apollo integration layer for all search routes, centralizing throttling, validation, and error handling; PeopleDataLabs dependency entirely removed.\n\n• Logger now records request duration, queue status, and Apollo rate-limit headers.\n\n• Verified backward compatibility—responses retain { people, pagination, breadcrumbs, validationWarnings } structure.\n\n• Updated tests to cover filter transformers, new error codes, rate-limit logic, and mapping utilities; OpenAPI spec reflects added rateLimit and queueStatus fields.\n</info added on 2025-07-04T13:09:18.523Z>",
+            "status": "done",
+            "testStrategy": "API integration tests hitting /search with sample filters; assert 200, expected body, and that no pdlProvider functions are called (jest spy)."
+          },
+          {
+            "id": 5,
+            "title": "Migrate Saved Searches from PDL to Apollo",
+            "description": "Write a one-off Node script that reads saved_searches table, converts PDL filter json to Apollo equivalents and flags unsupported filters for manual review.",
+            "dependencies": [
+              4
+            ],
+            "details": "• Create scripts/migrateSavedSearches.ts\n• Map dictionaries: { job_titles → person_titles, industry → industries, size → company_headcount } …\n• For unsupported fields (e.g., PDL’s personality insights) add field migration_status:'NEEDS_ATTENTION'.\n• Batch update DB in chunks of 200.\n• Provide dry-run and commit modes.\n• Add README section on execution & rollback.",
+            "status": "done",
+            "testStrategy": "Run script against staging DB snapshot; verify 100% converted rows, audit log of skipped filters. Unit tests for mapping function with edge cases."
+          },
+          {
+            "id": 6,
+            "title": "Create ApolloSearchContext & Data Fetching Hook",
+            "description": "Introduce React context to store filters, results, pagination, loading and error state, and expose useApolloSearch() hook that debounces calls and connects to backend /search route.",
+            "dependencies": [
+              4
+            ],
+            "details": "• Context file src/contexts/ApolloSearchContext.tsx with provider.\n• useApolloSearch(): accepts filter updates, runs debounce(400 ms), calls /api/search.\n• Persist page & filters to URL querystring via react-router useSearchParams.\n• Provide reset, clearAll, saveSearch helpers.",
+            "status": "done",
+            "testStrategy": "React Testing Library: render provider, trigger filter changes, assert debounced fetch call count and state transitions; jest mock axios to return fixture."
+          },
+          {
+            "id": 7,
+            "title": "Build Reusable Filter UI Components",
+            "description": "Develop MultiSelect, RangeSlider and AutoCompleteInput components for person and company filters and wire them into the sidebar using ApolloSearchContext.",
+            "dependencies": [
+              6
+            ],
+            "details": "• Component library folder ui/filters/.\n• MultiSelect: virtualised list, creatable tags.\n• RangeSlider: headcount and experience years.\n• AutoCompleteInput: hits /api/lookup endpoints for titles, industries, domains.\n• Each component updates context via dispatch({ type:'SET_FILTER', key, value }).\n• Display selected filters as chips; implement ‘Clear All’.",
+            "status": "done",
+            "testStrategy": "Storybook stories with interaction tests using @storybook/testing-library; snapshot visual regression; unit tests validating onChange emits correct payload."
+          },
+          {
+            "id": 8,
+            "title": "Implement Pagination Controls & Results View Update",
+            "description": "Add pagination UI, update table/list views to consume normalised Person model, and ensure no UI regressions after switching to Apollo data.",
+            "dependencies": [
+              6,
+              7
+            ],
+            "details": "• Pagination component reading page,total_pages from context; prev/next & page jump.\n• Sync current page to URL param.\n• Table/List view: replace PDL-specific fields with Person model props; show company.name, location, emailStatus badge.\n• Lead preview modal: ensure breadcrumbs[] and intent topics render.\n• A11y: keyboard navigation for pagination.\n• Remove any PDL flags from React code.",
+            "status": "done",
+            "testStrategy": "Cypress e2e: search → paginate → refresh url → state persists. Jest snapshot for table row. Lighthouse performance run to ensure no regressions."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-04T12:40:50.566Z",
+      "description": "Default tasks context",
+      "updated": "2025-07-04T13:34:29.915Z"
+    }
+  }
+}

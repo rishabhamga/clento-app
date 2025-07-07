@@ -1,0 +1,241 @@
+{
+    "breadcrumbs": [
+      {
+        "label": "Contains Email",
+        "signal_field_name": "has_email",
+        "value": true,
+        "display_name": "true"
+      },
+      {
+        "label": "Person Locations",
+        "signal_field_name": "person_locations",
+        "value": "India",
+        "display_name": "India"
+      }
+    ],
+    "partial_results_only": false,
+    "has_join": false,
+    "disable_eu_prospecting": false,
+    "partial_results_limit": 10000,
+    "pagination": {
+      "page": 1,
+      "per_page": 20,
+      "total_entries": 25905538,
+      "total_pages": 1295277
+    },
+    "contacts": [],
+    "people": [
+      {
+        "id": "683426d3889cf40001751804",
+        "first_name": "Ritesh",
+        "last_name": "Agarwal",
+        "name": "Ritesh Agarwal",
+        "linkedin_url": "http://www.linkedin.com/in/ritesh-agarwal-a0713022",
+        "title": null,
+        "email_status": "verified",
+        "photo_url": null,
+        "twitter_url": null,
+        "github_url": null,
+        "facebook_url": null,
+        "extrapolated_email_confidence": null,
+        "headline": "OYO Founder & Group CEO | Revolutionizing Hospitality Industry",
+        "email": "email_not_unlocked@domain.com",
+        "organization_id": "5da705fccd17be0001b71588",
+        "employment_history": [
+          {
+            "_id": "683426d4889cf40001751809",
+            "created_at": null,
+            "current": true,
+            "degree": null,
+            "description": null,
+            "emails": null,
+            "end_date": null,
+            "grade_level": null,
+            "kind": null,
+            "major": null,
+            "organization_id": "5da705fccd17be0001b71588",
+            "organization_name": "OYO",
+            "raw_address": null,
+            "start_date": "2013-06-01",
+            "title": null,
+            "updated_at": null,
+            "id": "683426d4889cf40001751809",
+            "key": "683426d4889cf40001751809"
+          }
+        ],
+        "state": null,
+        "city": null,
+        "country": "India",
+        "organization": {
+          "id": "5da705fccd17be0001b71588",
+          "name": "OYO",
+          "website_url": "http://www.oyorooms.com",
+          "blog_url": null,
+          "angellist_url": null,
+          "linkedin_url": "http://www.linkedin.com/company/oyo-rooms",
+          "twitter_url": "https://twitter.com/oyorooms",
+          "facebook_url": "https://www.facebook.com/oyorooms",
+          "primary_phone": {
+            "number": "+91 93139 31393",
+            "source": "Owler",
+            "sanitized_number": "+919313931393"
+          },
+          "languages": [
+            "English"
+          ],
+          "alexa_ranking": 32970,
+          "phone": "+91 93139 31393",
+          "linkedin_uid": "3716484",
+          "founded_year": 2012,
+          "publicly_traded_symbol": null,
+          "publicly_traded_exchange": "other",
+          "logo_url": "https://zenprospect-production.s3.amazonaws.com/uploads/pictures/6863ee253b4afd0001efa8dd/picture",
+          "crunchbase_url": null,
+          "primary_domain": "oyorooms.com",
+          "sanitized_phone": "+919313931393",
+          "organization_headcount_six_month_growth": 0.02776481567895474,
+          "organization_headcount_twelve_month_growth": 0.03744700894959963,
+          "organization_headcount_twenty_four_month_growth": 0.04334438654666035
+        },
+        "departments": [],
+        "subdepartments": [],
+        "seniority": null,
+        "functions": [],
+        "intent_strength": null,
+        "show_intent": true,
+        "email_domain_catchall": true,
+        "revealed_for_current_team": true
+      },
+      {
+        "id": "68416fe995dffb00016b124d",
+        "first_name": "Nikhil",
+        "last_name": "Kamath",
+        "name": "Nikhil Kamath",
+        "linkedin_url": "http://www.linkedin.com/in/nikhilkamathcio",
+        "title": "Co-Founder",
+        "email_status": "verified",
+        "photo_url": "https://media.licdn.com/dms/image/v2/D5603AQH7ELRLBZNGow/profile-displayphoto-shrink_200_200/B56ZVp0aAKGsAY-/0/1741237101042?e=2147483647&v=beta&t=3GerpoJ-EVAQ2u0sDEHzb8jeIYA39NGJTQDSuHPPoDM",
+        "twitter_url": null,
+        "github_url": null,
+        "facebook_url": null,
+        "extrapolated_email_confidence": null,
+        "headline": "Co-Founder",
+        "email": "email_not_unlocked@domain.com",
+        "organization_id": "5fcaf38ebdb5cf00015062ae",
+        "employment_history": [
+          {
+            "_id": "685f66fd56bfa70001f34db3",
+            "created_at": null,
+            "current": true,
+            "degree": null,
+            "description": null,
+            "emails": null,
+            "end_date": null,
+            "grade_level": null,
+            "kind": null,
+            "major": null,
+            "organization_id": "5fcaf38ebdb5cf00015062ae",
+            "organization_name": "Zerodha",
+            "raw_address": null,
+            "start_date": "2010-08-01",
+            "title": "Co-Founder",
+            "updated_at": null,
+            "id": "685f66fd56bfa70001f34db3",
+            "key": "685f66fd56bfa70001f34db3"
+          },
+          {
+            "_id": "685f66fd56bfa70001f34db4",
+            "created_at": null,
+            "current": true,
+            "degree": null,
+            "description": null,
+            "emails": null,
+            "end_date": null,
+            "grade_level": null,
+            "kind": null,
+            "major": null,
+            "organization_id": "5e563e014636bd0001e07888",
+            "organization_name": "True Beacon",
+            "raw_address": null,
+            "start_date": "2019-08-01",
+            "title": "Co-Founder",
+            "updated_at": null,
+            "id": "685f66fd56bfa70001f34db4",
+            "key": "685f66fd56bfa70001f34db4"
+          },
+          {
+            "_id": "685f66fd56bfa70001f34db6",
+            "created_at": null,
+            "current": false,
+            "degree": null,
+            "description": null,
+            "emails": null,
+            "end_date": "2010-07-01",
+            "grade_level": null,
+            "kind": null,
+            "major": null,
+            "organization_id": "57c4efdfa6da986aa0d3640b",
+            "organization_name": "Kamath Associates - India",
+            "raw_address": null,
+            "start_date": "2004-01-01",
+            "title": "Partner",
+            "updated_at": null,
+            "id": "685f66fd56bfa70001f34db6",
+            "key": "685f66fd56bfa70001f34db6"
+          }
+        ],
+        "state": "Karnataka",
+        "city": "Bengaluru",
+        "country": "India",
+        "organization": {
+          "id": "5fcaf38ebdb5cf00015062ae",
+          "name": "Zerodha",
+          "website_url": "http://www.zerodha.com",
+          "blog_url": null,
+          "angellist_url": null,
+          "linkedin_url": "http://www.linkedin.com/company/zerodha",
+          "twitter_url": "https://twitter.com/zerodhaonline",
+          "facebook_url": "https://facebook.com/zerodha.social",
+          "primary_phone": {
+            "number": "+91 80471 81888",
+            "source": "Owler",
+            "sanitized_number": "+918047181888"
+          },
+          "languages": [],
+          "alexa_ranking": 252,
+          "phone": "+91 80471 81888",
+          "linkedin_uid": "2160857",
+          "founded_year": 2010,
+          "publicly_traded_symbol": null,
+          "publicly_traded_exchange": null,
+          "logo_url": "https://zenprospect-production.s3.amazonaws.com/uploads/pictures/68662e84f51f4d00017a69f7/picture",
+          "crunchbase_url": null,
+          "primary_domain": "zerodha.com",
+          "sanitized_phone": "+918047181888",
+          "organization_headcount_six_month_growth": -0.006926406926406926,
+          "organization_headcount_twelve_month_growth": 0.0204626334519573,
+          "organization_headcount_twenty_four_month_growth": 0.1146744412050534
+        },
+        "departments": [
+          "c_suite"
+        ],
+        "subdepartments": [
+          "founder"
+        ],
+        "seniority": "founder",
+        "functions": [
+          "entrepreneurship"
+        ],
+        "intent_strength": null,
+        "show_intent": true,
+        "email_domain_catchall": false,
+        "revealed_for_current_team": true
+      }
+    ],
+    "model_ids": [
+      "649af4b3e9214b000171101d",
+      "66ebf959f39bf00001c1ded6"
+    ],
+    "num_fetch_result": null,
+    "derived_params": null
+  }
