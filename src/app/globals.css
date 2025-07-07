@@ -17,46 +17,6 @@
   display: none !important;
 }
 
-/* Custom waitlist styling */
-.waitlist-container .cl-card {
-  box-shadow: none !important;
-  border: none !important;
-  padding: 0 !important;
-}
-
-.waitlist-container .cl-headerTitle,
-.waitlist-container .cl-headerSubtitle {
-  display: none !important;
-}
-
-/* Improve form styling */
-.waitlist-container .cl-formFieldInput {
-  border-radius: 8px !important;
-  border: 1px solid #e5e7eb !important;
-  padding: 12px 16px !important;
-  font-size: 16px !important;
-}
-
-.waitlist-container .cl-formFieldInput:focus {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-}
-
-.waitlist-container .cl-formButtonPrimary {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
-  border: none !important;
-  border-radius: 8px !important;
-  padding: 12px 24px !important;
-  font-weight: 600 !important;
-  font-size: 16px !important;
-  transition: all 0.2s ease !important;
-}
-
-.waitlist-container .cl-formButtonPrimary:hover {
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
-}
-
 /* Hide any remaining Clerk branding */
 .cl-footer,
 .cl-footerAction,
@@ -70,6 +30,26 @@
 .cl-footer *,
 .cl-footerAction *,
 [data-testid="clerk-footer"] {
+  display: none !important;
+}
+
+/* Ensure consistent form styling across all Clerk components */
+.cl-formFieldInput {
+  width: 100% !important;
+}
+
+.cl-formButtonPrimary {
+  width: 100% !important;
+}
+
+/* Improve spacing for form elements */
+.cl-field {
+  margin-bottom: 1rem !important;
+}
+
+/* Hide any unwanted headers in embedded components */
+.cl-card .cl-headerTitle,
+.cl-card .cl-headerSubtitle {
   display: none !important;
 }
 
@@ -88,5 +68,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Inter, system-ui, sans-serif;
 }

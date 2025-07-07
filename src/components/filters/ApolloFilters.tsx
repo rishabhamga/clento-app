@@ -372,7 +372,7 @@ export function PeopleFilters({ filters, onChange }: PeopleFiltersProps) {
       {/* Experience & Career */}
       <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">💼 Experience & Career</Text>
+          <Text fontSize="lg" fontWeight="semibold">Experience & Career</Text>
         </CardHeader>
         <CardBody pt={2}>
           <VStack spacing={4} align="stretch">
@@ -430,7 +430,7 @@ export function PeopleFilters({ filters, onChange }: PeopleFiltersProps) {
       {/* Contact Information */}
       <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">📧 Contact Information</Text>
+          <Text fontSize="lg" fontWeight="semibold">Contact Information</Text>
         </CardHeader>
         <CardBody pt={2}>
           <FormControl>
@@ -510,7 +510,7 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
       {/* Company Size & Revenue */}
       <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">📊 Company Size & Revenue</Text>
+          <Text fontSize="lg" fontWeight="semibold">Company Size & Revenue</Text>
         </CardHeader>
         <CardBody pt={2}>
           <VStack spacing={4} align="stretch">
@@ -538,7 +538,7 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
       {/* Funding & Growth */}
       <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">💰 Funding & Growth</Text>
+          <Text fontSize="lg" fontWeight="semibold">Funding & Growth</Text>
         </CardHeader>
         <CardBody pt={2}>
           <VStack spacing={4} align="stretch">
@@ -612,7 +612,7 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
       {/* Engagement Signals */}
       <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">📈 Engagement Signals</Text>
+          <Text fontSize="lg" fontWeight="semibold">Engagement Signals</Text>
         </CardHeader>
         <CardBody pt={2}>
           <VStack spacing={4} align="stretch">
@@ -714,7 +714,7 @@ export function CommonFilters({ searchType, filters, onChange }: CommonFiltersPr
       {/* Intent Topics */}
       <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">🎯 Intent Signals</Text>
+          <Text fontSize="lg" fontWeight="semibold">Intent Signals</Text>
         </CardHeader>
         <CardBody pt={2}>
           <TagInput

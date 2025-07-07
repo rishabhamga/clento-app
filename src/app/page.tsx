@@ -6,15 +6,15 @@ import {
   Container,
   Heading,
   Text,
-  Button,
   VStack,
   HStack,
   SimpleGrid,
   Card,
   CardBody,
-  useColorModeValue,
-  Link
+  useColorModeValue
 } from '@chakra-ui/react'
+import Link from 'next/link'
+import { GradientButton } from '@/components/ui/GradientButton'
 
 export default function Home() {
   const cardBg = useColorModeValue('white', 'gray.700')
@@ -27,24 +27,39 @@ export default function Home() {
           <HStack justify="space-between">
             <Heading 
               size="lg" 
-              bgGradient="linear(to-r, primary.500, primary.600)" 
+              bgGradient="linear(to-r, purple.400, purple.600)" 
               bgClip="text"
             >
               clento
             </Heading>
             <HStack spacing={4}>
               <SignedOut>
-                <Button as={Link} href="/sign-in" variant="ghost">
-                  Sign In
-                </Button>
-                <Button as={Link} href="/sign-up" colorScheme="blue">
-                  Sign Up
-                </Button>
+                <Link href="/sign-in">
+                  <GradientButton 
+                    variant="tertiary"
+                    size="sm"
+                  >
+                    Sign In
+                  </GradientButton>
+                </Link>
+                <Link href="/sign-up">
+                  <GradientButton 
+                    variant="primary"
+                    size="sm"
+                  >
+                    Sign Up
+                  </GradientButton>
+                </Link>
               </SignedOut>
               <SignedIn>
-                <Button as={Link} href="/dashboard" colorScheme="blue">
-                  Dashboard
-                </Button>
+                <Link href="/dashboard">
+                  <GradientButton 
+                    variant="primary"
+                    size="sm"
+                  >
+                    Dashboard
+                  </GradientButton>
+                </Link>
                 <UserButton />
               </SignedIn>
             </HStack>
@@ -58,7 +73,7 @@ export default function Home() {
           <Box>
             <Heading 
               size="3xl" 
-              bgGradient="linear(to-r, primary.500, primary.600)" 
+              bgGradient="linear(to-r, purple.400, purple.600)" 
               bgClip="text"
               mb={4}
             >
@@ -70,21 +85,18 @@ export default function Home() {
             </Text>
           </Box>
 
-          <HStack spacing={4}>
-            <SignedOut>
-              <Button as={Link} href="/sign-up" size="lg" colorScheme="blue">
-                Get Started Free
-              </Button>
-              <Button as={Link} href="/sign-in" size="lg" variant="secondary">
-                Sign In
-              </Button>
-            </SignedOut>
-            <SignedIn>
-              <Button as={Link} href="/dashboard" size="lg" colorScheme="blue">
-                Go to Dashboard
-              </Button>
-            </SignedIn>
-          </HStack>
+          <Link href="/dashboard">
+            <GradientButton 
+              size="xl"
+              _hover={{
+                transform: 'translateY(-2px)',
+                shadow: 'xl',
+              }}
+              transition="all 0.3s ease"
+            >
+              Go to Dashboard
+            </GradientButton>
+          </Link>
         </VStack>
       </Container>
 
@@ -104,7 +116,7 @@ export default function Home() {
             <Card bg={cardBg} shadow="lg">
               <CardBody p={8}>
                 <VStack spacing={4} align="start">
-                  <Text fontSize="3xl">🎯</Text>
+                  <Text fontSize="3xl">•</Text>
                   <Heading size="md">Smart Lead Discovery</Heading>
                   <Text color="gray.600">
                     Find ideal prospects using AI-powered search across millions of contacts. 
@@ -130,7 +142,7 @@ export default function Home() {
             <Card bg={cardBg} shadow="lg">
               <CardBody p={8}>
                 <VStack spacing={4} align="start">
-                  <Text fontSize="3xl">📊</Text>
+                  <Text fontSize="3xl">•</Text>
                   <Heading size="md">Multi-Channel Sequences</Heading>
                   <Text color="gray.600">
                     Automate follow-ups across email and LinkedIn with intelligent timing 
@@ -156,7 +168,7 @@ export default function Home() {
             <Card bg={cardBg} shadow="lg">
               <CardBody p={8}>
                 <VStack spacing={4} align="start">
-                  <Text fontSize="3xl">📈</Text>
+                  <Text fontSize="3xl">•</Text>
                   <Heading size="md">Performance Analytics</Heading>
                   <Text color="gray.600">
                     Track open rates, reply rates, and meeting bookings with detailed 
@@ -169,7 +181,7 @@ export default function Home() {
             <Card bg={cardBg} shadow="lg">
               <CardBody p={8}>
                 <VStack spacing={4} align="start">
-                  <Text fontSize="3xl">🔗</Text>
+                  <Text fontSize="3xl">•</Text>
                   <Heading size="md">Seamless Integrations</Heading>
                   <Text color="gray.600">
                     Connect your existing email accounts, LinkedIn, and CRM tools 
@@ -192,16 +204,21 @@ export default function Home() {
             <Text fontSize="lg" opacity={0.9}>
               Join thousands of sales teams using AI to generate more qualified leads and book more meetings.
             </Text>
-            <SignedOut>
-              <Button as={Link} href="/sign-up" size="lg" bg="white" color="primary.600" _hover={{ bg: 'gray.100' }}>
-                Start Free Trial
-              </Button>
-            </SignedOut>
-            <SignedIn>
-              <Button as={Link} href="/dashboard" size="lg" bg="white" color="primary.600" _hover={{ bg: 'gray.100' }}>
-                Go to Dashboard
-              </Button>
-            </SignedIn>
+            <Link href="/dashboard">
+              <GradientButton 
+                size="lg" 
+                bg="white" 
+                color="purple.600" 
+                _hover={{ 
+                  bg: 'gray.100',
+                  transform: 'translateY(-2px)',
+                  shadow: 'xl',
+                }}
+                transition="all 0.3s ease"
+              >
+                Get Started Now
+              </GradientButton>
+            </Link>
           </VStack>
         </Container>
       </Box>

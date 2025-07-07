@@ -135,7 +135,7 @@ export function SearchTypeSelector({ className }: SearchTypeSelectorProps) {
             fontWeight="800"
             letterSpacing="-0.02em"
           >
-            🎯 Choose Your Target
+            Choose Your Target
           </Heading>
           <Text 
             fontSize="xl" 
@@ -287,7 +287,7 @@ export function SearchTypeSelector({ className }: SearchTypeSelectorProps) {
                         color="gray.700" 
                         mb={3}
                       >
-                        🚀 Key Features:
+                        Key Features:
                       </Text>
                       <VStack spacing={3} align="start" w="full">
                         {option.features.map((feature, featureIndex) => (

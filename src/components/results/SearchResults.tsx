@@ -378,7 +378,7 @@ function PersonCard({ person, isSelected, onSelect }: PersonCardProps) {
               {(person.email || person.phone) && (
                 <Box w="full">
                   <Text fontSize="sm" fontWeight="bold" color="gray.700" mb={2}>
-                    📧 Contact Information
+                    Contact Information
                   </Text>
                   <VStack spacing={2} align="start">
                     {person.email && (
@@ -480,7 +480,7 @@ function PersonCard({ person, isSelected, onSelect }: PersonCardProps) {
               {/* Data Source & Freshness */}
               <Box w="full">
                 <Text fontSize="sm" fontWeight="bold" color="gray.700" mb={2}>
-                  📊 Data Info
+                  Data Info
                 </Text>
                 <HStack spacing={4} fontSize="xs" color="gray.500">
                   <Text>Source: {person.data_source}</Text>

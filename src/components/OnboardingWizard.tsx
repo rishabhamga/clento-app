@@ -343,7 +343,7 @@ export default function OnboardingWizard() {
 
       if (response.ok) {
         toast({
-          title: 'Welcome Aboard! 🎉',
+          title: 'Welcome Aboard!',
           description: 'Your setup is complete. Ready to generate some leads?',
           status: 'success',
           duration: 4000,
@@ -394,7 +394,7 @@ export default function OnboardingWizard() {
             >
               <CardHeader textAlign="center" pb={4}>
                 <Heading size="xl" color="purple.400" mb={4}>
-                  🚀 Welcome to AI SDR Platform
+                  Welcome to AI SDR Platform
                 </Heading>
                 <Text fontSize="lg" color="gray.600" lineHeight="tall">
                   Transform your sales process with AI-powered lead generation and automated outreach
@@ -514,7 +514,7 @@ export default function OnboardingWizard() {
 
                       <Box w="full" bg={useColorModeValue('purple.50', 'purple.900')} p={4} borderRadius="xl" border="1px" borderColor={useColorModeValue('purple.200', 'purple.700')}>
                         <Heading size="sm" color={useColorModeValue('purple.700', 'purple.300')} mb={3}>
-                          ✨ What our AI will discover:
+                          What our AI will discover:
                         </Heading>
                         <SimpleGrid columns={{ base: 1, sm: 2 }} gap={2}>
                           {[
@@ -680,7 +680,7 @@ export default function OnboardingWizard() {
                     <>
                       <Box w="full" bg="purple.50" p={4} borderRadius="xl" border="1px" borderColor="purple.200">
                         <Heading size="sm" color="purple.700" mb={3}>
-                          ✨ Why create an organization?
+                          Why create an organization?
                         </Heading>
                         <SimpleGrid columns={{ base: 1, sm: 2 }} gap={2}>
                           {[
@@ -798,7 +798,7 @@ export default function OnboardingWizard() {
             >
               <CardHeader textAlign="center">
                 <Heading size="lg" bgGradient={accentGradient} bgClip="text" mb={2}>
-                  💼 Connect LinkedIn Accounts
+                  Connect LinkedIn Accounts
                 </Heading>
                 <Text color="gray.600">
                   Connect up to 10 LinkedIn accounts for automated outreach campaigns
@@ -906,7 +906,7 @@ export default function OnboardingWizard() {
                   {/* Benefits */}
                   <Box w="full" bg={useColorModeValue('purple.50', 'purple.900')} p={4} borderRadius="xl" border="1px" borderColor={useColorModeValue('purple.200', 'purple.700')}>
                     <Text fontWeight="semibold" color={useColorModeValue('purple.700', 'purple.300')} mb={3}>
-                      💡 Why connect multiple accounts?
+                      Why connect multiple accounts?
                     </Text>
                     <VStack spacing={2} align="start">
                       {[
@@ -967,7 +967,7 @@ export default function OnboardingWizard() {
             >
               <CardHeader textAlign="center">
                 <Heading size="xl" color="green.500" mb={4}>
-                  🎉 Setup Complete!
+                  Setup Complete!
                 </Heading>
                 <Text fontSize="lg" color="gray.600">
                   You're all set to start generating high-quality leads with AI
@@ -1008,7 +1008,7 @@ export default function OnboardingWizard() {
                   {/* Next Steps */}
                   <Box w="full" bg="purple.50" p={4} borderRadius="xl" border="1px" borderColor="purple.200">
                     <Text fontWeight="semibold" color="purple.700" mb={3}>
-                      🚀 What's next?
+                      What's next?
                     </Text>
                     <VStack spacing={2} align="start">
                       {[

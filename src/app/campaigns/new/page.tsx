@@ -238,7 +238,7 @@ export default function NewCampaignPage() {
                     color="white"
                     boxShadow="0 4px 12px rgba(128, 90, 213, 0.4)"
                   >
-                    🎯 AI-Powered Targeting
+                    AI-Powered Targeting
                   </Badge>
 
                   <GradientButton
@@ -337,7 +337,7 @@ export default function NewCampaignPage() {
                     bg="gray.500"
                     color="white"
                   >
-                    ⚡ Complete Previous Steps
+                    Complete Previous Steps
                   </Badge>
                   
                   <Text color={useColorModeValue('gray.600', 'gray.400')} fontSize="lg">
@@ -366,7 +366,7 @@ export default function NewCampaignPage() {
                     bg="gray.500"
                     color="white"
                   >
-                    🚀 Complete Previous Steps
+                    Complete Previous Steps
                   </Badge>
                   
                   <Text color={useColorModeValue('gray.600', 'gray.400')} fontSize="lg">
