@@ -663,7 +663,18 @@ Respond with valid JSON only.`;
     this.timeout = 15000; // 15-second timeout instead of 30
     
     try {
+      // Try browser-based analysis first
       return await this.analyzeWebsite(websiteUrl);
+    } catch (error) {
+      console.warn('Browser-based analysis failed, falling back to browser-free mode:', error);
+      
+      // Fallback to browser-free analysis for cloud environments
+      try {
+        return await this.analyzeWebsiteNoBrowser(websiteUrl);
+      } catch (fallbackError) {
+        console.error('Both browser and browser-free analysis failed:', fallbackError);
+        throw new Error(`Analysis failed: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
+      }
     } finally {
       // Restore original settings
       this.maxPages = originalMaxPages;
@@ -697,6 +708,189 @@ Respond with valid JSON only.`;
 
     return urls.sort((a, b) => priorityScore(b) - priorityScore(a));
   }
+
+  // Add browser-free analysis for cloud environments
+  async analyzeWebsiteNoBrowser(websiteUrl: string): Promise<ComprehensiveICPAnalysis> {
+    try {
+      console.log(`Starting browser-free analysis of ${websiteUrl}`);
+      
+      // Step 1: Discover pages without browser
+      const pages = await this.discoverPagesNoBrowser(websiteUrl);
+      console.log(`Found ${pages.length} pages to analyze`);
+
+      if (pages.length === 0) {
+        throw new Error('No pages found to analyze');
+      }
+
+      // Step 2: Fetch content without browser
+      const pageContents = await this.fetchPagesNoBrowser(pages);
+      
+      console.log(`Successfully fetched ${pageContents.length} pages out of ${pages.length} discovered`);
+      
+      if (pageContents.length === 0) {
+        throw new Error('Failed to fetch any content from pages');
+      }
+
+      // Step 3: Analyze with AI (same as before)
+      const analysis = await this.performAIAnalysis(pageContents, websiteUrl);
+
+      console.log('Browser-free analysis complete!', {
+        coreOffer: analysis.core_offer,
+        industry: analysis.industry,
+        confidence: analysis.confidence_score,
+        personasFound: analysis.target_personas.length
+      });
+      
+      return analysis;
+
+    } catch (error) {
+      console.error('Error in browser-free website analysis:', error);
+      throw new Error(`Failed to analyze website: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Browser-free page discovery
+  private async discoverPagesNoBrowser(websiteUrl: string): Promise<string[]> {
+    const baseUrl = new Url(websiteUrl);
+    const discoveredUrls = new Set<string>();
+    
+    // Add the main URL first
+    discoveredUrls.add(websiteUrl);
+    
+    // Add high-priority pages
+    this.addHighPriorityPages(baseUrl, discoveredUrls);
+
+    try {
+      // Check robots.txt and sitemap (this works without browser)
+      await Promise.race([
+        this.checkRobotsAndSitemap(baseUrl.origin, discoveredUrls),
+        new Promise(resolve => setTimeout(resolve, 3000)) // Shorter timeout for cloud
+      ]);
+
+      // Try to fetch homepage and extract links
+      await Promise.race([
+        this.extractLinksNoBrowser(websiteUrl, baseUrl, discoveredUrls),
+        new Promise(resolve => setTimeout(resolve, 3000))
+      ]);
+
+    } catch (error) {
+      console.error('Error discovering pages (browser-free):', error);
+    }
+
+    const urlArray = Array.from(discoveredUrls);
+    const prioritizedUrls = this.prioritizeUrls(urlArray, baseUrl);
+    
+    return prioritizedUrls.slice(0, this.maxPages);
+  }
+
+  // Extract links using fetch instead of browser
+  private async extractLinksNoBrowser(websiteUrl: string, baseUrl: Url, discoveredUrls: Set<string>): Promise<void> {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      const response = await fetch(websiteUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; WebsiteAnalyzer/1.0)'
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) return;
+
+      const html = await response.text();
+      const $ = cheerio.load(html);
+
+      // Extract all links
+      $('a[href]').each((_, element) => {
+        const href = $(element).attr('href');
+        if (href) {
+          const fullUrl = this.resolveUrl(href, baseUrl);
+          if (fullUrl && this.isRelevantPage(fullUrl) && this.isSameDomain(fullUrl, baseUrl)) {
+            discoveredUrls.add(fullUrl);
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error extracting links without browser:', error);
+    }
+  }
+
+  // Fetch pages using simple HTTP requests
+  private async fetchPagesNoBrowser(urls: string[]): Promise<Array<{url: string, content: string, title: string}>> {
+    const results: Array<{url: string, content: string, title: string}> = [];
+    const urlsToFetch = urls.slice(0, this.maxPages);
+    
+    // Parallel fetching
+    const fetchPromises = urlsToFetch.map(async (url, index) => {
+      try {
+        console.log(`Fetching page ${index + 1}/${urlsToFetch.length}: ${url}`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; WebsiteAnalyzer/1.0)',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const html = await response.text();
+        const $ = cheerio.load(html);
+
+        // Extract title
+        const title = $('title').text().trim() || url;
+
+        // Extract main content (remove scripts, styles, etc.)
+        $('script, style, nav, footer, header, .nav, .footer, .header').remove();
+        
+        // Get main content
+        const main = $('main').text() || $('body').text();
+        const content = main.replace(/\s+/g, ' ').trim();
+
+        return {
+          url,
+          title,
+          content
+        };
+        
+      } catch (error) {
+        console.error(`Error fetching ${url}:`, error);
+        return null;
+      }
+    });
+
+    // Execute with concurrency limit
+    const concurrencyLimit = 5; // Higher limit since no browser overhead
+    const batchedResults: Array<{url: string, content: string, title: string} | null> = [];
+    
+    for (let i = 0; i < fetchPromises.length; i += concurrencyLimit) {
+      const batch = fetchPromises.slice(i, i + concurrencyLimit);
+      const batchResults = await Promise.all(batch);
+      batchedResults.push(...batchResults);
+      
+      // Small delay between batches
+      if (i + concurrencyLimit < fetchPromises.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+
+    // Filter successful results
+    return batchedResults.filter((result): result is {url: string, content: string, title: string} => 
+      result !== null && result.content.length > 100
+    );
+  }
 }
 
 // Export utility functions
@@ -708,12 +902,27 @@ export async function analyzeWebsiteICP(websiteUrl: string, fast: boolean = true
   
   const service = new AIICPService();
   
-  if (fast) {
-    // Use optimized fast analysis (6 pages, 15s timeout)
-    return await service.analyzeWebsiteFast(websiteUrl);
-  } else {
-    // Use comprehensive analysis (15 pages, 30s timeout)
-    return await service.analyzeWebsite(websiteUrl);
+  try {
+    if (fast) {
+      // Use optimized fast analysis (6 pages, 15s timeout) with browser fallback
+      return await service.analyzeWebsiteFast(websiteUrl);
+    } else {
+      // Use comprehensive analysis (15 pages, 30s timeout)
+      return await service.analyzeWebsite(websiteUrl);
+    }
+  } catch (error) {
+    // If comprehensive analysis fails, try browser-free as last resort
+    if (!fast) {
+      console.warn('Comprehensive analysis failed, trying browser-free fallback');
+      try {
+        return await service.analyzeWebsiteNoBrowser(websiteUrl);
+      } catch (fallbackError) {
+        console.error('All analysis methods failed:', fallbackError);
+        throw error; // Throw original error
+      }
+    } else {
+      throw error; // Fast analysis already has fallback built-in
+    }
   }
 }
 
