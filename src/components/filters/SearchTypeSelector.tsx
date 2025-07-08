@@ -135,7 +135,7 @@ export function SearchTypeSelector({ className }: SearchTypeSelectorProps) {
             fontWeight="800"
             letterSpacing="-0.02em"
           >
-            Choose Your Target
+            Choose Your Target ICP
           </Heading>
           <Text 
             fontSize="xl" 

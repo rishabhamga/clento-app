@@ -73,7 +73,7 @@ export function SearchResults({
 
   if (loading) {
     return (
-      <Box className={className} textAlign="center" py={12}>
+      <Box className={className} flex={1} display="flex" alignItems="center" justifyContent="center" textAlign="center" py={12}>
         <VStack spacing={4}>
           <Spinner size="xl" color="purple.500" />
           <Text fontSize="lg" color="gray.600">
@@ -86,7 +86,7 @@ export function SearchResults({
 
   if (error) {
     return (
-      <Box className={className}>
+      <Box className={className} flex={1} display="flex" alignItems="center">
         <Alert status="error" borderRadius="lg">
           <AlertIcon />
           <Box>
@@ -100,7 +100,7 @@ export function SearchResults({
 
   if (!hasActiveFilters && (!results || results.length === 0)) {
     return (
-      <Box className={className} textAlign="center" py={12}>
+      <Box className={className} flex={1} display="flex" alignItems="center" justifyContent="center" textAlign="center" py={12}>
         <VStack spacing={4}>
           <Text fontSize="lg" color="gray.600">
             Apply filters to search for {searchType === 'people' ? 'people' : 'companies'}
@@ -115,7 +115,7 @@ export function SearchResults({
 
   if (results.length === 0) {
     return (
-      <Box className={className} textAlign="center" py={12}>
+      <Box className={className} flex={1} display="flex" alignItems="center" justifyContent="center" textAlign="center" py={12}>
         <VStack spacing={4}>
           <Text fontSize="lg" color="gray.600">
             No {searchType} found matching your criteria
@@ -129,10 +129,10 @@ export function SearchResults({
   }
 
   return (
-    <Box className={className}>
-      <VStack spacing={6} align="stretch">
+    <Box className={className} flex={1} display="flex" flexDirection="column" overflow="hidden">
+      <VStack spacing={6} align="stretch" flex={1} overflow="hidden">
         {/* Results header */}
-        <Flex align="center" justify="space-between">
+        <Flex align="center" justify="space-between" flexShrink={0}>
           <Text fontSize="lg" fontWeight="semibold">
             {pagination ? pagination.total_entries.toLocaleString() : results.length} {' '}
             {searchType} found
@@ -156,29 +156,33 @@ export function SearchResults({
         </Flex>
 
         {/* Results grid */}
-        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
-          {results
-            .sort((a, b) => (b.confidence || 0) - (a.confidence || 0)) // Sort by confidence descending
-            .map((result) => 
-            searchType === 'people' 
-              ? <PersonCard 
-                  key={result.id} 
-                  person={result as LeadSearchResult}
-                  isSelected={selectedLeadIds.includes(result.id)}
-                  onSelect={onLeadSelect}
-                />
-              : <CompanyCard 
-                  key={result.id} 
-                  company={result as CompanySearchResult}
-                  isSelected={selectedCompanyIds.includes(result.id)}
-                  onSelect={onCompanySelect}
-                />
-          )}
-        </SimpleGrid>
+        <Box flex={1} overflow="auto" pr={2}>
+          <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
+            {results
+              .sort((a, b) => (b.confidence || 0) - (a.confidence || 0)) // Sort by confidence descending
+              .map((result) => 
+              searchType === 'people' 
+                ? <PersonCard 
+                    key={result.id} 
+                    person={result as LeadSearchResult}
+                    isSelected={selectedLeadIds.includes(result.id)}
+                    onSelect={onLeadSelect}
+                  />
+                : <CompanyCard 
+                    key={result.id} 
+                    company={result as CompanySearchResult}
+                    isSelected={selectedCompanyIds.includes(result.id)}
+                    onSelect={onCompanySelect}
+                  />
+            )}
+          </SimpleGrid>
+        </Box>
 
         {/* Pagination */}
         {pagination && pagination.total_pages > 1 && (
-          <SearchPagination />
+          <Box flexShrink={0}>
+            <SearchPagination />
+          </Box>
         )}
       </VStack>
     </Box>

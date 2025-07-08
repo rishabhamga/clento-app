@@ -394,7 +394,7 @@ export default function OnboardingWizard() {
             >
               <CardHeader textAlign="center" pb={4}>
                 <Heading size="xl" color="purple.400" mb={4}>
-                  Welcome to AI SDR Platform
+                  Welcome to Clento.ai
                 </Heading>
                 <Text fontSize="lg" color="gray.600" lineHeight="tall">
                   Transform your sales process with AI-powered lead generation and automated outreach
@@ -1092,7 +1092,7 @@ export default function OnboardingWizard() {
               color={useColorModeValue('white', 'gray.100')}
               textShadow="0 2px 4px rgba(0,0,0,0.3)"
             >
-              Welcome to Your AI SDR
+              
             </Text>
             <Text 
               fontSize="lg" 

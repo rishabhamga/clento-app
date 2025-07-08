@@ -23,14 +23,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { CampaignStepper } from '@/components/ui/CampaignStepper'
 import { ApolloSearchProvider } from '@/hooks/useApolloSearch'
-import SearchTypeSelector from '@/components/filters/SearchTypeSelector'
-import { PeopleFilters, CompanyFilters, CommonFilters } from '@/components/filters/ApolloFilters'
+import { PeopleFilters, CommonFilters } from '@/components/filters/ApolloFilters'
 import SearchResults from '@/components/results/SearchResults'
 import { useSearchFilters, useApolloSearch } from '@/hooks/useApolloSearch'
 import { 
-  type ApolloFilterInput, 
-  type CompanyFilterInput,
-  type SearchType,
+  type ApolloFilterInput,
 } from '@/types/apollo'
 import CSVUpload from '@/components/filters/CSVUpload'
 import type { CSVLeadData } from '@/types/csv'
@@ -63,9 +60,9 @@ function LoadingSpinner() {
 // Component that uses useSearchParams
 function B2BFiltersPageWithParams() {
   const searchParams = useSearchParams()
-  const typeParam = searchParams.get('type') as SearchType
+  const typeParam = searchParams.get('type')
   
-  // Set initial search type based on URL parameter
+  // Set initial search type - only support people and csv_upload
   const initialSearchType = typeParam === 'csv_upload' ? 'csv_upload' : 'people'
   
   return (
@@ -92,7 +89,6 @@ function B2BFiltersContent() {
   
   // State for selected results
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([])
   const [isSavingLeads, setIsSavingLeads] = useState(false)
   
   // Apollo search hooks
@@ -115,18 +111,14 @@ function B2BFiltersContent() {
 
   // Handle URL parameter for search type
   useEffect(() => {
-    const typeParam = searchParams.get('type') as SearchType
+    const typeParam = searchParams.get('type')
     if (typeParam === 'csv_upload' && searchType !== 'csv_upload') {
       setSearchType('csv_upload')
     }
   }, [searchParams, searchType, setSearchType])
 
   // Handle filter changes
-  const handlePeopleFilterChange = (field: string, value: unknown) => {
-    updateFilter(field, value)
-  }
-
-  const handleCompanyFilterChange = (field: string, value: unknown) => {
+  const handleFilterChange = (field: string, value: unknown) => {
     updateFilter(field, value)
   }
 
@@ -136,7 +128,7 @@ function B2BFiltersContent() {
       await search()
       toast({
         title: 'Search Complete',
-        description: `Found results for your ${searchType} search`,
+        description: `Found results for your people search`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -167,28 +159,12 @@ function B2BFiltersContent() {
     }
   }
 
-  // Handle company selection
-  const handleCompanySelection = (companyId: string, selected: boolean) => {
-    if (selected) {
-      setSelectedCompanyIds(prev => [...prev, companyId])
-    } else {
-      setSelectedCompanyIds(prev => prev.filter(id => id !== companyId))
-    }
-  }
-
   // Handle proceed to next step
   const handleProceedToPitch = async () => {
-    // For CSV upload and people search, we check selectedLeadIds
-    // For company search, we check selectedCompanyIds
-    const selectedCount = (searchType === 'people' || searchType === 'csv_upload') 
-      ? selectedLeadIds.length 
-      : selectedCompanyIds.length
-    
-    if (selectedCount === 0) {
-      const entityType = searchType === 'company' ? 'company' : 'person'
+    if (selectedLeadIds.length === 0) {
       toast({
         title: 'No Results Selected',
-        description: `Please select at least one ${entityType} to continue.`,
+        description: 'Please select at least one person to continue.',
         status: 'warning',
         duration: 3000,
         isClosable: true,
@@ -196,15 +172,11 @@ function B2BFiltersContent() {
       return
     }
 
-    // Get the actual lead/company data for selected items
-    const searchResults = (searchType === 'people' || searchType === 'csv_upload') 
-      ? state.peopleResults 
-      : state.companyResults
-    const selectedLeads = searchResults?.filter(result => 
-      (searchType === 'people' || searchType === 'csv_upload') 
-        ? selectedLeadIds.includes(result.id)
-        : selectedCompanyIds.includes(result.id)
-    ) || []
+    // Get the actual lead data for selected items
+    const searchResults = state.peopleResults || []
+    const selectedLeads = searchResults.filter(result => 
+      selectedLeadIds.includes(result.id)
+    )
 
     console.log('Selected leads to save:', selectedLeads)
 
@@ -235,13 +207,13 @@ function B2BFiltersContent() {
         localStorage.setItem('campaignTargeting', JSON.stringify({
           searchType,
           filters,
-          selectedIds: searchType === 'company' ? selectedCompanyIds : selectedLeadIds,
-          selectedCount
+          selectedIds: selectedLeadIds,
+          selectedCount: selectedLeadIds.length
         }))
 
         toast({
           title: 'Leads Saved Successfully',
-          description: `${selectedCount} ${searchType === 'company' ? 'companies' : 'people'} saved for your campaign.`,
+          description: `${selectedLeadIds.length} people saved for your campaign.`,
           status: 'success',
           duration: 3000,
           isClosable: true,
@@ -385,29 +357,11 @@ function B2BFiltersContent() {
               mx="auto"
               textShadow="0 1px 2px rgba(0,0,0,0.2)"
             >
-              Use our advanced filters to find and select your perfect prospects from 300M+ verified contacts
+              Use our advanced filters to find and select your perfect people prospects from 200M+ verified contacts
             </Text>
           </Box>
 
-          {/* Search Type Selector */}
-          <Card 
-            bg={cardBg}
-            backdropFilter="blur(10px)"
-            border="1px solid"
-            borderColor={borderColor}
-            shadow="xl"
-            borderRadius="2xl"
-            overflow="hidden"
-            _hover={{
-              transform: 'translateY(-2px)',
-              shadow: '2xl',
-            }}
-            transition="all 0.3s ease"
-          >
-            <CardBody p={6}>
-              <SearchTypeSelector />
-            </CardBody>
-          </Card>
+
 
           {/* Filters and Results Grid */}
           <Grid templateColumns={{ base: "1fr", lg: "380px 1fr" }} gap={6} alignItems="start">
@@ -423,37 +377,31 @@ function B2BFiltersContent() {
                   shadow="xl"
                   borderRadius="2xl"
                   overflow="hidden"
-                  position="sticky"
-                  top={4}
+                  h="600px"
+                  display="flex"
+                  flexDirection="column"
                 >
-                  <CardBody p={6}>
+                  <CardBody p={6} display="flex" flexDirection="column" overflow="hidden">
                     {searchType === 'csv_upload' ? (
                       <CSVUpload onLeadsSelected={handleLeadsSelected} />
                     ) : (
-                      <VStack spacing={6} align="stretch">
-                        <Heading size="md" color="purple.500">
-                          {searchType === 'people' ? 'People Filters' : 'Company Filters'}
+                      <VStack spacing={6} align="stretch" flex={1} overflow="hidden">
+                        <Heading size="md" color="purple.500" flexShrink={0}>
+                          People Filters
                         </Heading>
                         
-                        {searchType === 'people' && (
+                        <Box flex={1} overflow="auto" pr={2}>
                           <PeopleFilters
                             filters={filters}
-                            onChange={handlePeopleFilterChange}
+                            onChange={handleFilterChange}
                           />
-                        )}
-                        
-                        {searchType === 'company' && (
-                          <CompanyFilters
+                          
+                          <CommonFilters
+                            searchType={searchType}
                             filters={filters}
-                            onChange={handleCompanyFilterChange}
+                            onChange={handleFilterChange}
                           />
-                        )}
-                        
-                        <CommonFilters
-                          searchType={searchType}
-                          filters={filters}
-                          onChange={handlePeopleFilterChange}
-                        />
+                        </Box>
                       </VStack>
                     )}
                   </CardBody>
@@ -504,14 +452,14 @@ function B2BFiltersContent() {
                 shadow="xl"
                 borderRadius="2xl"
                 overflow="hidden"
-                minH="600px"
+                h="600px"
+                display="flex"
+                flexDirection="column"
               >
-                <CardBody p={6}>
+                <CardBody p={6} display="flex" flexDirection="column" overflow="hidden">
                   <SearchResults
                     onLeadSelect={handleLeadSelection}
-                    onCompanySelect={handleCompanySelection}
                     selectedLeadIds={selectedLeadIds}
-                    selectedCompanyIds={selectedCompanyIds}
                   />
                 </CardBody>
               </Card>
@@ -537,7 +485,7 @@ function B2BFiltersContent() {
               onClick={handleProceedToPitch}
               isLoading={isSavingLeads}
               loadingText="Saving leads..."
-              disabled={selectedLeadIds.length === 0 && selectedCompanyIds.length === 0}
+              disabled={selectedLeadIds.length === 0}
               rightIcon={<Text>→</Text>}
               size="lg"
               _hover={{
@@ -546,7 +494,7 @@ function B2BFiltersContent() {
               }}
               transition="all 0.3s ease"
             >
-              Continue to Pitch ({(searchType === 'people' || searchType === 'csv_upload') ? selectedLeadIds.length : selectedCompanyIds.length} selected)
+              Continue to Pitch ({selectedLeadIds.length} selected)
             </GradientButton>
           </Flex>
         </VStack>
