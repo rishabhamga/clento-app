@@ -1,60 +1,99 @@
-// Simple test script for website analysis API
+// Enhanced test script for website analysis API with performance testing
 const testWebsiteAnalysis = async () => {
   const testUrl = 'https://example.com'
   
   try {
-    console.log('Testing website analysis API...')
+    console.log('🚀 Testing FAST website analysis API...')
     console.log('Test URL:', testUrl)
     
-    const response = await fetch('http://localhost:3004/api/analyze-site', {
+    const startTime = Date.now()
+    
+    const response = await fetch('http://localhost:3002/api/analyze-site', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         // Note: In a real app, you'd need proper authentication
       },
-      body: JSON.stringify({ url: testUrl })
+      body: JSON.stringify({ 
+        url: testUrl,
+        force: true // Force fresh analysis to test performance
+      })
     })
     
-    console.log('Response status:', response.status)
+    const responseTime = Date.now() - startTime
+    console.log('⏱️  Response time:', responseTime + 'ms')
+    console.log('📊 Response status:', response.status)
     
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Error response:', errorText)
+      console.error('❌ Error response:', errorText)
       return
     }
     
     const data = await response.json()
-    console.log('Response data structure:')
+    console.log('✅ Analysis started successfully!')
+    console.log('📋 Response structure:')
     console.log('- success:', data.success)
-    console.log('- analysis keys:', Object.keys(data.analysis || {}))
-    console.log('- suggestions keys:', Object.keys(data.suggestions || {}))
+    console.log('- analysisId:', data.analysisId)
+    console.log('- status:', data.status)
+    console.log('- message:', data.message)
     
-    if (data.analysis) {
-      console.log('\nAnalysis data:')
-      console.log('- summary:', data.analysis.summary ? 'present' : 'missing')
-      console.log('- valueProposition:', data.analysis.valueProposition ? 'present' : 'missing')
-      console.log('- painPoints:', Array.isArray(data.analysis.painPoints) ? `${data.analysis.painPoints.length} items` : 'missing')
-      console.log('- proofPoints:', Array.isArray(data.analysis.proofPoints) ? `${data.analysis.proofPoints.length} items` : 'missing')
+    if (data.analysisId) {
+      console.log('\n🔄 Polling for completion...')
       
-      if (data.analysis.painPoints && data.analysis.painPoints.length > 0) {
-        console.log('\nFirst pain point:', data.analysis.painPoints[0])
+      // Poll for completion
+      let attempts = 0
+      const maxAttempts = 30 // 1 minute max
+      const pollStartTime = Date.now()
+      
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        attempts++
+        
+        try {
+          const statusResponse = await fetch(`http://localhost:3002/api/analyze-site?id=${data.analysisId}`)
+          
+          if (statusResponse.ok) {
+            const statusData = await statusResponse.json()
+            
+            if (statusData.success && statusData.analysis) {
+              const status = statusData.analysis.status
+              console.log(`📈 Attempt ${attempts}: Status = ${status}`)
+              
+              if (status === 'completed') {
+                const totalTime = Date.now() - pollStartTime
+                console.log('\n🎉 ANALYSIS COMPLETED!')
+                console.log('⏱️  Total analysis time:', totalTime + 'ms (' + Math.round(totalTime/1000) + 's)')
+                console.log('📊 Analysis results:')
+                console.log('- Core Offer:', statusData.analysis.core_offer?.substring(0, 100) + '...')
+                console.log('- Industry:', statusData.analysis.industry)
+                console.log('- Business Model:', statusData.analysis.business_model)
+                console.log('- Confidence Score:', statusData.analysis.confidence_score)
+                console.log('- Target Personas:', statusData.analysis.target_personas?.length || 0)
+                console.log('- Case Studies:', statusData.analysis.case_studies?.length || 0)
+                console.log('- Pages Analyzed:', statusData.analysis.pages_analyzed || 'N/A')
+                break
+              } else if (status === 'failed') {
+                console.error('❌ Analysis failed')
+                break
+              }
+            }
+          }
+        } catch (pollError) {
+          console.error('❌ Error during polling:', pollError.message)
+        }
       }
       
-      if (data.analysis.proofPoints && data.analysis.proofPoints.length > 0) {
-        console.log('First proof point:', data.analysis.proofPoints[0])
+      if (attempts >= maxAttempts) {
+        console.log('⏰ Polling timeout - analysis may still be processing')
       }
-    }
-    
-    if (data.suggestions) {
-      console.log('\nSuggestions data:')
-      console.log('- painPoints:', Array.isArray(data.suggestions.painPoints) ? `${data.suggestions.painPoints.length} items` : 'missing')
-      console.log('- proofPoints:', Array.isArray(data.suggestions.proofPoints) ? `${data.suggestions.proofPoints.length} items` : 'missing')
     }
     
   } catch (error) {
-    console.error('Test failed:', error.message)
+    console.error('❌ Test failed:', error.message)
   }
 }
 
-// Run the test
+console.log('🧪 Starting Website Analysis Performance Test')
+console.log('==========================================')
 testWebsiteAnalysis() 

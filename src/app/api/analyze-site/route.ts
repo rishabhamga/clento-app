@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({
             success: true,
             message: 'Analysis already exists',
-            analysis_id: existingAnalysis.id,
+            analysisId: existingAnalysis.id,
             status: 'completed',
             analysis: {
               id: existingAnalysis.id,
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       success: true,
       message: 'Website analysis started',
-      analysis_id: analysisRecord.id,
+      analysisId: analysisRecord.id,
       status: 'analyzing'
     })
 

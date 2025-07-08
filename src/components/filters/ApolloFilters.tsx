@@ -731,8 +731,8 @@ export function CommonFilters({ searchType, filters, onChange }: CommonFiltersPr
         </CardBody>
       </Card>
 
-      {/* Keywords */}
-      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+      {/* Keywords - COMMENTED OUT AS REQUESTED */}
+      {/* <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
           <Text fontSize="lg" fontWeight="semibold">🔍 Keywords</Text>
         </CardHeader>
@@ -756,7 +756,7 @@ export function CommonFilters({ searchType, filters, onChange }: CommonFiltersPr
             </FormControl>
           </VStack>
         </CardBody>
-      </Card>
+      </Card> */}
     </VStack>
   )
 }

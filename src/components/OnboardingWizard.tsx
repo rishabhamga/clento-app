@@ -253,8 +253,8 @@ export default function OnboardingWizard() {
 
       const data = await response.json()
 
-      if (data.success && data.analysis_id) {
-        setAnalysisId(data.analysis_id)
+      if (data.success && data.analysisId) {
+        setAnalysisId(data.analysisId)
         setCurrentStep(1)
       } else {
         throw new Error(data.error || 'Analysis failed')

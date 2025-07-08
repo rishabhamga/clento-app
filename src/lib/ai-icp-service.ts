@@ -192,24 +192,34 @@ export class AIICPService {
     const baseUrl = new Url(websiteUrl);
     const discoveredUrls = new Set<string>();
     
-    // Add the main URL
+    // Add the main URL first (highest priority)
     discoveredUrls.add(websiteUrl);
 
+    // Add high-priority pages immediately
+    this.addHighPriorityPages(baseUrl, discoveredUrls);
+
     try {
-      // 1. Check robots.txt and sitemap
-      await this.checkRobotsAndSitemap(baseUrl.origin, discoveredUrls);
+      // 1. Check robots.txt and sitemap (but don't wait too long)
+      await Promise.race([
+        this.checkRobotsAndSitemap(baseUrl.origin, discoveredUrls),
+        new Promise(resolve => setTimeout(resolve, 5000)) // Max 5 seconds for sitemap discovery
+      ]);
 
-      // 2. Crawl the homepage for links
-      await this.crawlForLinks(websiteUrl, baseUrl, discoveredUrls);
-
-      // 3. Add common important pages
-      this.addCommonPages(baseUrl, discoveredUrls);
+      // 2. Crawl the homepage for links (but don't wait too long)
+      await Promise.race([
+        this.crawlForLinks(websiteUrl, baseUrl, discoveredUrls),
+        new Promise(resolve => setTimeout(resolve, 5000)) // Max 5 seconds for crawling
+      ]);
 
     } catch (error) {
       console.error('Error discovering pages:', error);
     }
 
-    return Array.from(discoveredUrls).slice(0, this.maxPages);
+    // Convert to array and prioritize
+    const urlArray = Array.from(discoveredUrls);
+    const prioritizedUrls = this.prioritizeUrls(urlArray, baseUrl);
+    
+    return prioritizedUrls.slice(0, this.maxPages);
   }
 
   private async checkRobotsAndSitemap(origin: string, discoveredUrls: Set<string>): Promise<void> {
@@ -291,19 +301,17 @@ export class AIICPService {
     }
   }
 
-  private addCommonPages(baseUrl: Url, discoveredUrls: Set<string>): void {
-    const commonPaths = [
-      '/about', '/about-us', '/company',
-      '/services', '/products', '/solutions',
-      '/pricing', '/plans',
-      '/case-studies', '/customers', '/success-stories',
-      '/resources', '/blog',
-      '/contact', '/contact-us',
-      '/features', '/how-it-works',
-      '/testimonials', '/reviews'
+  private addHighPriorityPages(baseUrl: Url, discoveredUrls: Set<string>): void {
+    // Highest priority pages for business analysis
+    const highPriorityPaths = [
+      '/about', '/about-us', '/company',  // Company info
+      '/solutions', '/services', '/products',  // What they offer
+      '/pricing', '/plans',  // Business model
+      '/case-studies', '/customers', '/success-stories',  // Social proof
+      '/features', '/how-it-works'  // Product details
     ];
 
-    for (const path of commonPaths) {
+    for (const path of highPriorityPaths) {
       const fullUrl = `${baseUrl.origin}${path}`;
       discoveredUrls.add(fullUrl);
     }
@@ -407,14 +415,20 @@ export class AIICPService {
     }
 
     const results: Array<{url: string, content: string, title: string}> = [];
+    const urlsToScrape = urls.slice(0, this.maxPages);
     
-    for (let i = 0; i < Math.min(urls.length, this.maxPages); i++) {
-      const url = urls[i];
+    // Parallel scraping for much better performance
+    const scrapingPromises = urlsToScrape.map(async (url, index) => {
       try {
-        console.log(`Scraping page ${i + 1}/${Math.min(urls.length, this.maxPages)}: ${url}`);
+        console.log(`Scraping page ${index + 1}/${urlsToScrape.length}: ${url}`);
         
         const page = await this.browser!.newPage();
-        await page.goto(url, { waitUntil: 'networkidle', timeout: this.timeout });
+        
+        // Set shorter timeout for faster processing
+        await page.goto(url, { 
+          waitUntil: 'domcontentloaded', // Faster than 'networkidle'
+          timeout: this.timeout 
+        });
         
         const title = await page.title();
         const content = await page.evaluate(() => {
@@ -427,24 +441,40 @@ export class AIICPService {
           return main.innerText;
         });
 
-        results.push({
+        await page.close();
+        
+        return {
           url,
           title,
           content: content.replace(/\s+/g, ' ').trim()
-        });
-
-        await page.close();
-        
-        // Add delay to be respectful
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        };
         
       } catch (error) {
         console.error(`Error scraping ${url}:`, error);
-        // Continue with other pages
+        // Return null for failed pages
+        return null;
+      }
+    });
+
+    // Execute all scraping in parallel with some concurrency limit
+    const concurrencyLimit = 3; // Scrape max 3 pages simultaneously
+    const batchedResults: Array<{url: string, content: string, title: string} | null> = [];
+    
+    for (let i = 0; i < scrapingPromises.length; i += concurrencyLimit) {
+      const batch = scrapingPromises.slice(i, i + concurrencyLimit);
+      const batchResults = await Promise.all(batch);
+      batchedResults.push(...batchResults);
+      
+      // Small delay between batches to be respectful to servers
+      if (i + concurrencyLimit < scrapingPromises.length) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 1000ms
       }
     }
 
-    return results;
+    // Filter out failed pages and return successful ones
+    return batchedResults.filter((result): result is {url: string, content: string, title: string} => 
+      result !== null && result.content.length > 100
+    );
   }
 
   private async performAIAnalysis(pageContents: Array<{url: string, content: string, title: string}>, websiteUrl: string): Promise<ComprehensiveICPAnalysis> {
@@ -621,15 +651,73 @@ Respond with valid JSON only.`;
       }
     }
   }
+
+  // Add a fast analysis method for better UX
+  async analyzeWebsiteFast(websiteUrl: string): Promise<ComprehensiveICPAnalysis> {
+    // Use optimized settings for speed
+    const originalMaxPages = this.maxPages;
+    const originalTimeout = this.timeout;
+    
+    // Temporarily optimize for speed
+    this.maxPages = 6; // Reduce to 6 most important pages
+    this.timeout = 15000; // 15-second timeout instead of 30
+    
+    try {
+      return await this.analyzeWebsite(websiteUrl);
+    } finally {
+      // Restore original settings
+      this.maxPages = originalMaxPages;
+      this.timeout = originalTimeout;
+    }
+  }
+
+  // Prioritize URLs by importance for business analysis
+  private prioritizeUrls(urls: string[], baseUrl: Url): string[] {
+    const priorityScore = (url: string): number => {
+      const lowerUrl = url.toLowerCase();
+      
+      // Homepage gets highest priority
+      if (url === baseUrl.href || url === `${baseUrl.origin}/`) return 100;
+      
+      // Core business pages
+      if (lowerUrl.includes('/about') || lowerUrl.includes('/company')) return 90;
+      if (lowerUrl.includes('/services') || lowerUrl.includes('/solutions') || lowerUrl.includes('/products')) return 85;
+      if (lowerUrl.includes('/pricing') || lowerUrl.includes('/plans')) return 80;
+      if (lowerUrl.includes('/case-studies') || lowerUrl.includes('/customers') || lowerUrl.includes('/success')) return 75;
+      if (lowerUrl.includes('/features') || lowerUrl.includes('/how-it-works')) return 70;
+      
+      // Secondary pages
+      if (lowerUrl.includes('/resources') || lowerUrl.includes('/blog')) return 60;
+      if (lowerUrl.includes('/contact') || lowerUrl.includes('/contact-us')) return 50;
+      if (lowerUrl.includes('/testimonials') || lowerUrl.includes('/reviews')) return 65;
+      
+      // Default score
+      return 40;
+    };
+
+    return urls.sort((a, b) => priorityScore(b) - priorityScore(a));
+  }
 }
 
 // Export utility functions
-export async function analyzeWebsiteICP(websiteUrl: string): Promise<ComprehensiveICPAnalysis> {
+export async function analyzeWebsiteICP(websiteUrl: string, fast: boolean = true): Promise<ComprehensiveICPAnalysis> {
   // Ensure this function only runs on the server
   if (typeof window !== 'undefined') {
     throw new Error('analyzeWebsiteICP can only be used on the server side');
   }
   
   const service = new AIICPService();
-  return await service.analyzeWebsite(websiteUrl);
+  
+  if (fast) {
+    // Use optimized fast analysis (6 pages, 15s timeout)
+    return await service.analyzeWebsiteFast(websiteUrl);
+  } else {
+    // Use comprehensive analysis (15 pages, 30s timeout)
+    return await service.analyzeWebsite(websiteUrl);
+  }
+}
+
+// For backwards compatibility - keep the original comprehensive function
+export async function analyzeWebsiteICPComprehensive(websiteUrl: string): Promise<ComprehensiveICPAnalysis> {
+  return await analyzeWebsiteICP(websiteUrl, false);
 } 
