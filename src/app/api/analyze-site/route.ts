@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
       if (existingAnalysis && !existingError) {
         // If analysis exists and is completed, return it
-        if (existingAnalysis.status === 'completed') {
+        if (existingAnalysis.analysis_status === 'completed') {
           console.log('Returning existing completed analysis')
           return NextResponse.json({
             success: true,
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     const analysisData = {
       user_id: userData.id,
       website_url,
-      status: 'analyzing',
+      analysis_status: 'analyzing',
       started_at: new Date().toISOString()
     }
 
@@ -257,7 +257,7 @@ export async function GET(request: NextRequest) {
       success: true,
       analysis: {
         id: analysis.id,
-        status: analysis.status,
+        status: analysis.analysis_status,
         website_url: analysis.website_url,
         started_at: analysis.started_at,
         completed_at: analysis.completed_at,
@@ -306,7 +306,7 @@ async function performAnalysisInBackground(analysisId: string, websiteUrl: strin
     const { error: updateError } = await supabase
       .from('website_analysis')
       .update({
-        status: 'completed',
+        analysis_status: 'completed',
         completed_at: new Date().toISOString(),
         
         // Core business intelligence
@@ -343,7 +343,7 @@ async function performAnalysisInBackground(analysisId: string, websiteUrl: strin
       await supabase
         .from('website_analysis')
         .update({
-          status: 'failed',
+          analysis_status: 'failed',
           completed_at: new Date().toISOString()
         })
         .eq('id', analysisId)
@@ -380,7 +380,7 @@ async function performAnalysisInBackground(analysisId: string, websiteUrl: strin
     await supabase
       .from('website_analysis')
       .update({
-        status: 'failed',
+        analysis_status: 'failed',
         completed_at: new Date().toISOString()
       })
       .eq('id', analysisId)

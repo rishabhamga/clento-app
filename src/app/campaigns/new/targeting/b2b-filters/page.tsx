@@ -377,7 +377,7 @@ function B2BFiltersContent() {
                   shadow="xl"
                   borderRadius="2xl"
                   overflow="hidden"
-                  h="600px"
+                  h="800px"
                   display="flex"
                   flexDirection="column"
                 >
@@ -452,7 +452,7 @@ function B2BFiltersContent() {
                 shadow="xl"
                 borderRadius="2xl"
                 overflow="hidden"
-                h="600px"
+                h="800px"
                 display="flex"
                 flexDirection="column"
               >
