@@ -797,9 +797,9 @@ export default function PitchPage() {
               <HStack justify="space-between">
                 <HStack>
                   <Badge colorScheme="red" px={3} py={1} borderRadius="full">
-                    PAIN POINTS
+                    🎯 PAIN POINTS
                   </Badge>
-                  <Heading size="lg" color="gray.800">
+                  <Heading size="md" color="gray.800">
                     Customer Pain Points
                   </Heading>
                 </HStack>
@@ -818,78 +818,67 @@ export default function PitchPage() {
               </HStack>
             </CardHeader>
             <CardBody pt={0}>
-              <VStack spacing={3} align="stretch">
+              <VStack spacing={2} align="stretch">
                 {painPoints.map((point, index) => (
-                  <Box 
+                  <HStack 
                     key={point.id}
-                    p={4}
+                    p={3}
                     bg={glassBg}
                     border="1px solid"
                     borderColor={borderColor}
-                    borderRadius="lg"
+                    borderRadius="md"
+                    spacing={3}
                     _hover={{ 
                       borderColor: 'red.300',
-                      shadow: 'md' 
+                      shadow: 'sm' 
                     }}
                     transition="all 0.2s ease"
                   >
-                    <VStack spacing={2} align="stretch">
-                      <HStack spacing={3}>
-                        <Text 
-                          fontSize="sm" 
-                          fontWeight="bold" 
-                          color="red.600"
-                          minW="20px"
-                        >
-                          {index + 1}.
-                        </Text>
-                        <Input
-                          placeholder="Pain point title..."
-                          value={point.title}
-                          onChange={(e) => updatePainPoint(point.id, 'title', e.target.value)}
-                          variant="unstyled"
-                          fontWeight="medium"
-                          fontSize="sm"
-                          _placeholder={{ color: 'gray.400' }}
-                        />
-                        <IconButton
-                          aria-label="Remove pain point"
-                          icon={<FiTrash2 />}
-                          onClick={() => removePainPoint(point.id)}
-                          size="xs"
-                          colorScheme="red"
-                          variant="ghost"
-                          opacity={0.7}
-                          _hover={{ opacity: 1 }}
-                        />
-                      </HStack>
-                      <Box pl="32px">
-                        <Textarea
-                          placeholder="Describe the pain point..."
-                          value={point.description}
-                          onChange={(e) => updatePainPoint(point.id, 'description', e.target.value)}
-                          variant="unstyled"
-                          fontSize="sm"
-                          resize="none"
-                          rows={2}
-                          _placeholder={{ color: 'gray.400' }}
-                        />
-                      </Box>
-                    </VStack>
-                  </Box>
+                    <Text 
+                      fontSize="xs" 
+                      fontWeight="bold" 
+                      color="red.600"
+                      minW="16px"
+                      textAlign="center"
+                    >
+                      {index + 1}
+                    </Text>
+                    <Input
+                      placeholder={`Pain point ${index + 1} (e.g., "High operational costs in loan collection")`}
+                      value={point.title || point.description}
+                      onChange={(e) => {
+                        updatePainPoint(point.id, 'title', e.target.value)
+                        updatePainPoint(point.id, 'description', e.target.value)
+                      }}
+                      variant="unstyled"
+                      fontSize="sm"
+                      _placeholder={{ color: 'gray.400' }}
+                      flex={1}
+                    />
+                    <IconButton
+                      aria-label="Remove pain point"
+                      icon={<FiTrash2 />}
+                      onClick={() => removePainPoint(point.id)}
+                      size="xs"
+                      colorScheme="red"
+                      variant="ghost"
+                      opacity={0.6}
+                      _hover={{ opacity: 1 }}
+                    />
+                  </HStack>
                 ))}
                 
                 {painPoints.length === 0 && (
                   <Box 
-                    p={6} 
+                    p={4} 
                     textAlign="center"
                     border="2px dashed" 
                     borderColor="gray.300"
-                    borderRadius="lg"
+                    borderRadius="md"
                     bg="gray.50"
                   >
                     <Text color="gray.500" fontSize="sm">
-                      Click the + button to add your first pain point
+                      Add customer pain points that your solution addresses
                     </Text>
                   </Box>
                 )}
@@ -911,9 +900,9 @@ export default function PitchPage() {
               <HStack justify="space-between">
                 <HStack>
                   <Badge colorScheme="green" px={3} py={1} borderRadius="full">
-                    ✅ PROOF POINTS
+                    🏆 PROOF POINTS
                   </Badge>
-                  <Heading size="lg" color="gray.800">
+                  <Heading size="md" color="gray.800">
                     Success Stories & Proof
                   </Heading>
                 </HStack>
@@ -932,78 +921,67 @@ export default function PitchPage() {
               </HStack>
             </CardHeader>
             <CardBody pt={0}>
-              <VStack spacing={3} align="stretch">
+              <VStack spacing={2} align="stretch">
                 {proofPoints.map((point, index) => (
-                  <Box 
+                  <HStack 
                     key={point.id}
-                    p={4}
+                    p={3}
                     bg={glassBg}
                     border="1px solid"
                     borderColor={borderColor}
-                    borderRadius="lg"
+                    borderRadius="md"
+                    spacing={3}
                     _hover={{ 
                       borderColor: 'green.300',
-                      shadow: 'md' 
+                      shadow: 'sm' 
                     }}
                     transition="all 0.2s ease"
                   >
-                    <VStack spacing={2} align="stretch">
-                      <HStack spacing={3}>
-                        <Text 
-                          fontSize="sm" 
-                          fontWeight="bold" 
-                          color="green.600"
-                          minW="20px"
-                        >
-                          {index + 1}.
-                        </Text>
-                        <Input
-                          placeholder="Success story title..."
-                          value={point.title}
-                          onChange={(e) => updateProofPoint(point.id, 'title', e.target.value)}
-                          variant="unstyled"
-                          fontWeight="medium"
-                          fontSize="sm"
-                          _placeholder={{ color: 'gray.400' }}
-                        />
-                        <IconButton
-                          aria-label="Remove proof point"
-                          icon={<FiTrash2 />}
-                          onClick={() => removeProofPoint(point.id)}
-                          size="xs"
-                          colorScheme="red"
-                          variant="ghost"
-                          opacity={0.7}
-                          _hover={{ opacity: 1 }}
-                        />
-                      </HStack>
-                      <Box pl="32px">
-                        <Textarea
-                          placeholder="Describe the success story or proof..."
-                          value={point.description}
-                          onChange={(e) => updateProofPoint(point.id, 'description', e.target.value)}
-                          variant="unstyled"
-                          fontSize="sm"
-                          resize="none"
-                          rows={2}
-                          _placeholder={{ color: 'gray.400' }}
-                        />
-                      </Box>
-                    </VStack>
-                  </Box>
+                    <Text 
+                      fontSize="xs" 
+                      fontWeight="bold" 
+                      color="green.600"
+                      minW="16px"
+                      textAlign="center"
+                    >
+                      {index + 1}
+                    </Text>
+                    <Input
+                      placeholder={`Success story ${index + 1} (e.g., "Reduced processing time by 60% for 500+ client company")`}
+                      value={point.title || point.description}
+                      onChange={(e) => {
+                        updateProofPoint(point.id, 'title', e.target.value)
+                        updateProofPoint(point.id, 'description', e.target.value)
+                      }}
+                      variant="unstyled"
+                      fontSize="sm"
+                      _placeholder={{ color: 'gray.400' }}
+                      flex={1}
+                    />
+                    <IconButton
+                      aria-label="Remove proof point"
+                      icon={<FiTrash2 />}
+                      onClick={() => removeProofPoint(point.id)}
+                      size="xs"
+                      colorScheme="red"
+                      variant="ghost"
+                      opacity={0.6}
+                      _hover={{ opacity: 1 }}
+                    />
+                  </HStack>
                 ))}
                 
                 {proofPoints.length === 0 && (
                   <Box 
-                    p={6} 
+                    p={4} 
                     textAlign="center"
                     border="2px dashed" 
                     borderColor="gray.300"
-                    borderRadius="lg"
+                    borderRadius="md"
                     bg="gray.50"
                   >
                     <Text color="gray.500" fontSize="sm">
-                      Click the + button to add your first success story
+                      Add success stories, case studies, or social proof
                     </Text>
                   </Box>
                 )}
