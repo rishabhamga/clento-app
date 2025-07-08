@@ -174,14 +174,32 @@ export default function OnboardingWizard() {
   // Polling for analysis status
   useEffect(() => {
     let pollInterval: NodeJS.Timeout
+    let pollCount = 0
+    const maxPolls = 60 // 3 minutes timeout
 
     if (isAnalyzing && analysisId) {
       setAnalysisProgress(10)
       
       pollInterval = setInterval(async () => {
+        pollCount++
+        
+        if (pollCount > maxPolls) {
+          console.log('Polling timeout reached')
+          setIsAnalyzing(false)
+          setAnalysisError('Analysis timeout. Please try again.')
+          clearInterval(pollInterval)
+          return
+        }
         try {
           const response = await fetch(`/api/analyze-site?id=${analysisId}`)
           const data = await response.json()
+          
+          console.log('=== POLLING DEBUG ===')
+          console.log('Response:', data)
+          console.log('Analysis object:', data.analysis)
+          console.log('Status value:', data.analysis?.status)
+          console.log('Status type:', typeof data.analysis?.status)
+          console.log('==================')
 
           if (data.success && data.analysis) {
             const status = data.analysis.status

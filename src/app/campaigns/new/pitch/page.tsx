@@ -282,13 +282,36 @@ export default function PitchPage() {
       
       if (data.analysisId) {
         // Poll for results
+        let pollCount = 0
+        const maxPolls = 60 // 2 minutes timeout
+        
         const pollForResults = async () => {
           try {
+            pollCount++
+            
+            if (pollCount > maxPolls) {
+              console.log('Pitch page polling timeout reached')
+              setIsAnalyzing(false)
+              toast({
+                title: 'Analysis Timeout',
+                description: 'Analysis took too long. Please try again.',
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+              })
+              return
+            }
             const resultResponse = await fetch(`/api/analyze-site?id=${data.analysisId}`)
             if (resultResponse.ok) {
               const resultData = await resultResponse.json()
               
-              if (resultData.status === 'completed' && resultData.analysis) {
+              console.log('=== PITCH PAGE POLLING DEBUG ===')
+              console.log('Result data:', resultData)
+              console.log('Result data status:', resultData.status)
+              console.log('Analysis status:', resultData.analysis?.status)
+              console.log('===============================')
+              
+              if (resultData.success && resultData.analysis && resultData.analysis.status === 'completed') {
                 setICPAnalysis(resultData.analysis)
                 setOfferingDescription(resultData.analysis.core_offer || '')
                 setShowAnalysisSection(true)
@@ -339,8 +362,8 @@ export default function PitchPage() {
                 })
                 
                 setIsAnalyzing(false)
-              } else if (resultData.status === 'failed') {
-                throw new Error(resultData.error || 'Analysis failed')
+              } else if (resultData.analysis && resultData.analysis.status === 'failed') {
+                throw new Error('Analysis failed')
               } else {
                 // Still processing, continue polling
                 setTimeout(pollForResults, 2000)
@@ -704,10 +727,12 @@ export default function PitchPage() {
                 <Collapse in={showAnalysisSection} animateOpacity>
                   {icpAnalysis && (
                     <Card 
-                      bg={greenBg}
+                      bg={cardBg}
+                      backdropFilter="blur(10px)"
                       border="1px solid"
-                      borderColor={greenBorderColor}
-                      borderRadius="xl"
+                      borderColor={borderColor}
+                      shadow="xl"
+                      borderRadius="2xl"
                       overflow="hidden"
                     >
                       <CardBody>
