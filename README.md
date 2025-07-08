@@ -1,4 +1,4 @@
-# AI SDR Platform
+# AI SDR Platform.
 
 AI-powered Sales Development Representative platform for automated lead generation and multichannel outreach. This platform finds ideal leads, enriches their data, and engages them via LinkedIn and email with AI-crafted messages.
 
