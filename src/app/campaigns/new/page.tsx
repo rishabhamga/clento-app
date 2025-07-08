@@ -9,20 +9,13 @@ import {
   Card,
   CardBody,
   Badge,
-  Stepper,
-  Step,
-  StepIndicator,
-  StepStatus,
-  StepIcon,
-  StepNumber,
-  StepTitle,
-  StepSeparator,
   useColorModeValue,
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { GradientButton } from '@/components/ui/GradientButton'
+import { Enhanced3DStepper } from '@/components/ui/Enhanced3DStepper'
 
 // Enhanced animations
 const float = keyframes`
@@ -41,8 +34,8 @@ const shimmer = keyframes`
 `
 
 const campaignSteps = [
-  { title: 'Targeting', description: 'Select your target audience' },
-  { title: 'Pitch', description: 'AI website analysis & messaging' },
+  { title: 'Targeting', description: 'Select your target ICP' },
+  { title: 'Pitch', description: 'Product/Service analysis' },
   { title: 'Outreach', description: 'Configure outreach settings' },
   { title: 'Workflow', description: 'Design your sequence' },
   { title: 'Launch', description: 'Review and launch campaign' }
@@ -135,56 +128,14 @@ export default function NewCampaignPage() {
           </Box>
 
           {/* Progress Stepper */}
-          <Card 
-            bg={cardBg}
-            backdropFilter="blur(10px)"
-            border="1px solid"
-            borderColor={borderColor}
-            shadow="xl"
-            borderRadius="2xl"
-            overflow="hidden"
-            _hover={{
-              transform: 'translateY(-2px)',
-              shadow: '2xl',
-            }}
-            transition="all 0.3s ease"
-          >
-            <CardBody p={8}>
-              <Stepper index={activeStep} size="lg" colorScheme="purple">
-                {campaignSteps.map((step, index) => (
-                  <Step key={index} onClick={() => handleStepClick(index)}>
-                    <StepIndicator 
-                      cursor={index <= activeStep ? 'pointer' : 'default'}
-                      _hover={index <= activeStep ? { transform: 'scale(1.05)' } : {}}
-                      transition="all 0.2s ease"
-                    >
-                      <StepStatus
-                        complete={<StepIcon />}
-                        incomplete={<StepNumber />}
-                        active={<StepNumber />}
-                      />
-                    </StepIndicator>
-
-                    <Box 
-                      flexShrink="0" 
-                      cursor={index <= activeStep ? 'pointer' : 'default'}
-                      _hover={index <= activeStep ? { color: 'purple.500' } : {}}
-                      transition="all 0.2s ease"
-                    >
-                      <StepTitle fontSize="md" fontWeight="semibold">
-                        {step.title}
-                      </StepTitle>
-                      <Text fontSize="sm" color="gray.600">
-                        {step.description}
-                      </Text>
-                    </Box>
-
-                    <StepSeparator />
-                  </Step>
-                ))}
-              </Stepper>
-            </CardBody>
-          </Card>
+          <Enhanced3DStepper 
+            currentStep={activeStep}
+            steps={campaignSteps}
+            variant="detailed"
+            colorScheme="purple"
+            showProgress={true}
+            animated={true}
+          />
 
           {/* Current Step Content */}
           <Card 

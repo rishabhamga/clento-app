@@ -341,19 +341,7 @@ export default function LaunchPage() {
       <Container maxW="7xl" py={8} position="relative" zIndex={1}>
         <VStack spacing={8} align="stretch">
           {/* Header with Campaign Stepper */}
-          <Card 
-            bg={cardBg}
-            backdropFilter="blur(10px)"
-            border="1px solid"
-            borderColor={borderColor}
-            shadow="xl"
-            borderRadius="2xl"
-            overflow="hidden"
-          >
-            <CardBody p={6}>
-              <CampaignStepper currentStep={4} />
-            </CardBody>
-          </Card>
+          <CampaignStepper currentStep={4} />
 
           {/* Page Title */}
           <Box textAlign="center" mb={8}>

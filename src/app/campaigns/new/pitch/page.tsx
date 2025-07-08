@@ -312,6 +312,12 @@ export default function PitchPage() {
               console.log('===============================')
               
               if (resultData.success && resultData.analysis && resultData.analysis.status === 'completed') {
+                console.log('=== ANALYSIS DATA DEBUG ===')
+                console.log('Full analysis data:', resultData.analysis)
+                console.log('Target personas:', resultData.analysis.target_personas)
+                console.log('Target personas length:', resultData.analysis.target_personas?.length)
+                console.log('==========================')
+                
                 setICPAnalysis(resultData.analysis)
                 setOfferingDescription(resultData.analysis.core_offer || '')
                 setShowAnalysisSection(true)
@@ -343,8 +349,63 @@ export default function PitchPage() {
                     }
                   })
                   
+                  console.log('Extracted pain points:', allPainPoints)
+                  console.log('Extracted proof points:', allProofPoints)
                   setPainPoints(allPainPoints)
                   setProofPoints(allProofPoints)
+                } else {
+                  console.log('No target_personas found or empty. Checking for alternative data structures...')
+                  
+                  // Check if there are pain points in other fields
+                  const alternativePainPoints: PainPoint[] = []
+                  const alternativeProofPoints: ProofPoint[] = []
+                  
+                  // Check case studies for proof points
+                  if (resultData.analysis.case_studies && Array.isArray(resultData.analysis.case_studies)) {
+                    resultData.analysis.case_studies.forEach((caseStudy: any, index: number) => {
+                      if (caseStudy.results && Array.isArray(caseStudy.results)) {
+                        caseStudy.results.forEach((result: string, resultIndex: number) => {
+                          alternativeProofPoints.push({
+                            id: `case-study-${index}-result-${resultIndex}`,
+                            title: `Case Study Result ${alternativeProofPoints.length + 1}`,
+                            description: result
+                          })
+                        })
+                      }
+                    })
+                  }
+                  
+                  // Check competitive advantages for proof points  
+                  if (resultData.analysis.competitive_advantages && Array.isArray(resultData.analysis.competitive_advantages)) {
+                    resultData.analysis.competitive_advantages.forEach((advantage: string, index: number) => {
+                      alternativeProofPoints.push({
+                        id: `advantage-${index}`,
+                        title: `Competitive Advantage ${alternativeProofPoints.length + 1}`,
+                        description: advantage
+                      })
+                    })
+                  }
+                  
+                  // Check social proof testimonials for proof points
+                  if (resultData.analysis.social_proof?.testimonials && Array.isArray(resultData.analysis.social_proof.testimonials)) {
+                    resultData.analysis.social_proof.testimonials.forEach((testimonial: any, index: number) => {
+                      alternativeProofPoints.push({
+                        id: `testimonial-${index}`,
+                        title: `Client Testimonial ${alternativeProofPoints.length + 1}`,
+                        description: testimonial.quote
+                      })
+                    })
+                  }
+                  
+                  console.log('Alternative pain points found:', alternativePainPoints.length)
+                  console.log('Alternative proof points found:', alternativeProofPoints.length)
+                  
+                  if (alternativeProofPoints.length > 0) {
+                    setProofPoints(alternativeProofPoints)
+                  }
+                  if (alternativePainPoints.length > 0) {
+                    setPainPoints(alternativePainPoints)
+                  }
                 }
                 
                 toast({
@@ -604,19 +665,7 @@ export default function PitchPage() {
       <Container maxW="7xl" py={8} position="relative" zIndex={1}>
         <VStack spacing={8} align="stretch">
           {/* Header with Campaign Stepper */}
-          <Card 
-            bg={cardBg}
-            backdropFilter="blur(10px)"
-            border="1px solid"
-            borderColor={borderColor}
-            shadow="xl"
-            borderRadius="2xl"
-            overflow="hidden"
-          >
-            <CardBody p={6}>
-              <CampaignStepper currentStep={1} />
-            </CardBody>
-          </Card>
+          <CampaignStepper currentStep={1} />
 
           {/* Page Title */}
           <Box textAlign="center" mb={8}>
@@ -845,9 +894,8 @@ export default function PitchPage() {
                     </Text>
                     <Input
                       placeholder={`Pain point ${index + 1} (e.g., "High operational costs in loan collection")`}
-                      value={point.title || point.description}
+                      value={point.description || point.title}
                       onChange={(e) => {
-                        updatePainPoint(point.id, 'title', e.target.value)
                         updatePainPoint(point.id, 'description', e.target.value)
                       }}
                       variant="unstyled"
@@ -948,9 +996,8 @@ export default function PitchPage() {
                     </Text>
                     <Input
                       placeholder={`Success story ${index + 1} (e.g., "Reduced processing time by 60% for 500+ client company")`}
-                      value={point.title || point.description}
+                      value={point.description || point.title}
                       onChange={(e) => {
-                        updateProofPoint(point.id, 'title', e.target.value)
                         updateProofPoint(point.id, 'description', e.target.value)
                       }}
                       variant="unstyled"

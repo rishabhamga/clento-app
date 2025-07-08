@@ -1,17 +1,4 @@
-import {
-  Box,
-  Card,
-  CardBody,
-  Step,
-  StepIcon,
-  StepIndicator,
-  StepNumber,
-  StepSeparator,
-  StepStatus,
-  StepTitle,
-  Stepper,
-  useColorModeValue
-} from '@chakra-ui/react'
+import { Enhanced3DStepper } from './Enhanced3DStepper'
 
 interface CampaignStep {
   title: string
@@ -21,6 +8,10 @@ interface CampaignStep {
 interface CampaignStepperProps {
   currentStep: number
   steps?: CampaignStep[]
+  variant?: 'default' | 'compact' | 'detailed'
+  colorScheme?: string
+  showProgress?: boolean
+  animated?: boolean
 }
 
 const defaultSteps: CampaignStep[] = [
@@ -31,35 +22,22 @@ const defaultSteps: CampaignStep[] = [
   { title: 'Launch', description: 'Start your campaign' }
 ]
 
-export function CampaignStepper({ currentStep, steps = defaultSteps }: CampaignStepperProps) {
-  const cardBg = useColorModeValue('white', 'gray.800')
-  const borderColor = useColorModeValue('gray.200', 'gray.700')
-
+export function CampaignStepper({ 
+  currentStep, 
+  steps = defaultSteps,
+  variant = 'detailed',
+  colorScheme = 'purple',
+  showProgress = true,
+  animated = true
+}: CampaignStepperProps) {
   return (
-    <Card bg={cardBg} border="1px solid" borderColor={borderColor} mb={6}>
-      <CardBody>
-        <Stepper index={currentStep} size="sm" colorScheme="purple">
-          {steps.map((step, index) => (
-            <Step key={index}>
-              <StepIndicator>
-                <StepStatus
-                  complete={<StepIcon />}
-                  incomplete={<StepNumber />}
-                  active={<StepNumber />}
-                />
-              </StepIndicator>
-
-              <Box flexShrink="0">
-                <StepTitle fontSize="sm" fontWeight="semibold">
-                  {step.title}
-                </StepTitle>
-              </Box>
-
-              <StepSeparator />
-            </Step>
-          ))}
-        </Stepper>
-      </CardBody>
-    </Card>
+    <Enhanced3DStepper
+      currentStep={currentStep}
+      steps={steps}
+      variant={variant}
+      colorScheme={colorScheme}
+      showProgress={showProgress}
+      animated={animated}
+    />
   )
 } 

@@ -18,7 +18,6 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider 
-      waitlistUrl="/waitlist"
       appearance={{
         elements: {
           footer: "hidden",

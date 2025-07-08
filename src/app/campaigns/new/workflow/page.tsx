@@ -120,7 +120,7 @@ const defaultTemplates: WorkflowTemplate[] = [
   {
     id: 'linkedin-first',
     name: 'LinkedIn First',
-    description: 'Start with LinkedIn connection, then follow up with email',
+    description: 'Start with LinkedIn, then follow up with email',
     icon: '•',
     color: 'linkedin',
     conversionRate: '18%',
@@ -409,7 +409,7 @@ export default function WorkflowPage() {
         backgroundSize="50px 50px"
       />
       
-      <Container maxW="6xl" py={8} position="relative" zIndex="1">
+      <Container maxW="7xl" py={8} position="relative" zIndex="1">
         <VStack spacing={8} align="stretch">
           <CampaignStepper currentStep={4} />
           

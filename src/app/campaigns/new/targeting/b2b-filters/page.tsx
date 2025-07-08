@@ -326,19 +326,7 @@ function B2BFiltersContent() {
       <Container maxW="7xl" py={8} position="relative" zIndex={1}>
         <VStack spacing={8} align="stretch">
           {/* Header with Campaign Stepper */}
-          <Card 
-            bg={cardBg}
-            backdropFilter="blur(10px)"
-            border="1px solid"
-            borderColor={borderColor}
-            shadow="xl"
-            borderRadius="2xl"
-            overflow="hidden"
-          >
-            <CardBody p={6}>
-              <CampaignStepper currentStep={0} />
-            </CardBody>
-          </Card>
+          <CampaignStepper currentStep={0} />
 
           {/* Page Title */}
           <Box textAlign="center">
@@ -387,7 +375,7 @@ function B2BFiltersContent() {
                     ) : (
                       <VStack spacing={6} align="stretch" flex={1} overflow="hidden">
                         <Heading size="md" color="purple.500" flexShrink={0}>
-                          People Filters
+                          Select Filters
                         </Heading>
                         
                         <Box flex={1} overflow="auto" pr={2}>

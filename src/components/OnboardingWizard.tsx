@@ -28,14 +28,7 @@ import {
   useColorModeValue,
   useToast,
   SimpleGrid,
-  Stepper,
-  Step,
-  StepIndicator,
-  StepStatus,
-  StepIcon,
-  StepNumber,
-  StepTitle,
-  StepSeparator,
+
   Icon,
   Tooltip
 } from '@chakra-ui/react'
@@ -46,6 +39,7 @@ import { FiUsers, FiTarget, FiBookOpen, FiLinkedin, FiSkipForward, FiCheck, FiAr
 import { HiOutlineOfficeBuilding } from 'react-icons/hi'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { AnalysisDisplay } from '@/components/AnalysisDisplay'
+import { Enhanced3DStepper } from '@/components/ui/Enhanced3DStepper'
 import { CreateOrganization, useOrganization, useUser } from '@clerk/nextjs'
 
 // Enhanced animations matching campaign creation
@@ -408,17 +402,17 @@ export default function OnboardingWizard() {
               overflow="hidden"
               animation={`${glow} 4s ease-in-out infinite`}
               w="full"
-              maxW="2xl"
+              maxW="4xl"
             >
               <CardHeader textAlign="center" pb={4}>
-                <Heading size="xl" color="purple.400" mb={4}>
+                <Heading size="lg" bgGradient={accentGradient} bgClip="text" mb={2}>
                   Welcome to Clento.ai
                 </Heading>
                 <Text fontSize="lg" color="gray.600" lineHeight="tall">
                   Transform your sales process with AI-powered lead generation and automated outreach
                 </Text>
               </CardHeader>
-              <CardBody pt={0}>
+              <CardBody px={8} py={6}>
                 <VStack spacing={6}>
                   <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
                     <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
@@ -501,7 +495,7 @@ export default function OnboardingWizard() {
               borderRadius="2xl"
               overflow="hidden"
               w="full"
-              maxW="2xl"
+              maxW="4xl"
             >
               <CardHeader textAlign="center">
                 <Heading size="lg" bgGradient={accentGradient} bgClip="text" mb={2}>
@@ -514,7 +508,7 @@ export default function OnboardingWizard() {
                   }
                 </Text>
               </CardHeader>
-              <CardBody>
+              <CardBody px={8} py={6}>
                 <VStack spacing={6}>
                   {!isAnalyzing && !icpAnalysis && (
                     <>
@@ -682,20 +676,21 @@ export default function OnboardingWizard() {
               borderRadius="2xl"
               overflow="hidden"
               w="full"
-              maxW="2xl"
+              maxW="4xl"
             >
               <CardHeader textAlign="center">
-                <Heading size="lg" color="purple.600" mb={2}>
+                <Heading size="lg" bgGradient={accentGradient} bgClip="text" mb={2}>
                   🏢 Organization Setup
                 </Heading>
                 <Text color="gray.600">
                   {organization ? 'Great! Your organization is ready' : 'Create your team workspace for collaboration'}
                 </Text>
               </CardHeader>
-              <CardBody>
+              <CardBody px={8} py={6}>
                 <VStack spacing={6}>
                   {!organization ? (
                     <>
+                      {/* Benefits Section */}
                       <Box w="full" bg="purple.50" p={4} borderRadius="xl" border="1px" borderColor="purple.200">
                         <Heading size="sm" color="purple.700" mb={3}>
                           Why create an organization?
@@ -717,39 +712,130 @@ export default function OnboardingWizard() {
                         </SimpleGrid>
                       </Box>
 
-                      <Box w="full">
-                        <CreateOrganization 
-                          afterCreateOrganizationUrl="/onboarding?step=3"
-                          appearance={{
-                            elements: {
-                              card: {
-                                boxShadow: 'none',
-                                border: 'none',
-                                background: 'transparent'
+                      {/* Organization Form - Seamlessly Integrated */}
+                      <Flex justify="center" w="full">
+                        <Box w="full" maxW="md" mx="auto">
+                          <CreateOrganization 
+                            afterCreateOrganizationUrl="/onboarding?step=3"
+                            appearance={{
+                              elements: {
+                                card: {
+                                  boxShadow: 'none',
+                                  border: 'none',
+                                  background: 'transparent',
+                                  padding: '16px',
+                                  margin: '0 auto',
+                                  width: '100%',
+                                  maxWidth: '420px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center'
+                                },
+                                headerTitle: {
+                                  display: 'none'
+                                },
+                                headerSubtitle: {
+                                  display: 'none'
+                                },
+                                formFieldRow: {
+                                  marginBottom: '12px',
+                                  width: '100%'
+                                },
+                                formField: {
+                                  marginBottom: '12px',
+                                  width: '100%'
+                                },
+                                formFieldInput: {
+                                  padding: '12px 16px',
+                                  margin: '4px 0',
+                                  width: '100%',
+                                  maxWidth: '100%',
+                                  fontSize: '16px',
+                                  borderRadius: '8px',
+                                  border: '2px solid #E2E8F0',
+                                  background: '#FFFFFF',
+                                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                  '&:focus': {
+                                    borderColor: '#667eea',
+                                    boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)'
+                                  }
+                                },
+                                formFieldLabel: {
+                                  fontSize: '14px',
+                                  fontWeight: '600',
+                                  color: '#2D3748',
+                                  marginBottom: '4px',
+                                  display: 'block'
+                                },
+                                formButtonPrimary: {
+                                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                  borderRadius: '12px',
+                                  border: 'none',
+                                  padding: '14px 24px',
+                                  fontSize: '16px',
+                                  fontWeight: '600',
+                                  width: '100%',
+                                  marginTop: '16px',
+                                  transition: 'all 0.3s ease',
+                                  '&:hover': {
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 8px 25px rgba(102, 126, 234, 0.4)'
+                                  }
+                                },
+                                footer: {
+                                  marginTop: '12px',
+                                  textAlign: 'center',
+                                  padding: '0',
+                                  display: 'none'
+                                },
+                                footerActionLink: {
+                                  display: 'none'
+                                },
+                                fileDropAreaBox: {
+                                  marginBottom: '12px'
+                                },
+                                fileDropAreaButtonPrimary: {
+                                  padding: '8px 12px',
+                                  fontSize: '14px'
+                                }
                               },
-                              headerTitle: {
-                                display: 'none'
-                              },
-                              headerSubtitle: {
-                                display: 'none'
+                              variables: {
+                                colorPrimary: '#667eea',
+                                colorText: '#2D3748',
+                                colorTextSecondary: '#718096',
+                                colorBackground: 'transparent',
+                                colorInputBackground: '#FFFFFF',
+                                colorInputText: '#2D3748',
+                                borderRadius: '8px',
+                                fontFamily: '"Inter", "system-ui", "sans-serif"',
+                                spacingUnit: '0.75rem'
                               }
-                            }
-                          }}
-                        />
-                      </Box>
+                            }}
+                          />
+                        </Box>
+                      </Flex>
 
-                      <HStack spacing={4} w="full" justify="center">
+                      {/* Skip Option */}
+                      <Box textAlign="center" mt={4}>
+                        <Text fontSize="sm" color="gray.600" mb={3}>
+                          You can create an organization later from your dashboard
+                        </Text>
                         <Button
                           variant="ghost"
                           size="lg"
                           onClick={() => setCurrentStep(3)}
                           leftIcon={<FiSkipForward />}
                           color="gray.500"
-                          _hover={{ color: 'gray.700' }}
+                          _hover={{ 
+                            color: 'gray.700',
+                            bg: 'gray.50'
+                          }}
+                          borderRadius="xl"
+                          px={6}
                         >
-                          Skip for Now
+                          Skip for now
                         </Button>
-                      </HStack>
+                      </Box>
                     </>
                   ) : (
                     <VStack spacing={6} w="full">
@@ -758,7 +844,7 @@ export default function OnboardingWizard() {
                         <Box>
                           <AlertTitle>Organization Ready! ✅</AlertTitle>
                           <AlertDescription>
-                            "{organization.name}" is set up and ready for team collaboration.
+                            "{organization?.name}" is set up and ready for team collaboration.
                           </AlertDescription>
                         </Box>
                       </Alert>
@@ -767,15 +853,15 @@ export default function OnboardingWizard() {
                         <VStack spacing={4}>
                           <HStack spacing={4}>
                             <Avatar 
-                              src={organization.imageUrl} 
-                              name={organization.name}
+                              src={organization?.imageUrl} 
+                              name={organization?.name}
                               size="lg"
                               icon={<HiOutlineOfficeBuilding />}
                             />
                             <VStack align="start" spacing={1}>
-                              <Text fontSize="xl" fontWeight="bold">{organization.name}</Text>
+                              <Text fontSize="xl" fontWeight="bold">{organization?.name}</Text>
                               <Text fontSize="sm" color="gray.600">
-                                {organization.membersCount} member{organization.membersCount !== 1 ? 's' : ''}
+                                {organization?.membersCount} member{organization?.membersCount !== 1 ? 's' : ''}
                               </Text>
                               <Badge colorScheme="green">Active</Badge>
                             </VStack>
@@ -812,7 +898,7 @@ export default function OnboardingWizard() {
               borderRadius="2xl"
               overflow="hidden"
               w="full"
-              maxW="2xl"
+              maxW="4xl"
             >
               <CardHeader textAlign="center">
                 <Heading size="lg" bgGradient={accentGradient} bgClip="text" mb={2}>
@@ -822,7 +908,7 @@ export default function OnboardingWizard() {
                   Connect up to 10 LinkedIn accounts for automated outreach campaigns
                 </Text>
               </CardHeader>
-              <CardBody>
+              <CardBody px={8} py={6}>
                 <VStack spacing={6}>
                   {/* Current LinkedIn Accounts */}
                   {linkedinAccounts.length > 0 && (
@@ -980,18 +1066,18 @@ export default function OnboardingWizard() {
               borderRadius="2xl"
               overflow="hidden"
               w="full"
-              maxW="2xl"
+              maxW="4xl"
               animation={`${glow} 4s ease-in-out infinite`}
             >
               <CardHeader textAlign="center">
-                <Heading size="xl" color="green.500" mb={4}>
+                <Heading size="lg" bgGradient={accentGradient} bgClip="text" mb={2}>
                   Setup Complete!
                 </Heading>
                 <Text fontSize="lg" color="gray.600">
                   You're all set to start generating high-quality leads with AI
                 </Text>
               </CardHeader>
-              <CardBody>
+              <CardBody px={8} py={6}>
                 <VStack spacing={6}>
                   {/* Setup Summary */}
                   <VStack spacing={4} w="full" align="stretch">
@@ -1100,7 +1186,7 @@ export default function OnboardingWizard() {
       />
       
       <Container maxW="7xl" py={8} position="relative" zIndex={1}>
-        <VStack spacing={8} align="stretch">
+        <VStack spacing={10} align="stretch">
           {/* Header */}
           <Box textAlign="center">
             <Text 
@@ -1115,7 +1201,7 @@ export default function OnboardingWizard() {
             <Text 
               fontSize="lg" 
               color={useColorModeValue('whiteAlpha.900', 'gray.200')}
-              maxW="2xl"
+              maxW="3xl"
               mx="auto"
               textShadow="0 1px 2px rgba(0,0,0,0.2)"
             >
@@ -1124,47 +1210,14 @@ export default function OnboardingWizard() {
           </Box>
 
           {/* Progress Stepper */}
-          <Card 
-            bg={cardBg}
-            backdropFilter="blur(10px)"
-            border="1px solid"
-            borderColor={borderColor}
-            shadow="xl"
-            borderRadius="2xl"
-            overflow="hidden"
-            _hover={{
-              transform: 'translateY(-2px)',
-              shadow: '2xl',
-            }}
-            transition="all 0.3s ease"
-          >
-            <CardBody p={6}>
-              <Stepper index={currentStep} size="lg" colorScheme="purple">
-                {steps.map((step, index) => (
-                  <Step key={index}>
-                    <StepIndicator>
-                      <StepStatus
-                        complete={<StepIcon />}
-                        incomplete={<StepNumber />}
-                        active={<StepNumber />}
-                      />
-                    </StepIndicator>
-
-                    <Box flexShrink="0">
-                      <StepTitle fontSize="md" fontWeight="semibold">
-                        {step.title}
-                      </StepTitle>
-                      <Text fontSize="sm" color="gray.600">
-                        {step.description}
-                      </Text>
-                    </Box>
-
-                    <StepSeparator />
-                  </Step>
-                ))}
-              </Stepper>
-            </CardBody>
-          </Card>
+          <Enhanced3DStepper
+            currentStep={currentStep}
+            steps={steps}
+            variant="detailed"
+            colorScheme="purple"
+            showProgress={true}
+            animated={true}
+          />
 
           {/* Current Step Content */}
           <Flex justify="center" w="full">
