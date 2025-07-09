@@ -607,8 +607,8 @@ ${signOffs[0]},
           </CardBody>
         </Card>
 
-        {/* Generate Sample Message */}
-        <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+        {/* Generate Sample Message - TODO: Show this later when message is personalized */}
+        {/* <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
           <CardBody textAlign="center">
             <GradientButton
               variant="primary"
@@ -621,7 +621,7 @@ ${signOffs[0]},
               Generate Sample Message
             </GradientButton>
           </CardBody>
-        </Card>
+        </Card> */}
 
         {/* Navigation */}
         <HStack justify="space-between" pt={4}>
