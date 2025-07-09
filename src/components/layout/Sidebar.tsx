@@ -12,13 +12,13 @@ import {
 import { useRouter, usePathname } from 'next/navigation'
 import { 
   BarChart3, 
-  Settings, 
+  // Settings, // TODO: Re-enable when Integrations page is ready
   Users, 
-  Eye, 
-  Inbox, 
+  // Eye, // TODO: Re-enable when Website Visitors page is ready
+  // Inbox, // TODO: Re-enable when Inbox page is ready
   Megaphone, 
-  Clock, 
-  Send 
+  // Clock, // TODO: Re-enable when Pending Messages page is ready
+  // Send // TODO: Re-enable when Senders page is ready
 } from 'lucide-react'
 import OrganizationSwitcher from '../OrganizationSwitcher'
 
@@ -74,16 +74,16 @@ export default function Sidebar() {
 
   const mainNavItems = [
     { icon: BarChart3, label: 'Analytics', href: '/analytics' },
-    { icon: Settings, label: 'Integrations', href: '/integrations' },
+    // { icon: Settings, label: 'Integrations', href: '/integrations' }, // TODO: Re-enable when ready
     { icon: Users, label: 'Leads', href: '/leads' },
-    { icon: Eye, label: 'Website Visitors', href: '/website-visitors' },
+    // { icon: Eye, label: 'Website Visitors', href: '/website-visitors' }, // TODO: Re-enable when ready
   ]
 
   const outboundNavItems = [
-    { icon: Inbox, label: 'Inbox', href: '/inbox' },
+    // { icon: Inbox, label: 'Inbox', href: '/inbox' }, // TODO: Re-enable when ready
     { icon: Megaphone, label: 'Campaigns', href: '/dashboard' },
-    { icon: Clock, label: 'Pending Messages', href: '/pending-messages' },
-    { icon: Send, label: 'Senders', href: '/senders' },
+    // { icon: Clock, label: 'Pending Messages', href: '/pending-messages' }, // TODO: Re-enable when ready
+    // { icon: Send, label: 'Senders', href: '/senders' }, // TODO: Re-enable when ready
   ]
 
   return (

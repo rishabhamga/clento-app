@@ -31,6 +31,7 @@ import {
 } from '@/types/apollo'
 import CSVUpload from '@/components/filters/CSVUpload'
 import type { CSVLeadData } from '@/types/csv'
+import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 // Enhanced animations
 const float = keyframes`
@@ -54,6 +55,130 @@ function LoadingSpinner() {
     <Box display="flex" justifyContent="center" alignItems="center" minH="200px">
       <Spinner size="lg" color="purple.500" />
     </Box>
+  )
+}
+
+// Selected Filters Display Component
+function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchType: string }) {
+  const cardBg = useColorModeValue('rgba(255, 255, 255, 0.95)', 'rgba(26, 32, 44, 0.95)')
+  const borderColor = useColorModeValue('rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.2)')
+
+  // Helper function to format filter values
+  const formatFilterValue = (value: any): string => {
+    if (Array.isArray(value)) {
+      return value.length > 0 ? value.join(', ') : ''
+    }
+    if (typeof value === 'boolean') {
+      return value ? 'Yes' : 'No'
+    }
+    if (typeof value === 'string' && value.trim()) {
+      return value
+    }
+    return ''
+  }
+
+  // Get active filters
+  const activeFilters: Array<{ label: string; value: string }> = []
+
+  if (searchType === 'people') {
+    // People-specific filters
+    if (filters.jobTitles?.length > 0) {
+      activeFilters.push({ label: 'Job Titles', value: formatFilterValue(filters.jobTitles) })
+    }
+    if (filters.seniorities?.length > 0) {
+      activeFilters.push({ label: 'Seniority', value: formatFilterValue(filters.seniorities) })
+    }
+    if (filters.locations?.length > 0) {
+      activeFilters.push({ label: 'Locations', value: formatFilterValue(filters.locations) })
+    }
+    if (filters.timeInCurrentRole?.length > 0) {
+      activeFilters.push({ label: 'Time in Role', value: formatFilterValue(filters.timeInCurrentRole) })
+    }
+    if (filters.totalYearsExperience?.length > 0) {
+      activeFilters.push({ label: 'Experience', value: formatFilterValue(filters.totalYearsExperience) })
+    }
+    if (filters.hasEmail !== null) {
+      activeFilters.push({ label: 'Has Email', value: formatFilterValue(filters.hasEmail) })
+    }
+    if (filters.excludeJobTitles?.length > 0) {
+      activeFilters.push({ label: 'Exclude Job Titles', value: formatFilterValue(filters.excludeJobTitles) })
+    }
+    if (filters.excludeLocations?.length > 0) {
+      activeFilters.push({ label: 'Exclude Locations', value: formatFilterValue(filters.excludeLocations) })
+    }
+  }
+
+  // Common filters for both people and companies
+  if (filters.industries?.length > 0) {
+    activeFilters.push({ label: 'Industries', value: formatFilterValue(filters.industries) })
+  }
+  if (filters.companyHeadcount?.length > 0) {
+    activeFilters.push({ label: 'Company Size', value: formatFilterValue(filters.companyHeadcount) })
+  }
+  if (filters.technologies?.length > 0) {
+    activeFilters.push({ label: 'Technologies', value: formatFilterValue(filters.technologies) })
+  }
+  if (filters.intentTopics?.length > 0) {
+    activeFilters.push({ label: 'Intent Topics', value: formatFilterValue(filters.intentTopics) })
+  }
+  if (filters.keywords?.length > 0) {
+    activeFilters.push({ label: 'Keywords', value: formatFilterValue(filters.keywords) })
+  }
+  if (filters.companyDomains?.length > 0) {
+    activeFilters.push({ label: 'Company Domains', value: formatFilterValue(filters.companyDomains) })
+  }
+
+  if (activeFilters.length === 0) {
+    return null
+  }
+
+  return (
+    <Card 
+      bg={cardBg}
+      backdropFilter="blur(12px)"
+      border="1px solid"
+      borderColor={borderColor}
+      shadow="lg"
+      borderRadius="xl"
+      mb={6}
+    >
+      <CardBody p={4}>
+        <VStack spacing={3} align="stretch">
+          <HStack justify="space-between" align="center">
+            <Text fontSize="sm" fontWeight="600" color="purple.600">
+              Selected Filters ({activeFilters.length})
+            </Text>
+            <Text fontSize="xs" color="gray.500">
+              {searchType === 'people' ? 'People Search' : searchType === 'company' ? 'Company Search' : 'CSV Upload'}
+            </Text>
+          </HStack>
+          
+          <Box>
+            <Flex wrap="wrap" gap={2}>
+              {activeFilters.map((filter, index) => (
+                <Box
+                  key={index}
+                  bg={useColorModeValue('purple.50', 'purple.900')}
+                  border="1px solid"
+                  borderColor={useColorModeValue('purple.200', 'purple.700')}
+                  borderRadius="lg"
+                  px={3}
+                  py={1}
+                  fontSize="xs"
+                >
+                  <Text as="span" fontWeight="600" color="purple.700">
+                    {filter.label}:
+                  </Text>
+                  <Text as="span" color="gray.700" ml={1}>
+                    {filter.value.length > 50 ? `${filter.value.substring(0, 50)}...` : filter.value}
+                  </Text>
+                </Box>
+              ))}
+            </Flex>
+          </Box>
+        </VStack>
+      </CardBody>
+    </Card>
   )
 }
 
@@ -85,11 +210,8 @@ export default function B2BFiltersPage() {
 function B2BFiltersContent() {
   const router = useRouter()
   const toast = useToast()
+  const customToast = createCustomToast(toast)
   const searchParams = useSearchParams()
-  
-  // State for selected results
-  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
-  const [isSavingLeads, setIsSavingLeads] = useState(false)
   
   // Apollo search hooks
   const { search, isSearching, clearResults, setSearchResults, state } = useApolloSearch()
@@ -126,128 +248,48 @@ function B2BFiltersContent() {
   const handleSearch = async () => {
     try {
       await search()
-      toast({
+      customToast.success({
         title: 'Search Complete',
         description: `Found results for your people search`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-        position: 'top-right',
-        variant: 'solid',
-        containerStyle: {
-          background: 'linear-gradient(45deg, #667eea, #764ba2)',
-          color: 'white',
-        }
       })
     } catch (error) {
-      toast({
+      customToast.error({
         title: 'Search Error',
         description: error instanceof Error ? error.message : 'Something went wrong',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
       })
-    }
-  }
-
-  // Handle lead selection
-  const handleLeadSelection = (leadId: string, selected: boolean) => {
-    if (selected) {
-      setSelectedLeadIds(prev => [...prev, leadId])
-    } else {
-      setSelectedLeadIds(prev => prev.filter(id => id !== leadId))
     }
   }
 
   // Handle proceed to next step
   const handleProceedToPitch = async () => {
-    if (selectedLeadIds.length === 0) {
-      toast({
-        title: 'No Results Selected',
-        description: 'Please select at least one person to continue.',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      })
-      return
+    // Save only the filters and search configuration for the next step
+    const targetingConfig = {
+      searchType,
+      filters,
+      hasResults: (state.peopleResults && state.peopleResults.length > 0) || 
+                   (state.companyResults && state.companyResults.length > 0),
+      resultsCount: searchType === 'people' 
+        ? (state.peopleResults?.length || 0)
+        : (state.companyResults?.length || 0)
     }
 
-    // Get the actual lead data for selected items
-    const searchResults = state.peopleResults || []
-    const selectedLeads = searchResults.filter(result => 
-      selectedLeadIds.includes(result.id)
-    )
+    localStorage.setItem('campaignTargeting', JSON.stringify(targetingConfig))
 
-    console.log('Selected leads to save:', selectedLeads)
+    customToast.success({
+      title: 'Targeting Configuration Saved',
+      description: `Your targeting filters have been saved successfully.`,
+      duration: 2000,
+    })
 
-    // Save leads to Supabase
-    if (selectedLeads.length > 0) {
-      setIsSavingLeads(true)
-      try {
-        const response = await fetch('/api/leads/save', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            leads: selectedLeads
-          }),
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to save leads')
-        }
-
-        const result = await response.json()
-        console.log('Leads saved successfully:', result)
-
-        // Store selection for next step
-        localStorage.setItem('selectedLeads', JSON.stringify(selectedLeads))
-        localStorage.setItem('campaignTargeting', JSON.stringify({
-          searchType,
-          filters,
-          selectedIds: selectedLeadIds,
-          selectedCount: selectedLeadIds.length
-        }))
-
-        toast({
-          title: 'Leads Saved Successfully',
-          description: `${selectedLeadIds.length} people saved for your campaign.`,
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-          position: 'top-right',
-          variant: 'solid',
-          containerStyle: {
-            background: 'linear-gradient(45deg, #667eea, #764ba2)',
-            color: 'white',
-          }
-        })
-
-        // Navigate to pitch step
-        setTimeout(() => {
-          router.push('/campaigns/new/pitch')
-        }, 1000)
-
-      } catch (error) {
-        console.error('Error saving leads:', error)
-        toast({
-          title: 'Error Saving Leads',
-          description: error instanceof Error ? error.message : 'Failed to save leads',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        })
-      } finally {
-        setIsSavingLeads(false)
-      }
-    }
+    // Navigate to pitch step
+    setTimeout(() => {
+      router.push('/campaigns/new/pitch')
+    }, 1000)
   }
 
   // Handle leads selected from CSV upload
   const handleLeadsSelected = (leads: CSVLeadData[]) => {
-    console.log('CSV leads selected:', leads)
+    console.log('CSV leads loaded for preview:', leads)
     
     // Convert CSV leads to the format expected by search results
     const convertedLeads = leads.map((lead, index) => {
@@ -277,18 +319,22 @@ function B2BFiltersContent() {
     
     setSearchResults(convertedLeads)
     
-    toast({
-      title: 'CSV Data Loaded',
-      description: `${leads.length} leads loaded from CSV file.`,
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
+    customToast.success({
+      title: 'CSV Data Loaded for Preview',
+      description: `${leads.length} leads loaded for preview.`,
     })
   }
 
   const handleBackToCampaigns = () => {
     router.push('/campaigns/new')
   }
+
+  // Check if we can proceed to pitch
+  const canProceedToPitch = hasActiveFilters && (
+    (searchType === 'csv_upload' && state.peopleResults && state.peopleResults.length > 0) ||
+    (searchType === 'people' && state.peopleResults && state.peopleResults.length > 0) ||
+    (searchType === 'company' && state.companyResults && state.companyResults.length > 0)
+  )
 
   return (
     <Box 
@@ -336,7 +382,7 @@ function B2BFiltersContent() {
               color={useColorModeValue('white', 'gray.100')}
               textShadow="0 2px 4px rgba(0,0,0,0.3)"
             >
-              Target Your Ideal Prospects
+              Ideal Customer Profile Preview
             </Heading>
             <Text 
               fontSize="lg" 
@@ -345,11 +391,12 @@ function B2BFiltersContent() {
               mx="auto"
               textShadow="0 1px 2px rgba(0,0,0,0.2)"
             >
-              Use our advanced filters to find and select your perfect people prospects from 200M+ verified contacts
+              Use our advanced filters to find your perfect people prospects from 200M+ verified contacts
             </Text>
           </Box>
 
-
+          {/* Selected Filters Display */}
+          <SelectedFiltersDisplay filters={filters} searchType={searchType} />
 
           {/* Filters and Results Grid */}
           <Grid templateColumns={{ base: "1fr", lg: "380px 1fr" }} gap={6} alignItems="start">
@@ -416,13 +463,27 @@ function B2BFiltersContent() {
                     
                     {hasActiveFilters && (
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant="outline"
+                        size="md"
                         onClick={resetFilters}
-                        color="purple.500"
-                        _hover={{ bg: 'purple.50' }}
+                        w="full"
+                        bg="white"
+                        color="purple.600"
+                        borderColor="purple.300"
+                        borderWidth="2px"
+                        _hover={{ 
+                          bg: 'purple.50',
+                          borderColor: 'purple.400',
+                          transform: 'translateY(-1px)',
+                          shadow: 'md'
+                        }}
+                        _active={{
+                          bg: 'purple.100'
+                        }}
+                        transition="all 0.2s ease"
+                        fontWeight="600"
                       >
-                        Clear All Filters
+                        🗑️ Clear All Filters
                       </Button>
                     )}
                   </VStack>
@@ -445,10 +506,7 @@ function B2BFiltersContent() {
                 flexDirection="column"
               >
                 <CardBody p={6} display="flex" flexDirection="column" overflow="hidden">
-                  <SearchResults
-                    onLeadSelect={handleLeadSelection}
-                    selectedLeadIds={selectedLeadIds}
-                  />
+                  <SearchResults />
                 </CardBody>
               </Card>
             </GridItem>
@@ -456,24 +514,34 @@ function B2BFiltersContent() {
 
           {/* Navigation Actions */}
           <Flex justify="space-between" align="center">
-            <GradientButton
-              variant="secondary"
+            <Button
               onClick={handleBackToCampaigns}
               leftIcon={<Text>←</Text>}
+              size="lg"
+              bg="white"
+              color="purple.600"
+              borderColor="purple.300"
+              borderWidth="2px"
+              variant="outline"
               _hover={{
+                bg: 'purple.50',
+                borderColor: 'purple.400',
                 transform: 'translateY(-2px)',
                 shadow: 'lg',
               }}
+              _active={{
+                bg: 'purple.100'
+              }}
               transition="all 0.3s ease"
+              fontWeight="600"
+              minW="160px"
             >
               Back to Campaign
-            </GradientButton>
+            </Button>
 
             <GradientButton
               onClick={handleProceedToPitch}
-              isLoading={isSavingLeads}
-              loadingText="Saving leads..."
-              disabled={selectedLeadIds.length === 0}
+              disabled={!canProceedToPitch}
               rightIcon={<Text>→</Text>}
               size="lg"
               _hover={{
@@ -481,8 +549,9 @@ function B2BFiltersContent() {
                 shadow: 'xl',
               }}
               transition="all 0.3s ease"
+              minW="180px"
             >
-              Continue to Pitch ({selectedLeadIds.length} selected)
+              Continue to Pitch
             </GradientButton>
           </Flex>
         </VStack>

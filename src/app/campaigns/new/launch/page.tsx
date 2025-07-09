@@ -21,26 +21,24 @@ import {
   NumberDecrementStepper,
   Select,
   Heading,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
   SimpleGrid,
   Divider,
   useColorModeValue,
   useToast,
   Badge,
   Progress,
-  Icon
+  Icon,
+  Button
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { CampaignStepper } from '@/components/ui/CampaignStepper'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { useRouter } from 'next/navigation'
-import { FiCalendar, FiClock, FiShield, FiUsers, FiZap, FiCheckCircle, FiPlay, FiTarget } from 'react-icons/fi'
+import { FiCalendar, FiClock, FiShield, FiZap, FiCheckCircle, FiPlay, FiTarget } from 'react-icons/fi'
 import { HiOutlineOfficeBuilding } from 'react-icons/hi'
 import { format } from 'date-fns'
 import { useOrganization } from '@clerk/nextjs'
+import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 // Enhanced animations
 const float = keyframes`
@@ -84,6 +82,7 @@ const saveCampaignSettings = async (launchSettings: LaunchSettings) => {
 export default function LaunchPage() {
   const router = useRouter()
   const toast = useToast()
+  const customToast = createCustomToast(toast)
   const { organization } = useOrganization()
   const [isLaunching, setIsLaunching] = useState(false)
 
@@ -154,33 +153,11 @@ export default function LaunchPage() {
     })
   }
 
-  const calculateStats = () => {
-    const selectedLeads = typeof window !== 'undefined' 
-      ? JSON.parse(localStorage.getItem('selectedLeads') || '[]')
-      : []
-    const workflowSteps = campaignData?.workflow?.customSteps || []
-    
-    // Only count selected leads, not all leads in database
-    const leadCount = selectedLeads.length
-    
-    return {
-      totalLeads: leadCount,
-      totalTouchpoints: leadCount * workflowSteps.length,
-      estimatedDuration: workflowSteps.length > 0 
-        ? Math.max(...workflowSteps.map((step: { delay?: number }) => step.delay || 0)) + 1
-        : 0,
-      dailyLimit: launchSettings.dailyLimit
-    }
-  }
-
   const handleLaunchCampaign = async () => {
     if (!launchSettings.campaignName.trim()) {
-      toast({
+      customToast.warning({
         title: 'Campaign name required',
         description: 'Please enter a name for your campaign.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
       })
       return
     }
@@ -188,71 +165,43 @@ export default function LaunchPage() {
     setIsLaunching(true)
 
     try {
-      const selectedLeads = typeof window !== 'undefined' 
-        ? JSON.parse(localStorage.getItem('selectedLeads') || '[]')
-        : []
+      // Get targeting data (filters/ICP) instead of selected leads
+      const targetingData = typeof window !== 'undefined' 
+        ? JSON.parse(localStorage.getItem('campaignTargeting') || '{}')
+        : {}
       
-      // Debug logging
-      console.log('Launch: selectedLeads from localStorage:', selectedLeads)
-      console.log('Launch: selectedLeads length:', selectedLeads.length)
-      
-      // Only check for selected leads in localStorage
-      if (selectedLeads.length === 0) {
-        // Also check if we have targeting data with selected IDs
-        const targetingData = typeof window !== 'undefined' 
-          ? JSON.parse(localStorage.getItem('campaignTargeting') || '{}')
-          : {}
-        
-        console.log('Launch: targetingData:', targetingData)
-        console.log('Launch: selectedIds from targeting:', targetingData.selectedIds)
-        
-        toast({
-          title: 'No leads selected',
-          description: 'Please select leads for your campaign before launching.',
-          status: 'warning',
-          duration: 3000,
-          isClosable: true,
-        })
-        setIsLaunching(false)
-        return
-      }
-      
-      // Always use selected leads from localStorage
-      const leadsToUse = selectedLeads
+      console.log('Launch: Using targeting data/filters:', targetingData)
       
       const campaignPayload = {
         campaignName: launchSettings.campaignName,
-        targeting: campaignData?.targeting,
-        pitch: campaignData?.pitch,
-        outreach: campaignData?.outreach,
-        workflow: campaignData?.workflow,
-        launch: launchSettings,
-        selectedLeads: leadsToUse,
-        organizationId: organization?.id || null // Include organization context
+        targeting: targetingData,
+        pitchData: typeof window !== 'undefined' 
+          ? JSON.parse(localStorage.getItem('campaignPitchData') || '{}')
+          : {},
+        outreachData: typeof window !== 'undefined' 
+          ? JSON.parse(localStorage.getItem('campaignOutreachData') || '{}')
+          : {},
+        workflow: typeof window !== 'undefined' 
+          ? JSON.parse(localStorage.getItem('campaignWorkflow') || '{}')
+          : {},
+        launchSettings
       }
 
-      console.log('Creating campaign with organization context:', {
-        organizationId: organization?.id,
-        organizationName: organization?.name,
-        campaignName: launchSettings.campaignName
-      })
+      console.log('Creating campaign with payload:', campaignPayload)
 
-      // Send the campaign data to the API
       const response = await fetch('/api/campaigns/create', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(campaignPayload)
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create campaign')
+        throw new Error(data.error || 'Failed to create campaign')
       }
 
-      const result = await response.json()
-      console.log('Campaign created:', result)
+      console.log('Campaign created successfully:', data)
 
       // Clear localStorage data after successful launch
       if (typeof window !== 'undefined') {
@@ -264,20 +213,12 @@ export default function LaunchPage() {
         localStorage.removeItem('selectedLeads')
       }
 
-      toast({
+      customToast.success({
         title: 'Campaign Launched!',
         description: organization 
           ? `"${launchSettings.campaignName}" has been successfully created in ${organization.name} and is ready to start.`
           : `"${launchSettings.campaignName}" has been successfully created and is ready to start.`,
-        status: 'success',
         duration: 5000,
-        isClosable: true,
-        position: 'top-right',
-        variant: 'solid',
-        containerStyle: {
-          background: 'linear-gradient(45deg, #667eea, #764ba2)',
-          color: 'white',
-        }
       })
 
       // Navigate to campaign dashboard or campaigns list
@@ -287,12 +228,10 @@ export default function LaunchPage() {
 
     } catch (error) {
       console.error('Error launching campaign:', error)
-      toast({
+      customToast.error({
         title: 'Launch Failed',
         description: error instanceof Error ? error.message : 'Failed to launch campaign',
-        status: 'error',
         duration: 5000,
-        isClosable: true,
       })
     } finally {
       setIsLaunching(false)
@@ -302,8 +241,6 @@ export default function LaunchPage() {
   const handleBack = () => {
     router.push('/campaigns/new/workflow')
   }
-
-  const stats = calculateStats()
 
   return (
     <Box 
@@ -382,105 +319,6 @@ export default function LaunchPage() {
               </Badge>
             )}
           </Box>
-
-          {/* Campaign Stats Overview */}
-          <Card 
-            bg={cardBg}
-            backdropFilter="blur(10px)"
-            border="1px solid"
-            borderColor={borderColor}
-            shadow="xl"
-            borderRadius="2xl"
-            overflow="hidden"
-            animation={`${glow} 5s ease-in-out infinite`}
-          >
-            <CardHeader pb={3}>
-              <HStack>
-                <Badge 
-                  colorScheme="blue"
-                  px={3}
-                  py={1}
-                  borderRadius="full"
-                >
-                  Campaign Overview
-                </Badge>
-                <Heading size="lg" color="gray.800">
-                  Your Campaign at a Glance
-                </Heading>
-              </HStack>
-            </CardHeader>
-            <CardBody pt={0}>
-              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
-                <Card bg={glassBg} border="1px solid" borderColor={borderColor} borderRadius="xl">
-                  <CardBody textAlign="center">
-                    <Stat>
-                      <StatLabel>
-                        <HStack justify="center" spacing={2}>
-                          <Icon as={FiUsers} color="blue.500" />
-                          <Text fontSize="sm">Target Leads</Text>
-                        </HStack>
-                      </StatLabel>
-                      <StatNumber color="blue.500" fontSize="2xl">
-                        {stats.totalLeads}
-                      </StatNumber>
-                      <StatHelpText fontSize="xs">Selected prospects</StatHelpText>
-                    </Stat>
-                  </CardBody>
-                </Card>
-
-                <Card bg={glassBg} border="1px solid" borderColor={borderColor} borderRadius="xl">
-                  <CardBody textAlign="center">
-                    <Stat>
-                      <StatLabel>
-                        <HStack justify="center" spacing={2}>
-                          <Icon as={FiTarget} color="green.500" />
-                          <Text fontSize="sm">Touchpoints</Text>
-                        </HStack>
-                      </StatLabel>
-                      <StatNumber color="green.500" fontSize="2xl">
-                        {stats.totalTouchpoints}
-                      </StatNumber>
-                      <StatHelpText fontSize="xs">Total interactions</StatHelpText>
-                    </Stat>
-                  </CardBody>
-                </Card>
-
-                <Card bg={glassBg} border="1px solid" borderColor={borderColor} borderRadius="xl">
-                  <CardBody textAlign="center">
-                    <Stat>
-                      <StatLabel>
-                        <HStack justify="center" spacing={2}>
-                          <Icon as={FiClock} color="orange.500" />
-                          <Text fontSize="sm">Duration</Text>
-                        </HStack>
-                      </StatLabel>
-                      <StatNumber color="orange.500" fontSize="2xl">
-                        {stats.estimatedDuration}
-                      </StatNumber>
-                      <StatHelpText fontSize="xs">Days to complete</StatHelpText>
-                    </Stat>
-                  </CardBody>
-                </Card>
-
-                <Card bg={glassBg} border="1px solid" borderColor={borderColor} borderRadius="xl">
-                  <CardBody textAlign="center">
-                    <Stat>
-                      <StatLabel>
-                        <HStack justify="center" spacing={2}>
-                          <Icon as={FiZap} color="purple.500" />
-                          <Text fontSize="sm">Daily Limit</Text>
-                        </HStack>
-                      </StatLabel>
-                      <StatNumber color="purple.500" fontSize="2xl">
-                        {stats.dailyLimit}
-                      </StatNumber>
-                      <StatHelpText fontSize="xs">Contacts per day</StatHelpText>
-                    </Stat>
-                  </CardBody>
-                </Card>
-              </SimpleGrid>
-            </CardBody>
-          </Card>
 
           {/* Launch Settings */}
           <Card 
@@ -732,24 +570,36 @@ export default function LaunchPage() {
 
           {/* Navigation Actions */}
           <HStack justify="space-between" align="center">
-            <GradientButton
-              variant="secondary"
+            <Button
               onClick={handleBack}
               leftIcon={<Text>←</Text>}
+              size="lg"
+              bg="white"
+              color="purple.600"
+              borderColor="purple.300"
+              borderWidth="2px"
+              variant="outline"
               _hover={{
+                bg: 'purple.50',
+                borderColor: 'purple.400',
                 transform: 'translateY(-2px)',
                 shadow: 'lg',
               }}
+              _active={{
+                bg: 'purple.100'
+              }}
               transition="all 0.3s ease"
+              fontWeight="600"
+              minW="160px"
             >
               Back to Workflow
-            </GradientButton>
+            </Button>
 
             <GradientButton
               onClick={handleLaunchCampaign}
               isLoading={isLaunching}
               loadingText="Launching..."
-              disabled={!launchSettings.campaignName.trim() || stats.totalLeads === 0}
+              disabled={!launchSettings.campaignName.trim()}
               rightIcon={<Icon as={FiPlay} />}
               size="lg"
               px={12}
@@ -762,7 +612,7 @@ export default function LaunchPage() {
               transition="all 0.3s ease"
               animation={`${glow} 4s ease-in-out infinite`}
             >
-                                {isLaunching ? 'Launching Campaign...' : 'Launch Campaign'}
+              {isLaunching ? 'Launching Campaign...' : '🚀 Launch Campaign'}
             </GradientButton>
           </HStack>
         </VStack>

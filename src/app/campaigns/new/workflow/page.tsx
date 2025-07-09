@@ -43,7 +43,8 @@ import {
   AccordionItem,
   AccordionButton,
   AccordionPanel,
-  AccordionIcon
+  AccordionIcon,
+  Button
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { 
@@ -781,29 +782,66 @@ export default function WorkflowPage() {
 
           {/* Navigation */}
           <HStack justify="space-between" pt={4}>
-            <GradientButton
-              variant="secondary"
+            <Button
               onClick={handleBack}
               leftIcon={<ChevronRightIcon transform="rotate(180deg)" />}
+              size="lg"
+              bg="white"
+              color="purple.600"
+              borderColor="purple.300"
+              borderWidth="2px"
+              variant="outline"
+              _hover={{
+                bg: 'purple.50',
+                borderColor: 'purple.400',
+                transform: 'translateY(-2px)',
+                shadow: 'lg',
+              }}
+              _active={{
+                bg: 'purple.100'
+              }}
+              transition="all 0.3s ease"
+              fontWeight="600"
+              minW="160px"
             >
               Back to Outreach
-            </GradientButton>
+            </Button>
             
             <HStack spacing={3}>
-              <GradientButton
-                variant="secondary"
+              <Button
                 onClick={handleSave}
                 leftIcon={<FiSettings />}
+                size="lg"
+                bg="white"
+                color="gray.600"
+                borderColor="gray.300"
+                borderWidth="2px"
+                variant="outline"
+                _hover={{ 
+                  bg: 'gray.50',
+                  borderColor: 'gray.400'
+                }}
+                _active={{
+                  bg: 'gray.100'
+                }}
+                transition="all 0.2s ease"
+                fontWeight="600"
               >
-                Save Draft
-              </GradientButton>
+                💾 Save Draft
+              </Button>
               <GradientButton
-                variant="primary"
                 onClick={handleContinue}
                 isDisabled={customSteps.length === 0}
                 rightIcon={<FiPlay />}
+                size="lg"
+                _hover={{
+                  transform: 'translateY(-2px)',
+                  shadow: 'xl',
+                }}
+                transition="all 0.3s ease"
+                minW="180px"
               >
-                Launch Campaign
+                🚀 Launch Campaign
               </GradientButton>
             </HStack>
           </HStack>

@@ -57,7 +57,7 @@ import { ChevronDownIcon, MoreHorizontal, RefreshCw, ExternalLink, Mail, Phone, 
 import { FiActivity, FiBarChart2, FiCalendar, FiClock, FiMail, FiPause, FiPlay, FiSettings, FiUserCheck } from 'react-icons/fi'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
-import { SearchResults } from '@/components/results/SearchResults'
+import SearchResults from '@/components/results/SearchResults'
 import { ApolloSearchProvider, useApolloSearch } from '@/hooks/useApolloSearch'
 import { format } from 'date-fns'
 
@@ -746,10 +746,7 @@ function CampaignDetailInner() {
                           </SimpleGrid>
                           
                           {/* Use SearchResults component for leads display */}
-                          <SearchResults
-                            onLeadSelect={handleLeadSelect}
-                            selectedLeadIds={selectedLeadIds}
-                          />
+                          <SearchResults />
                         </>
                       ) : (
                         <Card variant="outline">

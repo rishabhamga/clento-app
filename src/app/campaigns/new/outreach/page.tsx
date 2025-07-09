@@ -629,15 +629,38 @@ ${signOffs[0]},
 
         {/* Navigation */}
         <HStack justify="space-between" pt={4}>
-          <GradientButton
-            variant="secondary"
+          <Button
             onClick={handleBackToPitch}
+            size="lg"
+            bg="white"
+            color="purple.600"
+            borderColor="purple.300"
+            borderWidth="2px"
+            variant="outline"
+            _hover={{
+              bg: 'purple.50',
+              borderColor: 'purple.400',
+              transform: 'translateY(-2px)',
+              shadow: 'lg',
+            }}
+            _active={{
+              bg: 'purple.100'
+            }}
+            transition="all 0.3s ease"
+            fontWeight="600"
+            minW="160px"
           >
             ← Back to Pitch
-          </GradientButton>
+          </Button>
           <GradientButton
-            variant="primary"
             onClick={handleContinueToWorkflow}
+            size="lg"
+            _hover={{
+              transform: 'translateY(-2px)',
+              shadow: 'xl',
+            }}
+            transition="all 0.3s ease"
+            minW="180px"
           >
             Continue to Workflow →
           </GradientButton>

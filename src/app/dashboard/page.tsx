@@ -320,7 +320,7 @@ export default function Dashboard() {
                 <VStack spacing={2} align="start">
                   <HStack spacing={3} align="center">
                     <Heading size="lg" color="gray.800">
-                      {organization ? `${organization.name} Campaigns` : 'My Campaigns'}
+                      Campaigns
                     </Heading>
                     <Badge colorScheme="purple" borderRadius="full" px={2}>
                       {campaigns.length}

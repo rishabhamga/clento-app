@@ -29,6 +29,7 @@ import { CampaignStepper } from '@/components/ui/CampaignStepper'
 import { AnalysisDisplay } from '@/components/AnalysisDisplay'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
+import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 // Enhanced animations
 const float = keyframes`
@@ -136,6 +137,7 @@ interface ICPAnalysis {
 export default function PitchPage() {
   const router = useRouter()
   const toast = useToast()
+  const customToast = createCustomToast(toast)
   const { user } = useUser()
 
   // Enhanced color mode values with glassmorphism
@@ -244,12 +246,9 @@ export default function PitchPage() {
 
   const handleAnalyzeWebsite = async () => {
     if (!websiteUrl.trim()) {
-      toast({
+      customToast.warning({
         title: 'Website URL required',
         description: 'Please enter a website URL to analyze.',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
       })
       return
     }
@@ -292,12 +291,9 @@ export default function PitchPage() {
             if (pollCount > maxPolls) {
               console.log('Pitch page polling timeout reached')
               setIsAnalyzing(false)
-              toast({
+              customToast.error({
                 title: 'Analysis Timeout',
                 description: 'Analysis took too long. Please try again.',
-                status: 'error',
-                duration: 5000,
-                isClosable: true,
               })
               return
             }
@@ -408,18 +404,9 @@ export default function PitchPage() {
                   }
                 }
                 
-                toast({
+                customToast.success({
                   title: 'Analysis Complete!',
                   description: 'Your website has been analyzed and insights generated.',
-                  status: 'success',
-                  duration: 5000,
-                  isClosable: true,
-                  position: 'top-right',
-                  variant: 'solid',
-                  containerStyle: {
-                    background: 'linear-gradient(45deg, #667eea, #764ba2)',
-                    color: 'white',
-                  }
                 })
                 
                 setIsAnalyzing(false)
@@ -435,12 +422,9 @@ export default function PitchPage() {
           } catch (error) {
             console.error('Error polling for results:', error)
             setIsAnalyzing(false)
-            toast({
+            customToast.error({
               title: 'Analysis Error',
               description: error instanceof Error ? error.message : 'Failed to complete analysis',
-              status: 'error',
-              duration: 5000,
-              isClosable: true,
             })
           }
         }
@@ -448,12 +432,9 @@ export default function PitchPage() {
         // Start polling
         setTimeout(pollForResults, 1000)
         
-        toast({
+        customToast.info({
           title: 'Analysis Started',
           description: 'Analyzing your website... This may take up to 2 minutes.',
-          status: 'info',
-          duration: 5000,
-          isClosable: true,
         })
       } else {
         throw new Error('Failed to start analysis')
@@ -461,12 +442,9 @@ export default function PitchPage() {
     } catch (error) {
       console.error('Error analyzing website:', error)
       setIsAnalyzing(false)
-      toast({
+      customToast.error({
         title: 'Analysis Error',
         description: error instanceof Error ? error.message : 'Failed to analyze website',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
       })
     }
   }
@@ -561,18 +539,9 @@ export default function PitchPage() {
     
     localStorage.setItem('campaignPitchData', JSON.stringify(pitchData))
     
-    toast({
+    customToast.success({
       title: 'Pitch Data Saved',
       description: 'Your pitch configuration has been saved.',
-      status: 'success',
-      duration: 2000,
-      isClosable: true,
-      position: 'top-right',
-      variant: 'solid',
-      containerStyle: {
-        background: 'linear-gradient(45deg, #667eea, #764ba2)',
-        color: 'white',
-      }
     })
     
     setTimeout(() => {
@@ -593,18 +562,9 @@ export default function PitchPage() {
     
     localStorage.setItem('campaignPitchData', JSON.stringify(pitchData))
     
-    toast({
+    customToast.success({
       title: 'Draft Saved',
       description: 'Your pitch data has been saved locally.',
-      status: 'success',
-      duration: 2000,
-      isClosable: true,
-      position: 'top-right',
-      variant: 'solid',
-      containerStyle: {
-        background: 'linear-gradient(45deg, #667eea, #764ba2)',
-        color: 'white',
-      }
     })
   }
 
@@ -1038,27 +998,51 @@ export default function PitchPage() {
 
           {/* Navigation Actions */}
           <HStack justify="space-between" align="center">
-            <GradientButton
-              variant="secondary"
+            <Button
               onClick={handleBackToTargeting}
               leftIcon={<Text>←</Text>}
+              size="lg"
+              bg="white"
+              color="purple.600"
+              borderColor="purple.300"
+              borderWidth="2px"
+              variant="outline"
               _hover={{
+                bg: 'purple.50',
+                borderColor: 'purple.400',
                 transform: 'translateY(-2px)',
                 shadow: 'lg',
               }}
+              _active={{
+                bg: 'purple.100'
+              }}
               transition="all 0.3s ease"
+              fontWeight="600"
+              minW="160px"
             >
               Back to Targeting
-            </GradientButton>
+            </Button>
 
             <HStack spacing={4}>
               <Button
-                variant="ghost"
                 onClick={handleSaveDraft}
-                color="purple.500"
-                _hover={{ bg: 'purple.50' }}
+                size="lg"
+                bg="white"
+                color="gray.600"
+                borderColor="gray.300"
+                borderWidth="2px"
+                variant="outline"
+                _hover={{ 
+                  bg: 'gray.50',
+                  borderColor: 'gray.400'
+                }}
+                _active={{
+                  bg: 'gray.100'
+                }}
+                transition="all 0.2s ease"
+                fontWeight="600"
               >
-                Save Draft
+                💾 Save Draft
               </Button>
               
               <GradientButton
@@ -1070,6 +1054,7 @@ export default function PitchPage() {
                   shadow: 'xl',
                 }}
                 transition="all 0.3s ease"
+                minW="180px"
               >
                 Continue to Outreach
               </GradientButton>

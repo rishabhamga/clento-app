@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useState, useRef } from 'react'
 import {
   Box,
   Button,
@@ -27,6 +27,7 @@ import { useDropzone } from 'react-dropzone'
 import { FiUpload, FiFile, FiCheck, FiX, FiAlertCircle, FiHelpCircle } from 'react-icons/fi'
 import type { CSVLeadData, CSVUploadState } from '@/types/csv'
 import { CSVFormatGuide } from './CSVFormatGuide'
+import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 interface CSVUploadProps {
   onLeadsSelected: (leads: CSVLeadData[]) => void
@@ -34,6 +35,7 @@ interface CSVUploadProps {
 
 export function CSVUpload({ onLeadsSelected }: CSVUploadProps) {
   const toast = useToast()
+  const customToast = createCustomToast(toast)
   const { isOpen, onToggle } = useDisclosure()
   const [state, setState] = useState<CSVUploadState>({
     file: null,
@@ -63,6 +65,72 @@ export function CSVUpload({ onLeadsSelected }: CSVUploadProps) {
     }
   }
 
+  const validateAndParseCSV = async (file: File): Promise<CSVLeadData[]> => {
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      throw new Error('Please upload a CSV file')
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      throw new Error('File size must be less than 10MB')
+    }
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string
+          const lines = text.split('\n').filter(line => line.trim())
+          
+          if (lines.length < 2) {
+            throw new Error('CSV must contain at least a header row and one data row')
+          }
+
+          const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+          
+          // Validate required columns
+          const requiredFields = ['first_name', 'last_name', 'email']
+          const missingFields = requiredFields.filter(field => 
+            !headers.some(header => header.includes(field.replace('_', '')))
+          )
+
+          if (missingFields.length > 0) {
+            throw new Error(`Missing required columns: ${missingFields.join(', ')}`)
+          }
+
+          // Parse data rows
+          const leads: CSVLeadData[] = []
+          for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''))
+            
+            if (values.length !== headers.length) {
+              console.warn(`Row ${i + 1} has mismatched columns, skipping`)
+              continue
+            }
+
+            const lead: any = {}
+            headers.forEach((header, index) => {
+              lead[header] = values[index] || ''
+            })
+
+            leads.push(lead as CSVLeadData)
+          }
+
+          if (leads.length === 0) {
+            throw new Error('No valid leads found in CSV')
+          }
+
+          resolve(leads)
+        } catch (error) {
+          reject(error)
+        }
+      }
+
+      reader.onerror = () => reject(new Error('Failed to read file'))
+      reader.readAsText(file)
+    })
+  }
+
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
     if (!file) return
@@ -78,33 +146,13 @@ export function CSVUpload({ onLeadsSelected }: CSVUploadProps) {
         }))
       }, 100)
 
-      // Read and parse the CSV file
-      const text = await file.text()
-      const rows = text.split('\n')
-      const headers = rows[0].split(',').map(h => h.trim().toLowerCase())
-      
-      const parsedData: CSVLeadData[] = rows.slice(1)
-        .filter(row => row.trim())
-        .map((row, index) => {
-          const values = row.split(',').map(v => v.trim())
-          const data: any = {
-            source: 'csv_upload',
-            upload_date: new Date().toISOString(),
-            validation_status: 'pending'
-          }
-          
-          headers.forEach((header, i) => {
-            data[header] = values[i] || ''
-          })
-
-          return data as CSVLeadData
-        })
+      const leads = await validateAndParseCSV(file)
 
       // Clear progress interval
       clearInterval(progressInterval)
 
       // Validate the data
-      const validationResult = await validateLeads(parsedData)
+      const validationResult = await validateLeads(leads)
       const { leads: validatedLeads, summary } = validationResult
 
       setState(prev => ({
@@ -118,20 +166,9 @@ export function CSVUpload({ onLeadsSelected }: CSVUploadProps) {
           .filter((_, i) => validatedLeads[i].validation_status === 'valid'),
       }))
 
-      toast({
+      customToast.success({
         title: summary.invalid === 0 ? 'File Uploaded Successfully' : 'Validation Warning',
         description: `Found ${summary.total} leads (${summary.valid} valid, ${summary.invalid} invalid)`,
-        status: summary.invalid === 0 ? 'success' : 'warning',
-        duration: 5000,
-        isClosable: true,
-        position: 'top-right',
-        variant: 'solid',
-        ...(summary.invalid === 0 && {
-          containerStyle: {
-            background: 'linear-gradient(45deg, #667eea, #764ba2)',
-            color: 'white',
-          }
-        })
       })
 
     } catch (error) {
@@ -142,15 +179,12 @@ export function CSVUpload({ onLeadsSelected }: CSVUploadProps) {
         error: error instanceof Error ? error.message : 'Unknown error',
       }))
 
-      toast({
-        title: 'Error',
-        description: 'Failed to process CSV file',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
+      customToast.error({
+        title: 'CSV Upload Failed',
+        description: error instanceof Error ? error.message : 'Failed to process CSV file',
       })
     }
-  }, [toast])
+  }, [toast, customToast])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -164,12 +198,9 @@ export function CSVUpload({ onLeadsSelected }: CSVUploadProps) {
   const handleRowSelect = (index: string) => {
     const lead = state.parsedData[parseInt(index)]
     if (lead.validation_status === 'invalid') {
-      toast({
+      customToast.warning({
         title: 'Cannot Select Invalid Lead',
         description: lead.validation_message,
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
       })
       return
     }

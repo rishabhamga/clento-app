@@ -41,6 +41,7 @@ import { GradientButton } from '@/components/ui/GradientButton'
 import { AnalysisDisplay } from '@/components/AnalysisDisplay'
 import { Enhanced3DStepper } from '@/components/ui/Enhanced3DStepper'
 import { CreateOrganization, useOrganization, useUser } from '@clerk/nextjs'
+import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 // Enhanced animations matching campaign creation
 const float = keyframes`
@@ -111,28 +112,26 @@ export default function OnboardingWizard() {
   )
 
   const steps = [
-    { title: 'Welcome', description: 'Getting started' },
+    // { title: 'Welcome', description: 'Getting started' }, // TODO: Re-enable in future
     { title: 'Website Analysis', description: 'AI-powered insights' },
     { title: 'Organization Setup', description: 'Create your workspace' },
-    { title: 'LinkedIn Accounts', description: 'Connect outreach accounts' },
+    // { title: 'LinkedIn Accounts', description: 'Connect outreach accounts' }, // TODO: Re-enable in future
     { title: 'Complete Setup', description: 'Finalize your profile' }
   ]
 
+  const customToast = createCustomToast(toast)
+  
   // Check for LinkedIn connection success on mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.get('linkedin_connected') === 'true') {
-      toast({
+      customToast.success({
         title: 'LinkedIn Connected!',
         description: 'Your LinkedIn account has been successfully connected.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-        position: 'top-right',
       })
       fetchLinkedInAccounts()
     }
-  }, [toast])
+  }, [])
 
   // Fetch LinkedIn accounts
   const fetchLinkedInAccounts = async () => {
@@ -204,25 +203,18 @@ export default function OnboardingWizard() {
               setAnalysisProgress(100)
               clearInterval(pollInterval)
               
-              toast({
+              customToast.success({
                 title: 'Analysis Complete!',
                 description: 'Your website has been successfully analyzed.',
-                status: 'success',
-                duration: 3000,
-                isClosable: true,
-                position: 'top-right',
               })
             } else if (status === 'failed') {
               setIsAnalyzing(false)
               setAnalysisError('Analysis failed. Please try again.')
               clearInterval(pollInterval)
               
-              toast({
+              customToast.error({
                 title: 'Analysis Failed',
                 description: 'Unable to analyze your website. Please check the URL and try again.',
-                status: 'error',
-                duration: 5000,
-                isClosable: true,
               })
             } else if (status === 'analyzing') {
               setAnalysisProgress(prev => Math.min(prev + 2, 90))
@@ -243,12 +235,9 @@ export default function OnboardingWizard() {
 
   const handleWebsiteSubmit = async () => {
     if (!websiteUrl) {
-      toast({
+      customToast.warning({
         title: 'Website URL Required',
         description: 'Please enter your website URL to continue.',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
       })
       return
     }
@@ -275,12 +264,9 @@ export default function OnboardingWizard() {
       console.error('Error starting analysis:', error)
       setIsAnalyzing(false)
       setAnalysisError('Failed to start analysis')
-      toast({
+      customToast.error({
         title: 'Analysis Failed',
         description: 'Unable to start website analysis. Please try again.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
       })
     }
   }
@@ -299,12 +285,9 @@ export default function OnboardingWizard() {
       const data = await response.json()
       
       if (data.success) {
-        toast({
+        customToast.success({
           title: 'Account Disconnected',
           description: data.message,
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
         })
         fetchLinkedInAccounts()
       } else {
@@ -312,12 +295,9 @@ export default function OnboardingWizard() {
       }
     } catch (error) {
       console.error('Error disconnecting LinkedIn:', error)
-      toast({
+      customToast.error({
         title: 'Disconnection Failed',
         description: 'Unable to disconnect LinkedIn account. Please try again.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
       })
     }
   }
@@ -354,13 +334,9 @@ export default function OnboardingWizard() {
       })
 
       if (response.ok) {
-        toast({
+        customToast.success({
           title: 'Welcome Aboard!',
           description: 'Your setup is complete. Ready to generate some leads?',
-          status: 'success',
-          duration: 4000,
-          isClosable: true,
-          position: 'top-right',
         })
         
         // Small delay to ensure database update propagates
@@ -372,13 +348,9 @@ export default function OnboardingWizard() {
       }
     } catch (error) {
       console.error('Error completing onboarding:', error)
-      toast({
+      customToast.success({
         title: 'Setup Complete',
         description: 'Welcome to your dashboard!',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-        position: 'top-right',
       })
       // Still redirect to dashboard even if profile update fails
       setTimeout(() => {
@@ -389,101 +361,103 @@ export default function OnboardingWizard() {
 
   const renderStep = () => {
     switch (currentStep) {
-      case 0:
-        return (
-          <VStack spacing={8} w="full">
-            <Card 
-              bg={cardBg}
-              backdropFilter="blur(10px)"
-              border="1px solid"
-              borderColor={borderColor}
-              shadow="xl"
-              borderRadius="2xl"
-              overflow="hidden"
-              animation={`${glow} 4s ease-in-out infinite`}
-              w="full"
-              maxW="4xl"
-            >
-              <CardHeader textAlign="center" pb={4}>
-                <Heading size="lg" bgGradient={accentGradient} bgClip="text" mb={2}>
-                  Welcome to Clento.ai
-                </Heading>
-                <Text fontSize="lg" color="gray.600" lineHeight="tall">
-                  Transform your sales process with AI-powered lead generation and automated outreach
-                </Text>
-              </CardHeader>
-              <CardBody px={8} py={6}>
-                <VStack spacing={6}>
-                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
-                    <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
-                      <HStack>
-                        <Icon as={FiTarget} color="purple.500" boxSize={6} />
-                        <VStack align="start" spacing={1}>
-                          <Text fontWeight="bold" fontSize="sm">AI Website Analysis</Text>
-                          <Text fontSize="xs" color="gray.600">Discover your ideal customer profile</Text>
-                        </VStack>
-                      </HStack>
-                    </Card>
-                    
-                    <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
-                      <HStack>
-                        <Icon as={FiLinkedin} color="purple.600" boxSize={6} />
-                        <VStack align="start" spacing={1}>
-                          <Text fontWeight="bold" fontSize="sm">LinkedIn Integration</Text>
-                          <Text fontSize="xs" color="gray.600">Connect accounts for outreach</Text>
-                        </VStack>
-                      </HStack>
-                    </Card>
-                    
-                    <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
-                      <HStack>
-                        <Icon as={FiUsers} color="green.500" boxSize={6} />
-                        <VStack align="start" spacing={1}>
-                          <Text fontWeight="bold" fontSize="sm">Smart Lead Discovery</Text>
-                          <Text fontSize="xs" color="gray.600">Find qualified prospects automatically</Text>
-                        </VStack>
-                      </HStack>
-                    </Card>
-                    
-                    <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
-                      <HStack>
-                        <Icon as={FiBookOpen} color="purple.500" boxSize={6} />
-                        <VStack align="start" spacing={1}>
-                          <Text fontWeight="bold" fontSize="sm">Personalized Outreach</Text>
-                          <Text fontSize="xs" color="gray.600">AI-crafted messages that convert</Text>
-                        </VStack>
-                      </HStack>
-                    </Card>
-                  </SimpleGrid>
+      // TODO: Re-enable Welcome step when needed
+      // case 0:
+      //   return (
+      //     <VStack spacing={8} w="full">
+      //       <Card 
+      //         bg={cardBg}
+      //         backdropFilter="blur(10px)"
+      //         border="1px solid"
+      //         borderColor={borderColor}
+      //         shadow="xl"
+      //         borderRadius="2xl"
+      //         overflow="hidden"
+      //         animation={`${glow} 4s ease-in-out infinite`}
+      //         w="full"
+      //         maxW="4xl"
+      //       >
+      //         <CardHeader textAlign="center" pb={4}>
+      //           <Heading size="lg" bgGradient={accentGradient} bgClip="text" mb={2}>
+      //             Welcome to Clento.ai
+      //           </Heading>
+      //           <Text fontSize="lg" color="gray.600" lineHeight="tall">
+      //             Transform your sales process with AI-powered lead generation and automated outreach
+      //           </Text>
+      //         </CardHeader>
+      //         <CardBody px={8} py={6}>
+      //           <VStack spacing={6}>
+      //             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="full">
+      //               <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
+      //                 <HStack>
+      //                   <Icon as={FiTarget} color="purple.500" boxSize={6} />
+      //                   <VStack align="start" spacing={1}>
+      //                     <Text fontWeight="bold" fontSize="sm">AI Website Analysis</Text>
+      //                     <Text fontSize="xs" color="gray.600">Discover your ideal customer profile</Text>
+      //                   </VStack>
+      //                 </HStack>
+      //               </Card>
+      //               
+      //               {/* TODO: Re-enable LinkedIn integration card when step is re-enabled */}
+      //               {/* <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
+      //                 <HStack>
+      //                   <Icon as={FiLinkedin} color="purple.600" boxSize={6} />
+      //                   <VStack align="start" spacing={1}>
+      //                     <Text fontWeight="bold" fontSize="sm">LinkedIn Integration</Text>
+      //                     <Text fontSize="xs" color="gray.600">Connect accounts for outreach</Text>
+      //                   </VStack>
+      //                 </HStack>
+      //               </Card> */}
+      //               
+      //               <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
+      //                 <HStack>
+      //                   <Icon as={FiUsers} color="green.500" boxSize={6} />
+      //                   <VStack align="start" spacing={1}>
+      //                     <Text fontWeight="bold" fontSize="sm">Smart Lead Discovery</Text>
+      //                     <Text fontSize="xs" color="gray.600">Find qualified prospects automatically</Text>
+      //                   </VStack>
+      //                 </HStack>
+      //               </Card>
+      //               
+      //               <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
+      //                 <HStack>
+      //                   <Icon as={FiBookOpen} color="purple.500" boxSize={6} />
+      //                   <VStack align="start" spacing={1}>
+      //                     <Text fontWeight="bold" fontSize="sm">Personalized Outreach</Text>
+      //                     <Text fontSize="xs" color="gray.600">AI-crafted messages that convert</Text>
+      //                   </VStack>
+      //                 </HStack>
+      //               </Card>
+      //             </SimpleGrid>
+      //
+      //             <HStack spacing={4} w="full" justify="center">
+      //               <GradientButton
+      //                 variant="primary"
+      //                 size="lg"
+      //                 onClick={() => setCurrentStep(1)}
+      //                 rightIcon={<ChevronRightIcon />}
+      //               >
+      //                 Start Setup
+      //               </GradientButton>
+      //               
+      //               <Button
+      //                 variant="ghost"
+      //                 size="lg"
+      //                 onClick={handleSkipStep}
+      //                 leftIcon={<FiSkipForward />}
+      //                 color="gray.500"
+      //                 _hover={{ color: 'gray.700' }}
+      //               >
+      //                 Skip Setup
+      //               </Button>
+      //             </HStack>
+      //           </VStack>
+      //         </CardBody>
+      //       </Card>
+      //     </VStack>
+      //   )
 
-                  <HStack spacing={4} w="full" justify="center">
-                    <GradientButton
-                      variant="primary"
-                      size="lg"
-                      onClick={() => setCurrentStep(1)}
-                      rightIcon={<ChevronRightIcon />}
-                    >
-                      Start Setup
-                    </GradientButton>
-                    
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      onClick={handleSkipStep}
-                      leftIcon={<FiSkipForward />}
-                      color="gray.500"
-                      _hover={{ color: 'gray.700' }}
-                    >
-                      Skip Setup
-                    </Button>
-                  </HStack>
-                </VStack>
-              </CardBody>
-            </Card>
-          </VStack>
-        )
-
-      case 1:
+      case 0: // Website Analysis (was case 1, now case 0 since Welcome step is skipped)
         return (
           <VStack spacing={8} w="full">
             <Card 
@@ -640,7 +614,7 @@ export default function OnboardingWizard() {
                       <GradientButton
                         variant="primary"
                         size="lg"
-                        onClick={() => setCurrentStep(2)}
+                        onClick={() => setCurrentStep(1)} // Organization Setup (was 2, now 1 since Welcome step is skipped)
                         rightIcon={<ChevronRightIcon />}
                         w="full"
                       >
@@ -664,7 +638,7 @@ export default function OnboardingWizard() {
           </VStack>
                   )
 
-      case 2:
+      case 1: // Organization Setup (was case 2, now case 1 since Welcome step is skipped)
         return (
           <VStack spacing={8} w="full">
             <Card 
@@ -716,7 +690,7 @@ export default function OnboardingWizard() {
                       <Flex justify="center" w="full">
                         <Box w="full" maxW="md" mx="auto">
                           <CreateOrganization 
-                            afterCreateOrganizationUrl="/onboarding?step=3"
+                            afterCreateOrganizationUrl="/onboarding?step=2"
                             appearance={{
                               elements: {
                                 card: {
@@ -823,7 +797,7 @@ export default function OnboardingWizard() {
                         <Button
                           variant="ghost"
                           size="lg"
-                          onClick={() => setCurrentStep(3)}
+                          onClick={() => setCurrentStep(2)} // Skip LinkedIn step, go directly to Complete Setup
                           leftIcon={<FiSkipForward />}
                           color="gray.500"
                           _hover={{ 
@@ -872,7 +846,7 @@ export default function OnboardingWizard() {
                       <GradientButton
                         variant="primary"
                         size="lg"
-                        onClick={() => setCurrentStep(3)}
+                        onClick={() => setCurrentStep(2)} // Skip LinkedIn step, go directly to Complete Setup
                         rightIcon={<ChevronRightIcon />}
                         w="full"
                       >
@@ -886,175 +860,176 @@ export default function OnboardingWizard() {
           </VStack>
         )
 
-      case 3:
-        return (
-          <VStack spacing={8} w="full">
-            <Card 
-              bg={cardBg}
-              backdropFilter="blur(10px)"
-              border="1px solid"
-              borderColor={borderColor}
-              shadow="xl"
-              borderRadius="2xl"
-              overflow="hidden"
-              w="full"
-              maxW="4xl"
-            >
-              <CardHeader textAlign="center">
-                <Heading size="lg" bgGradient={accentGradient} bgClip="text" mb={2}>
-                  Connect LinkedIn Accounts
-                </Heading>
-                <Text color="gray.600">
-                  Connect up to 10 LinkedIn accounts for automated outreach campaigns
-                </Text>
-              </CardHeader>
-              <CardBody px={8} py={6}>
-                <VStack spacing={6}>
-                  {/* Current LinkedIn Accounts */}
-                  {linkedinAccounts.length > 0 && (
-                    <VStack spacing={4} w="full" align="stretch">
-                      <Text fontWeight="semibold" color="gray.700">
-                        Connected Accounts ({linkedinAccounts.length}/10)
-                      </Text>
-                      
-                      {linkedinAccounts.map((account) => (
-                        <Card key={account.id} bg={glassBg} p={4} borderRadius="xl">
-                          <HStack spacing={4} w="full">
-                            <Avatar 
-                              src={account.profile_picture_url} 
-                              name={account.display_name}
-                              size="md"
-                            />
-                            <VStack align="start" spacing={1} flex={1}>
-                              <Text fontWeight="bold" fontSize="sm">
-                                {account.display_name}
-                              </Text>
-                              {account.headline && (
-                                <Text fontSize="xs" color="gray.600" noOfLines={1}>
-                                  {account.headline}
-                                </Text>
-                              )}
-                              <HStack spacing={2}>
-                                <Badge size="sm" colorScheme="green">Connected</Badge>
-                                {account.industry && (
-                                  <Badge size="sm" variant="outline">{account.industry}</Badge>
-                                )}
-                              </HStack>
-                            </VStack>
-                            <Tooltip label="Disconnect Account">
-                              <IconButton
-                                aria-label="Disconnect"
-                                icon={<DeleteIcon />}
-                                size="sm"
-                                variant="ghost"
-                                colorScheme="red"
-                                onClick={() => handleDisconnectLinkedIn(account.id)}
-                              />
-                            </Tooltip>
-                          </HStack>
-                        </Card>
-                      ))}
-                    </VStack>
-                  )}
+      // TODO: Re-enable LinkedIn step in future
+      // case 3:
+      //   return (
+      //     <VStack spacing={8} w="full">
+      //       <Card 
+      //         bg={cardBg}
+      //         backdropFilter="blur(10px)"
+      //         border="1px solid"
+      //         borderColor={borderColor}
+      //         shadow="xl"
+      //         borderRadius="2xl"
+      //         overflow="hidden"
+      //         w="full"
+      //         maxW="4xl"
+      //       >
+      //         <CardHeader textAlign="center">
+      //           <Heading size="lg" bgGradient={accentGradient} bgClip="text" mb={2}>
+      //             Connect LinkedIn Accounts
+      //           </Heading>
+      //           <Text color="gray.600">
+      //             Connect up to 10 LinkedIn accounts for automated outreach campaigns
+      //           </Text>
+      //         </CardHeader>
+      //         <CardBody px={8} py={6}>
+      //           <VStack spacing={6}>
+      //             {/* Current LinkedIn Accounts */}
+      //             {linkedinAccounts.length > 0 && (
+      //               <VStack spacing={4} w="full" align="stretch">
+      //                 <Text fontWeight="semibold" color="gray.700">
+      //                   Connected Accounts ({linkedinAccounts.length}/10)
+      //                 </Text>
+      //                 
+      //                 {linkedinAccounts.map((account) => (
+      //                   <Card key={account.id} bg={glassBg} p={4} borderRadius="xl">
+      //                     <HStack spacing={4} w="full">
+      //                       <Avatar 
+      //                         src={account.profile_picture_url} 
+      //                         name={account.display_name}
+      //                         size="md"
+      //                       />
+      //                       <VStack align="start" spacing={1} flex={1}>
+      //                         <Text fontWeight="bold" fontSize="sm">
+      //                           {account.display_name}
+      //                         </Text>
+      //                         {account.headline && (
+      //                           <Text fontSize="xs" color="gray.600" noOfLines={1}>
+      //                             {account.headline}
+      //                           </Text>
+      //                         )}
+      //                         <HStack spacing={2}>
+      //                           <Badge size="sm" colorScheme="green">Connected</Badge>
+      //                           {account.industry && (
+      //                             <Badge size="sm" variant="outline">{account.industry}</Badge>
+      //                           )}
+      //                         </HStack>
+      //                       </VStack>
+      //                       <Tooltip label="Disconnect Account">
+      //                         <IconButton
+      //                           aria-label="Disconnect"
+      //                           icon={<DeleteIcon />}
+      //                           size="sm"
+      //                           variant="ghost"
+      //                           colorScheme="red"
+      //                           onClick={() => handleDisconnectLinkedIn(account.id)}
+      //                         />
+      //                       </Tooltip>
+      //                     </HStack>
+      //                   </Card>
+      //                 ))}
+      //               </VStack>
+      //             )}
 
-                  {/* Add New Account */}
-                  {linkedinAccounts.length < 10 && (
-                    <Card 
-                      bg={glassBg} 
-                      p={6} 
-                      borderRadius="xl" 
-                      border="2px dashed" 
-                      borderColor={useColorModeValue('purple.200', 'purple.700')}
-                      w="full"
-                      cursor="pointer"
-                      onClick={handleConnectLinkedIn}
-                      _hover={{ borderColor: useColorModeValue('purple.400', 'purple.500'), transform: 'translateY(-2px)' }}
-                      transition="all 0.2s"
-                    >
-                      <VStack spacing={4}>
-                        <Icon as={FiLinkedin} boxSize={12} color={useColorModeValue('purple.600', 'purple.400')} />
-                        <VStack spacing={2}>
-                          <Text fontWeight="bold" textAlign="center">
-                            Connect LinkedIn Account
-                          </Text>
-                          <Text fontSize="sm" color="gray.600" textAlign="center">
-                            Add another LinkedIn account for outreach diversity and higher sending limits
-                          </Text>
-                        </VStack>
-                        
-                        <GradientButton
-                          variant="primary"
-                          size="md"
-                          isLoading={isLoadingLinkedIn}
-                          loadingText="Connecting..."
-                          leftIcon={<FiLinkedin />}
-                        >
-                          Connect Account
-                        </GradientButton>
-                      </VStack>
-                    </Card>
-                  )}
+      //             {/* Add New Account */}
+      //             {linkedinAccounts.length < 10 && (
+      //               <Card 
+      //                 bg={glassBg} 
+      //                 p={6} 
+      //                 borderRadius="xl" 
+      //                 border="2px dashed" 
+      //                 borderColor={useColorModeValue('purple.200', 'purple.700')}
+      //                 w="full"
+      //                 cursor="pointer"
+      //                 onClick={handleConnectLinkedIn}
+      //                 _hover={{ borderColor: useColorModeValue('purple.400', 'purple.500'), transform: 'translateY(-2px)' }}
+      //                 transition="all 0.2s"
+      //               >
+      //                 <VStack spacing={4}>
+      //                   <Icon as={FiLinkedin} boxSize={12} color={useColorModeValue('purple.600', 'purple.400')} />
+      //                   <VStack spacing={2}>
+      //                     <Text fontWeight="bold" textAlign="center">
+      //                       Connect LinkedIn Account
+      //                     </Text>
+      //                     <Text fontSize="sm" color="gray.600" textAlign="center">
+      //                       Add another LinkedIn account for outreach diversity and higher sending limits
+      //                     </Text>
+      //                   </VStack>
+      //                   
+      //                   <GradientButton
+      //                     variant="primary"
+      //                     size="md"
+      //                     isLoading={isLoadingLinkedIn}
+      //                     loadingText="Connecting..."
+      //                     leftIcon={<FiLinkedin />}
+      //                   >
+      //                     Connect Account
+      //                   </GradientButton>
+      //                 </VStack>
+      //               </Card>
+      //             )}
 
-                  {linkedinAccounts.length >= 10 && (
-                    <Alert status="info" borderRadius="xl">
-                      <AlertIcon />
-                      <Box>
-                        <AlertTitle>Maximum Accounts Reached</AlertTitle>
-                        <AlertDescription>
-                          You've connected the maximum of 10 LinkedIn accounts. This provides excellent sending capacity!
-                        </AlertDescription>
-                      </Box>
-                    </Alert>
-                  )}
+      //             {linkedinAccounts.length >= 10 && (
+      //               <Alert status="info" borderRadius="xl">
+      //                 <AlertIcon />
+      //                 <Box>
+      //                   <AlertTitle>Maximum Accounts Reached</AlertTitle>
+      //                   <AlertDescription>
+      //                     You've connected the maximum of 10 LinkedIn accounts. This provides excellent sending capacity!
+      //                   </AlertDescription>
+      //                 </Box>
+      //               </Alert>
+      //             )}
 
-                  {/* Benefits */}
-                  <Box w="full" bg={useColorModeValue('purple.50', 'purple.900')} p={4} borderRadius="xl" border="1px" borderColor={useColorModeValue('purple.200', 'purple.700')}>
-                    <Text fontWeight="semibold" color={useColorModeValue('purple.700', 'purple.300')} mb={3}>
-                      Why connect multiple accounts?
-                    </Text>
-                    <VStack spacing={2} align="start">
-                      {[
-                        'Higher daily sending limits (100+ connections per account)',
-                        'Reduced risk of account restrictions',
-                        'Better deliverability and response rates',
-                        'Ability to A/B test different messaging strategies'
-                      ].map((benefit, index) => (
-                        <HStack key={index}>
-                          <CheckCircleIcon color="green.500" boxSize={4} />
-                          <Text fontSize="sm">{benefit}</Text>
-                        </HStack>
-                      ))}
-                    </VStack>
-                  </Box>
+      //             {/* Benefits */}
+      //             <Box w="full" bg={useColorModeValue('purple.50', 'purple.900')} p={4} borderRadius="xl" border="1px" borderColor={useColorModeValue('purple.200', 'purple.700')}>
+      //               <Text fontWeight="semibold" color={useColorModeValue('purple.700', 'purple.300')} mb={3}>
+      //                 Why connect multiple accounts?
+      //               </Text>
+      //               <VStack spacing={2} align="start">
+      //                 {[
+      //                   'Higher daily sending limits (100+ connections per account)',
+      //                   'Reduced risk of account restrictions',
+      //                   'Better deliverability and response rates',
+      //                   'Ability to A/B test different messaging strategies'
+      //                 ].map((benefit, index) => (
+      //                   <HStack key={index}>
+      //                     <CheckCircleIcon color="green.500" boxSize={4} />
+      //                     <Text fontSize="sm">{benefit}</Text>
+      //                   </HStack>
+      //                 ))}
+      //               </VStack>
+      //             </Box>
 
-                  <HStack spacing={4} w="full" justify="center">
-                    <GradientButton
-                      variant="primary"
-                      size="lg"
-                      onClick={() => setCurrentStep(4)}
-                      rightIcon={<ChevronRightIcon />}
-                    >
-                      {linkedinAccounts.length > 0 ? 'Continue' : 'Continue Without LinkedIn'}
-                    </GradientButton>
-                    
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      onClick={handleSkipStep}
-                      leftIcon={<FiSkipForward />}
-                      color="gray.500"
-                      _hover={{ color: 'gray.700' }}
-                    >
-                      Skip for Now
-                    </Button>
-                  </HStack>
-                </VStack>
-              </CardBody>
-            </Card>
-          </VStack>
-        )
+      //             <HStack spacing={4} w="full" justify="center">
+      //               <GradientButton
+      //                 variant="primary"
+      //                 size="lg"
+      //                 onClick={() => setCurrentStep(4)}
+      //                 rightIcon={<ChevronRightIcon />}
+      //               >
+      //                 {linkedinAccounts.length > 0 ? 'Continue' : 'Continue Without LinkedIn'}
+      //               </GradientButton>
+      //               
+      //               <Button
+      //                 variant="ghost"
+      //                 size="lg"
+      //                 onClick={handleSkipStep}
+      //                 leftIcon={<FiSkipForward />}
+      //                 color="gray.500"
+      //                 _hover={{ color: 'gray.700' }}
+      //               >
+      //                 Skip for Now
+      //               </Button>
+      //             </HStack>
+      //           </VStack>
+      //         </CardBody>
+      //       </Card>
+      //     </VStack>
+      //   )
 
-      case 4:
+      case 2: // Complete Setup (was case 3, now case 2 since Welcome and LinkedIn steps are skipped)
         return (
           <VStack spacing={8} w="full">
             <Card 
@@ -1100,12 +1075,13 @@ export default function OnboardingWizard() {
                         </Text>
                       </HStack>
                       
-                      <HStack>
+                      {/* TODO: Re-enable LinkedIn accounts summary when step is re-enabled */}
+                      {/* <HStack>
                         <Icon as={linkedinAccounts.length > 0 ? FiCheck : FiLinkedin} color={linkedinAccounts.length > 0 ? "green.500" : "gray.400"} />
                         <Text>
                           LinkedIn Accounts: {linkedinAccounts.length > 0 ? `✅ ${linkedinAccounts.length} connected` : '⏭️ None connected'}
                         </Text>
-                      </HStack>
+                      </HStack> */}
                     </SimpleGrid>
                   </VStack>
 

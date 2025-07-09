@@ -14,11 +14,12 @@ import {
   Badge,
   useColorModeValue,
   Heading,
+  Button,
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FiDatabase, FiShoppingCart, FiMapPin, FiUpload } from 'react-icons/fi'
+import { FiDatabase, /* FiShoppingCart, FiMapPin, */ FiUpload } from 'react-icons/fi'
 import { GradientButton } from '@/components/ui/GradientButton'
 
 // Enhanced animations
@@ -65,38 +66,40 @@ const leadSources = [
     popular: false,
     path: '/campaigns/new/targeting/b2b-filters'
   },
-  {
-    id: 'ecommerce',
-    title: 'E-commerce',
-    subtitle: 'Store owners & managers',
-    description: 'Target online store decision makers',
-    icon: FiShoppingCart,
-    features: [
-      'Shopify store owners',
-      'WooCommerce sites',
-      'Revenue estimates',
-      'Technology stack',
-      'Growth stage analysis'
-    ],
-    popular: false,
-    path: '/campaigns/new/targeting/ecommerce-filters'
-  },
-  {
-    id: 'local',
-    title: 'Local Data', 
-    subtitle: 'Local businesses',
-    description: 'Find local business owners and managers',
-    icon: FiMapPin,
-    features: [
-      'Local business directory',
-      'Google My Business data',
-      'Contact information',
-      'Business hours',
-      'Review analysis'
-    ],
-    popular: false,
-    path: '/campaigns/new/targeting/local-filters'
-  }
+  // TODO: Re-enable E-commerce option when ready
+  // {
+  //   id: 'ecommerce',
+  //   title: 'E-commerce',
+  //   subtitle: 'Store owners & managers',
+  //   description: 'Target online store decision makers',
+  //   icon: FiShoppingCart,
+  //   features: [
+  //     'Shopify store owners',
+  //     'WooCommerce sites',
+  //     'Revenue estimates',
+  //     'Technology stack',
+  //     'Growth stage analysis'
+  //   ],
+  //   popular: false,
+  //   path: '/campaigns/new/targeting/ecommerce-filters'
+  // },
+  // TODO: Re-enable Local Data option when ready
+  // {
+  //   id: 'local',
+  //   title: 'Local Data', 
+  //   subtitle: 'Local businesses',
+  //   description: 'Find local business owners and managers',
+  //   icon: FiMapPin,
+  //   features: [
+  //     'Local business directory',
+  //     'Google My Business data',
+  //     'Contact information',
+  //     'Business hours',
+  //     'Review analysis'
+  //   ],
+  //   popular: false,
+  //   path: '/campaigns/new/targeting/local-filters'
+  // }
 ]
 
 export default function TargetingPage() {
@@ -298,22 +301,30 @@ export default function TargetingPage() {
 
           {/* Bottom Navigation */}
           <HStack justify="space-between" align="center" pt={4}>
-            <GradientButton
-              variant="secondary"
+            <Button
               onClick={() => router.push('/campaigns/new')}
+              size="lg"
+              bg="white"
+              color="purple.600"
+              borderColor="purple.300"
+              borderWidth="2px"
+              variant="outline"
               _hover={{
+                bg: 'purple.50',
+                borderColor: 'purple.400',
                 transform: 'translateY(-2px)',
                 shadow: 'lg',
               }}
+              _active={{
+                bg: 'purple.100'
+              }}
               transition="all 0.3s ease"
-              bg={useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')}
-              color={useColorModeValue('gray.800', 'white')}
-              border="1px solid"
-              borderColor={useColorModeValue('rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.2)')}
+              fontWeight="600"
+              minW="200px"
               backdropFilter="blur(10px)"
             >
               ← Back to Campaign Setup
-            </GradientButton>
+            </Button>
             
             <Box />
           </HStack>
