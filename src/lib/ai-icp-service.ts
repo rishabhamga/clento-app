@@ -29,12 +29,17 @@ function normalizeAndValidateUrl(input: string): string {
   // Clean up the input
   let url = input.trim();
   
-  if (url.length === 0) {
+  if (!input || url.length === 0) {
     throw new Error('URL cannot be empty');
   }
 
   // Remove trailing slashes for consistency
   url = url.replace(/\/+$/, '');
+
+  // Handle special edge cases early
+  if (url === 'www' || url === 'www.') {
+    throw new Error(`Incomplete URL: "${input}". Did you mean "www.example.com"?`);
+  }
 
   try {
     // Case 1: Already has protocol
@@ -91,10 +96,7 @@ function normalizeAndValidateUrl(input: string): string {
     
     // If it still doesn't look like a domain, try to help
     if (!domainPattern.test(url) && !ipPattern.test(url) && !localhostPattern.test(url)) {
-      // Special case: just "www" without anything else
-      if (url === 'www') {
-        throw new Error(`Incomplete URL: "${input}". Did you mean "www.example.com"?`);
-      }
+
       
       // Check if it might be missing TLD
       if (url.includes('.') && !url.includes(' ')) {
