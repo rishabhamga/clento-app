@@ -46,6 +46,7 @@ import { CampaignStepper } from '@/components/ui/CampaignStepper'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { useRouter } from 'next/navigation'
 import { FiGlobe, FiUser, FiTarget, FiSettings, FiEye, FiPlus, FiTrash2, FiEdit3, FiMessageCircle } from 'react-icons/fi'
+import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 interface PitchData {
   websiteUrl: string
@@ -76,6 +77,7 @@ const shimmer = keyframes`
 export default function OutreachPage() {
   const router = useRouter()
   const toast = useToast()
+  const customToast = createCustomToast(toast)
   const { isOpen, onOpen, onClose } = useDisclosure()
   
   // Enhanced color mode values with 3D styling
@@ -179,12 +181,9 @@ export default function OutreachPage() {
 
   const generateSampleMessage = async () => {
     if (!pitchData) {
-      toast({
+      customToast.warning({
         title: 'No Pitch Data',
         description: 'Please complete the pitch step first.',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
       })
       return
     }
@@ -209,12 +208,9 @@ ${signOffs[0]},
       onOpen()
     } catch (error) {
       console.error('Error generating sample message:', error)
-      toast({
+      customToast.error({
         title: 'Generation Failed',
         description: 'Failed to generate sample message. Please try again.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
       })
     } finally {
       setIsGenerating(false)

@@ -1,26 +1,37 @@
 'use client'
 
+import React, { Suspense, useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Container,
   VStack,
   HStack,
+  Box,
   Text,
   Card,
+  CardHeader,
   CardBody,
   Button,
+  Input,
+  Select,
   Table,
   Thead,
   Tbody,
   Tr,
   Th,
   Td,
-  Badge,
-  Avatar,
+  TableContainer,
   Checkbox,
-  Input,
-  Select,
+  Avatar,
+  Badge,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
   useColorModeValue,
   useToast,
+  useDisclosure,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -28,20 +39,34 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  useDisclosure,
+  Heading,
   Stat,
   StatLabel,
   StatNumber,
+  StatHelpText,
+  StatArrow,
+  StatGroup,
   SimpleGrid,
+  Spinner,
+  Flex,
+  Spacer,
+  Divider,
+  Link,
 } from '@chakra-ui/react'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { GradientButton } from '@/components/ui/GradientButton'
-import { 
-  FiDownload, 
+import {
   FiSearch,
+  FiDownload,
+  FiEye,
+  FiMoreVertical,
+  FiFilter,
+  FiUser,
+  FiMail,
+  FiPhone,
+  FiHome,
+  FiMapPin,
   FiExternalLink,
 } from 'react-icons/fi'
+import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 interface Lead {
   id: string
@@ -127,7 +152,7 @@ const mockLeads: Lead[] = [
   }
 ]
 
-export default function ResultsPage() {
+function TargetingResultsContent() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [selectedLeads, setSelectedLeads] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -139,7 +164,9 @@ export default function ResultsPage() {
 
   const { isOpen, onOpen, onClose } = useDisclosure()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const toast = useToast()
+  const customToast = createCustomToast(toast)
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.600')
   const hoverBg = useColorModeValue('gray.50', 'gray.700')
@@ -196,7 +223,7 @@ export default function ResultsPage() {
     }
 
     // Create CSV content
-    const headers = ['First Name', 'Last Name', 'Email', 'Phone', 'Title', 'Company', 'Industry', 'Location']
+    const headers = ['First Name', 'Last Name', 'Email', 'Phone', 'Title', 'Company', 'Industry', 'Location', 'LinkedIn']
     const csvContent = [
       headers.join(','),
       ...selectedLeadData.map(lead => [
@@ -204,15 +231,16 @@ export default function ResultsPage() {
         lead.lastName,
         lead.email,
         lead.phone || '',
-        `"${lead.title}"`,
-        `"${lead.company}"`,
+        lead.title,
+        lead.company,
         lead.industry,
-        `"${lead.location}"`
+        lead.location,
+        lead.linkedinUrl || ''
       ].join(','))
     ].join('\n')
 
     // Download CSV
-    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -222,30 +250,17 @@ export default function ResultsPage() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
 
-    toast({
+    customToast.success({
       title: 'Export successful',
       description: `Exported ${selectedLeadData.length} leads`,
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-      position: 'top-right',
-      variant: 'solid',
-      containerStyle: {
-        background: 'linear-gradient(45deg, #667eea, #764ba2)',
-        color: 'white',
-        boxShadow: '0 10px 25px rgba(102, 126, 234, 0.3)',
-      }
     })
   }
 
   const handleSaveAndCreateCampaign = async () => {
     if (selectedLeads.length === 0) {
-      toast({
+      customToast.warning({
         title: 'No leads selected',
         description: 'Please select leads to save',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
       })
       return
     }
@@ -284,19 +299,9 @@ export default function ResultsPage() {
 
       const result = await response.json()
 
-      toast({
+      customToast.success({
         title: 'Leads saved successfully',
         description: `Saved ${result.count} leads to your database`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-        position: 'top-right',
-        variant: 'solid',
-        containerStyle: {
-          background: 'linear-gradient(45deg, #667eea, #764ba2)',
-          color: 'white',
-          boxShadow: '0 10px 25px rgba(102, 126, 234, 0.3)',
-        }
       })
 
       // Store selected leads in session storage for the campaign creation
@@ -307,12 +312,9 @@ export default function ResultsPage() {
 
     } catch (error) {
       console.error('Error saving leads:', error)
-      toast({
+      customToast.error({
         title: 'Error saving leads',
         description: 'Please try again',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
       })
     } finally {
       setIsSaving(false)
@@ -554,14 +556,14 @@ export default function ResultsPage() {
               {selectedLeads.length} of {sortedLeads.length} leads selected
             </Text>
             
-            <GradientButton
+            <Button
               size="lg"
               onClick={handleSaveAndCreateCampaign}
               isLoading={isSaving}
               isDisabled={selectedLeads.length === 0}
             >
               Save & Create Campaign ({selectedLeads.length})
-            </GradientButton>
+            </Button>
           </HStack>
         </HStack>
 
@@ -649,5 +651,19 @@ export default function ResultsPage() {
         </Modal>
       </VStack>
     </Container>
+  )
+}
+
+export default function TargetingResultsPage() {
+  return (
+    <Suspense fallback={
+      <Container maxW="7xl" py={8}>
+        <VStack spacing={6}>
+          <Text>Loading targeting results...</Text>
+        </VStack>
+      </Container>
+    }>
+      <TargetingResultsContent />
+    </Suspense>
   )
 } 

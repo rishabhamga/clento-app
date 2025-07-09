@@ -41,6 +41,7 @@ import { ChevronDownIcon, AddIcon } from '@chakra-ui/icons'
 import { FiUsers, FiPlus } from 'react-icons/fi'
 import { HiOutlineOfficeBuilding } from 'react-icons/hi'
 import { GradientButton } from './ui/GradientButton'
+import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 interface Organization {
   id: string
@@ -61,6 +62,7 @@ export default function OrganizationSwitcher({ onOrganizationChange }: Organizat
   const { user } = useUser()
   const { isOpen, onOpen, onClose } = useDisclosure()
   const toast = useToast()
+  const customToast = createCustomToast(toast)
   
   const [isLoading, setIsLoading] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -87,21 +89,14 @@ export default function OrganizationSwitcher({ onOrganizationChange }: Organizat
       await setActive({ organization: orgId })
       onOrganizationChange?.(orgId)
       
-      toast({
-        title: 'Switched successfully',
-        description: orgId ? 'Organization context updated' : 'Switched to personal account',
-        status: 'success',
-        duration: 2000,
-        isClosable: true,
+      customToast.success({
+        title: 'Organization Switched',
+        description: 'Successfully switched to the new organization',
       })
     } catch (error) {
-      console.error('Error switching organization:', error)
-      toast({
-        title: 'Switch failed',
-        description: 'Failed to switch organization context',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
+      customToast.error({
+        title: 'Switch Failed',
+        description: 'Failed to switch organization. Please try again.',
       })
     } finally {
       setIsLoading(false)
@@ -110,12 +105,9 @@ export default function OrganizationSwitcher({ onOrganizationChange }: Organizat
 
   const handleCreateOrganization = async () => {
     if (!formData.name.trim()) {
-      toast({
+      customToast.warning({
         title: 'Name required',
         description: 'Please enter an organization name',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
       })
       return
     }
@@ -127,21 +119,14 @@ export default function OrganizationSwitcher({ onOrganizationChange }: Organizat
       setShowCreateForm(false)
       onClose()
       
-      toast({
+      customToast.info({
         title: 'Creating organization...',
         description: 'Your organization is being set up',
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
       })
     } catch (error) {
-      console.error('Error creating organization:', error)
-      toast({
-        title: 'Creation failed',
-        description: 'Failed to create organization',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
+      customToast.error({
+        title: 'Creation Failed',
+        description: 'Failed to create organization. Please try again.',
       })
     } finally {
       setIsLoading(false)

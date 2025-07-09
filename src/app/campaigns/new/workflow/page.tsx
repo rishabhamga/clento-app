@@ -77,6 +77,7 @@ import {
   FiZap,
   FiEye
 } from 'react-icons/fi'
+import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 // Animations
 const pulse = keyframes`
@@ -237,6 +238,7 @@ const defaultTemplates: WorkflowTemplate[] = [
 export default function WorkflowPage() {
   const router = useRouter()
   const toast = useToast()
+  const customToast = createCustomToast(toast)
   const { isOpen, onOpen, onClose } = useDisclosure()
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
   const [customSteps, setCustomSteps] = useState<WorkflowStep[]>([])
@@ -358,32 +360,30 @@ export default function WorkflowPage() {
     )
   }
 
-  const handleSave = () => {
-    const workflowData = {
-      templateId: selectedTemplate,
-      customSteps: customSteps,
-      isCustom
-    }
-    
-    localStorage.setItem('campaignWorkflow', JSON.stringify(workflowData))
-    
-    toast({
-      title: 'Workflow saved!',
-      description: 'Your workflow configuration has been saved successfully.',
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-      position: 'top-right',
-      variant: 'solid',
-      containerStyle: {
-        background: 'linear-gradient(45deg, #667eea, #764ba2)',
-        color: 'white',
+  const handleSaveWorkflow = async () => {
+    try {
+      const workflowData = {
+        templateId: selectedTemplate,
+        customSteps: customSteps,
+        isCustom
       }
-    })
+      
+      localStorage.setItem('campaignWorkflow', JSON.stringify(workflowData))
+      
+      customToast.success({
+        title: 'Workflow Saved',
+        description: 'Your campaign workflow has been saved successfully.',
+      })
+    } catch (error) {
+      customToast.error({
+        title: 'Save Failed',
+        description: 'Failed to save workflow. Please try again.',
+      })
+    }
   }
 
   const handleContinue = () => {
-    handleSave()
+    handleSaveWorkflow()
     router.push('/campaigns/new/launch')
   }
 
@@ -809,7 +809,7 @@ export default function WorkflowPage() {
             
             <HStack spacing={3}>
               <Button
-                onClick={handleSave}
+                onClick={handleSaveWorkflow}
                 leftIcon={<FiSettings />}
                 size="lg"
                 bg="white"

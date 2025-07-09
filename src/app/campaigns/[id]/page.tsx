@@ -60,6 +60,7 @@ import { GradientButton } from '@/components/ui/GradientButton'
 import SearchResults from '@/components/results/SearchResults'
 import { ApolloSearchProvider, useApolloSearch } from '@/hooks/useApolloSearch'
 import { format } from 'date-fns'
+import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 interface CampaignProgress {
   totalLeads: number
@@ -126,6 +127,7 @@ function CampaignDetailInner() {
   const params = useParams()
   const router = useRouter()
   const toast = useToast()
+  const customToast = createCustomToast(toast)
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [progress, setProgress] = useState<CampaignProgress | null>(null)
   const [loading, setLoading] = useState(true)
@@ -287,28 +289,15 @@ function CampaignDetailInner() {
       const data = await response.json()
       setCampaign(data.campaign)
       
-      toast({
+      customToast.success({
         title: 'Campaign updated',
         description: `Campaign status changed to ${newStatus}`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-        position: 'top-right',
-        variant: 'solid',
-        containerStyle: {
-          background: 'linear-gradient(45deg, #667eea, #764ba2)',
-          color: 'white',
-          boxShadow: '0 10px 25px rgba(102, 126, 234, 0.3)',
-        }
       })
     } catch (err) {
       console.error('Error updating campaign:', err)
-      toast({
+      customToast.error({
         title: 'Update failed',
         description: 'Failed to update campaign status',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
       })
     } finally {
       setIsUpdating(false)
