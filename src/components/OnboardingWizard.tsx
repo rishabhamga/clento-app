@@ -76,7 +76,51 @@ interface ICPAnalysis {
   industry: string
   business_model: string
   icp_summary: string
+  target_personas?: Array<{
+    title: string
+    company_size: string
+    industry: string
+    pain_points: string[]
+    desired_outcomes: string[]
+    challenges: string[]
+    demographics: {
+      seniority_level: string
+      department: string
+      decision_making_authority: string
+    }
+  }>
+  case_studies?: Array<{
+    title: string
+    industry: string
+    challenge: string
+    solution: string
+    results: string[]
+    metrics?: string
+    client_info?: string
+  }>
+  lead_magnets?: Array<{
+    title: string
+    type: string
+    description: string
+    target_audience: string
+    call_to_action: string
+    url?: string
+  }>
   competitive_advantages: string[]
+  tech_stack?: string[]
+  social_proof?: {
+    testimonials: Array<{
+      quote: string
+      author: string
+      company?: string
+      position?: string
+    }>
+    client_logos: string[]
+    metrics: Array<{
+      metric: string
+      value: string
+    }>
+  }
   confidence_score: number
   pages_analyzed?: number
   completed_at?: string
@@ -159,79 +203,16 @@ export default function OnboardingWizard() {
       
       // Load LinkedIn accounts
       fetchLinkedInAccounts()
+      
+      // For onboarding, we don't load existing analysis - users should start fresh
+      // This ensures they can enter a new website URL and run a new analysis
+      console.log('Onboarding: Starting fresh - not loading existing analysis')
     }
     
     syncUserAndLoadData()
   }, [])
 
-  // Polling for analysis status
-  useEffect(() => {
-    let pollInterval: NodeJS.Timeout
-    let pollCount = 0
-    const maxPolls = 60 // 3 minutes timeout
 
-    if (isAnalyzing && analysisId) {
-      setAnalysisProgress(10)
-      
-      pollInterval = setInterval(async () => {
-        pollCount++
-        
-        if (pollCount > maxPolls) {
-          console.log('Polling timeout reached')
-          setIsAnalyzing(false)
-          setAnalysisError('Analysis timeout. Please try again.')
-          clearInterval(pollInterval)
-          return
-        }
-        try {
-          const response = await fetch(`/api/analyze-site?id=${analysisId}`)
-          const data = await response.json()
-          
-          console.log('=== POLLING DEBUG ===')
-          console.log('Response:', data)
-          console.log('Analysis object:', data.analysis)
-          console.log('Status value:', data.analysis?.status)
-          console.log('Status type:', typeof data.analysis?.status)
-          console.log('==================')
-
-          if (data.success && data.analysis) {
-            const status = data.analysis.status
-
-            if (status === 'completed') {
-              setIcpAnalysis(data.analysis)
-              setIsAnalyzing(false)
-              setAnalysisProgress(100)
-              clearInterval(pollInterval)
-              
-              customToast.success({
-                title: 'Analysis Complete!',
-                description: 'Your website has been successfully analyzed.',
-              })
-            } else if (status === 'failed') {
-              setIsAnalyzing(false)
-              setAnalysisError('Analysis failed. Please try again.')
-              clearInterval(pollInterval)
-              
-              customToast.error({
-                title: 'Analysis Failed',
-                description: 'Unable to analyze your website. Please check the URL and try again.',
-              })
-            } else if (status === 'analyzing') {
-              setAnalysisProgress(prev => Math.min(prev + 2, 90))
-            }
-          }
-        } catch (error) {
-          console.error('Error checking analysis status:', error)
-        }
-      }, 3000)
-    }
-
-    return () => {
-      if (pollInterval) {
-        clearInterval(pollInterval)
-      }
-    }
-  }, [isAnalyzing, analysisId, toast])
 
   const handleWebsiteSubmit = async () => {
     if (!websiteUrl) {
@@ -242,21 +223,92 @@ export default function OnboardingWizard() {
       return
     }
 
+    // Add protocol if missing
+    let urlToAnalyze = websiteUrl.trim()
+    if (!urlToAnalyze.startsWith('http://') && !urlToAnalyze.startsWith('https://')) {
+      urlToAnalyze = 'https://' + urlToAnalyze
+    }
+
     setIsAnalyzing(true)
     setAnalysisError(null)
+    setIcpAnalysis(null)
 
     try {
       const response = await fetch('/api/analyze-site', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ website_url: websiteUrl })
+        body: JSON.stringify({ website_url: urlToAnalyze })
       })
 
       const data = await response.json()
 
       if (data.success && data.analysisId) {
         setAnalysisId(data.analysisId)
-        setCurrentStep(1)
+        setAnalysisProgress(10)
+        
+        // Start polling for results instead of immediately moving to next step
+        let pollCount = 0
+        const maxPolls = 60 // 3 minutes timeout
+        
+        const pollForResults = async () => {
+          try {
+            pollCount++
+            
+            if (pollCount > maxPolls) {
+              console.log('Onboarding polling timeout reached')
+              setIsAnalyzing(false)
+              setAnalysisError('Analysis timeout. Please try again.')
+              customToast.error({
+                title: 'Analysis Timeout',
+                description: 'Analysis took too long. Please try again.',
+              })
+              return
+            }
+            
+            const resultResponse = await fetch(`/api/analyze-site?id=${data.analysisId}`)
+            if (resultResponse.ok) {
+              const resultData = await resultResponse.json()
+              
+              console.log('=== ONBOARDING POLLING DEBUG ===')
+              console.log('Result data:', resultData)
+              console.log('Analysis status:', resultData.analysis?.status)
+              console.log('===============================')
+              
+              if (resultData.success && resultData.analysis) {
+                const status = resultData.analysis.status
+                
+                if (status === 'completed') {
+                  setIcpAnalysis(resultData.analysis)
+                  setIsAnalyzing(false)
+                  setAnalysisProgress(100)
+                } else if (status === 'failed') {
+                  throw new Error('Analysis failed')
+                } else if (status === 'analyzing') {
+                  setAnalysisProgress(prev => Math.min(prev + 2, 90))
+                  setTimeout(pollForResults, 2000)
+                } else {
+                  // Still processing, continue polling
+                  setTimeout(pollForResults, 2000)
+                }
+              } else {
+                setTimeout(pollForResults, 2000)
+              }
+            } else {
+              throw new Error('Failed to fetch analysis results')
+            }
+          } catch (error) {
+            console.error('Error polling for results:', error)
+            setIsAnalyzing(false)
+            setAnalysisError('Failed to complete analysis')
+            customToast.error({
+              title: 'Analysis Error',
+              description: error instanceof Error ? error.message : 'Failed to complete analysis',
+            })
+          }
+        }
+        
+        // Start polling
+        setTimeout(pollForResults, 1000)
       } else {
         throw new Error(data.error || 'Analysis failed')
       }
@@ -334,11 +386,6 @@ export default function OnboardingWizard() {
       })
 
       if (response.ok) {
-        customToast.success({
-          title: 'Welcome Aboard!',
-          description: 'Your setup is complete. Ready to generate some leads?',
-        })
-        
         // Small delay to ensure database update propagates
         setTimeout(() => {
           router.push('/dashboard')
@@ -348,10 +395,6 @@ export default function OnboardingWizard() {
       }
     } catch (error) {
       console.error('Error completing onboarding:', error)
-      customToast.success({
-        title: 'Setup Complete',
-        description: 'Welcome to your dashboard!',
-      })
       // Still redirect to dashboard even if profile update fails
       setTimeout(() => {
         router.push('/dashboard')
@@ -611,15 +654,31 @@ export default function OnboardingWizard() {
                         />
                       </Card>
 
-                      <GradientButton
-                        variant="primary"
-                        size="lg"
-                        onClick={() => setCurrentStep(1)} // Organization Setup (was 2, now 1 since Welcome step is skipped)
-                        rightIcon={<ChevronRightIcon />}
-                        w="full"
-                      >
-                        Continue Setup
-                      </GradientButton>
+                      <HStack spacing={4} w="full" justify="center">
+                        <GradientButton
+                          variant="primary"
+                          size="lg"
+                          onClick={() => setCurrentStep(1)} // Organization Setup (was 2, now 1 since Welcome step is skipped)
+                          rightIcon={<ChevronRightIcon />}
+                        >
+                          Continue Setup
+                        </GradientButton>
+                        
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => {
+                            setIcpAnalysis(null)
+                            setWebsiteUrl('')
+                            setAnalysisError(null)
+                            setAnalysisProgress(0)
+                          }}
+                          leftIcon={<FiArrowRight />}
+                          colorScheme="purple"
+                        >
+                          Run New Analysis
+                        </Button>
+                      </HStack>
                     </VStack>
                   )}
 

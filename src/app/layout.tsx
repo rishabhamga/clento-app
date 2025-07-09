@@ -9,6 +9,14 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "AI SDR Platform",
   description: "AI-powered Sales Development Representative platform for automated lead generation and outreach",
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
+      { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/favicon.png',
+  },
 };
 
 export default function RootLayout({
