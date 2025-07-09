@@ -21,11 +21,22 @@ import {
   InputGroup,
   InputLeftElement,
   Select,
-  useColorModeValue
+  useColorModeValue,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  Button,
+  Icon,
+  useToast
 } from '@chakra-ui/react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
-import { Search, Filter, Download, Plus } from 'lucide-react'
+import { Search, Filter, Download, Plus, CheckCircle, Mail } from 'lucide-react'
 
 const sampleLeads: any[] = []
 
@@ -42,6 +53,23 @@ function getStatusColor(status: string) {
 
 export default function LeadsPage() {
   const cardBg = useColorModeValue('white', 'gray.700')
+  const { isOpen, onOpen, onClose } = useDisclosure()
+  const toast = useToast()
+
+  const handleUpgradeClick = () => {
+    onOpen()
+  }
+
+  const handleModalClose = () => {
+    onClose()
+    toast({
+      title: "Thank you for your interest!",
+      description: "Our sales team will contact you within 24 hours.",
+      status: "success",
+      duration: 5000,
+      isClosable: true,
+    })
+  }
 
   return (
     <DashboardLayout>
@@ -59,9 +87,6 @@ export default function LeadsPage() {
               <HStack spacing={3}>
                 <GradientButton leftIcon={<Download size={16} />} variant="tertiary">
                   Export
-                </GradientButton>
-                <GradientButton leftIcon={<Plus size={16} />}>
-                  Import Leads
                 </GradientButton>
               </HStack>
             </HStack>
@@ -90,21 +115,10 @@ export default function LeadsPage() {
           </Box>
 
           {/* Leads Table */}
-          <Card bg={cardBg}>
-            <CardBody>
-              {sampleLeads.length === 0 ? (
-                <VStack spacing={4} py={12} textAlign="center">
-                  <Text fontSize="lg" color="gray.500">
-                    No leads found
-                  </Text>
-                  <Text color="gray.400">
-                    Start by importing leads or creating your first campaign
-                  </Text>
-                  <GradientButton>
-                    Import Your First Leads
-                  </GradientButton>
-                </VStack>
-              ) : (
+          {/* Leads table will be shown when leads are available */}
+          {sampleLeads.length > 0 && (
+            <Card bg={cardBg}>
+              <CardBody>
                 <Table variant="simple">
                   <Thead>
                     <Tr>
@@ -154,9 +168,9 @@ export default function LeadsPage() {
                     ))}
                   </Tbody>
                 </Table>
-              )}
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          )}
 
           {/* Enterprise Notice */}
           <Card bg="purple.50" border="2px solid" borderColor="purple.200">
@@ -172,7 +186,7 @@ export default function LeadsPage() {
                   Unlock advanced lead scoring, custom fields, automated workflows, 
                   and team collaboration features with Enterprise plan.
                 </Text>
-                <GradientButton size="lg">
+                <GradientButton size="lg" onClick={handleUpgradeClick}>
                   Upgrade to Enterprise
                 </GradientButton>
               </VStack>
@@ -180,6 +194,57 @@ export default function LeadsPage() {
           </Card>
         </VStack>
       </Container>
+
+      {/* Upgrade Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="md" isCentered>
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent mx={4} borderRadius="xl" overflow="hidden">
+          <ModalHeader 
+            bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+            color="white"
+            textAlign="center"
+            py={6}
+          >
+            <VStack spacing={3}>
+              <Icon as={CheckCircle} w={8} h={8} />
+              <Text fontSize="xl" fontWeight="bold">
+                Request Submitted Successfully!
+              </Text>
+            </VStack>
+          </ModalHeader>
+          <ModalCloseButton color="white" />
+          
+          <ModalBody py={8} textAlign="center">
+            <VStack spacing={4}>
+              <Icon as={Mail} w={12} h={12} color="purple.500" />
+              <Heading size="md" color="gray.700">
+                We're excited to help you!
+              </Heading>
+              <Text color="gray.600" fontSize="lg" lineHeight="1.6">
+                Clento AI sales executive will shortly reach out to you on your email
+              </Text>
+              <Box 
+                bg="purple.50" 
+                p={4} 
+                borderRadius="lg" 
+                border="1px solid" 
+                borderColor="purple.200"
+                w="full"
+              >
+                <Text fontSize="sm" color="purple.700" fontWeight="medium">
+                  📧 Expected response time: Within 24 hours
+                </Text>
+              </Box>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter justifyContent="center" pb={6}>
+            <GradientButton onClick={handleModalClose} size="lg" w="full">
+              Got it, thanks!
+            </GradientButton>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </DashboardLayout>
   )
 } 

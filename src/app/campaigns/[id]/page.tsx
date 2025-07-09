@@ -744,22 +744,26 @@ function CampaignDetailInner() {
                               <Box
                                 w="80px"
                                 h="80px"
-                                bg="gray.100"
+                                bg="purple.100"
                                 borderRadius="full"
                                 display="flex"
                                 alignItems="center"
                                 justifyContent="center"
                               >
-                                <Building size={32} color="gray" />
+                                <Spinner size="lg" color="purple.500" />
                               </Box>
                               <VStack spacing={2}>
-                                <Text fontWeight="medium" fontSize="lg">No leads found</Text>
+                                <Text fontWeight="medium" fontSize="lg" color="purple.600">
+                                  Clento AI is working on it
+                                </Text>
                                 <Text color="gray.500" textAlign="center" maxW="md">
-                                  Start building your prospect list by adding leads to this campaign. 
-                                  You can upload a CSV file or search for prospects using our B2B database.
+                                  Clento AI is working to get the best leads based on your set ICP, 
+                                  how you selected filters, and your campaign objectives.
                                 </Text>
                               </VStack>
-                              <GradientButton size="sm">Add Your First Lead</GradientButton>
+                              <Text fontSize="sm" color="gray.400" textAlign="center">
+                                We'll notify you when your leads are ready
+                              </Text>
                             </VStack>
                           </CardBody>
                         </Card>
@@ -771,7 +775,35 @@ function CampaignDetailInner() {
                   <TabPanel>
                     <VStack spacing={6} align="stretch">
                       <Heading size="md">Message Performance</Heading>
-                      <Text color="gray.500">Message analytics and performance data will be displayed here.</Text>
+                      <Card variant="outline">
+                        <CardBody>
+                          <VStack py={8} spacing={4}>
+                            <Box
+                              w="80px"
+                              h="80px"
+                              bg="purple.100"
+                              borderRadius="full"
+                              display="flex"
+                              alignItems="center"
+                              justifyContent="center"
+                            >
+                              <Spinner size="lg" color="purple.500" />
+                            </Box>
+                            <VStack spacing={2}>
+                              <Text fontWeight="medium" fontSize="lg" color="purple.600">
+                                Clento AI is personalizing messages
+                              </Text>
+                              <Text color="gray.500" textAlign="center" maxW="md">
+                                Clento AI is finding data about the leads to personalize the messages to send to them 
+                                based on their profiles, interests, and company information.
+                              </Text>
+                            </VStack>
+                            <Text fontSize="sm" color="gray.400" textAlign="center">
+                              Personalized messages will be ready once lead analysis is complete
+                            </Text>
+                          </VStack>
+                        </CardBody>
+                      </Card>
                     </VStack>
                   </TabPanel>
                   
