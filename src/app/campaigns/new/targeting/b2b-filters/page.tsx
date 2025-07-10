@@ -330,10 +330,10 @@ function B2BFiltersContent() {
   }
 
   // Check if we can proceed to pitch
+  // Allow proceeding with just filters for people/company search (in case of API issues)
+  // but require actual results for CSV uploads
   const canProceedToPitch = hasActiveFilters && (
-    (searchType === 'csv_upload' && state.peopleResults && state.peopleResults.length > 0) ||
-    (searchType === 'people' && state.peopleResults && state.peopleResults.length > 0) ||
-    (searchType === 'company' && state.companyResults && state.companyResults.length > 0)
+    searchType === 'csv_upload' ? (state.peopleResults && state.peopleResults.length > 0) : true
   )
 
   return (
@@ -460,6 +460,21 @@ function B2BFiltersContent() {
                     >
                       🔍 Search Prospects
                     </GradientButton>
+                    
+                    {hasActiveFilters && !isSearching && (
+                      <Box 
+                        p={3}
+                        bg="blue.50"
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor="blue.200"
+                        w="full"
+                      >
+                        <Text fontSize="sm" color="blue.700" textAlign="center">
+                          💡 <strong>Tip:</strong> You can continue to pitch creation with just your filters selected, or search for prospects to preview results first.
+                        </Text>
+                      </Box>
+                    )}
                     
                     {hasActiveFilters && (
                       <Button
