@@ -23,7 +23,7 @@ class ApolloHttpClient {
 
   constructor(config: ApolloConfig) {
     this.apiKey = config.apiKey
-    
+
     this.client = axios.create({
       baseURL: config.baseURL || 'https://api.apollo.io/v1',
       timeout: config.timeout || 30000,
@@ -43,12 +43,12 @@ class ApolloHttpClient {
       (config) => {
         // Add API key to headers
         config.headers['x-api-key'] = this.apiKey
-        
+
         // Log request for debugging (remove in production)
         if (process.env.NODE_ENV === 'development') {
           console.log(`Apollo API Request: ${config.method?.toUpperCase()} ${config.url}`)
         }
-        
+
         return config
       },
       (error) => {
@@ -62,48 +62,48 @@ class ApolloHttpClient {
       (response: AxiosResponse) => {
         // Extract and store rate limit information
         this.updateRateLimitInfo(response.headers)
-        
+
         if (process.env.NODE_ENV === 'development') {
           console.log(`Apollo API Response: ${response.status} ${response.config.url}`)
         }
-        
+
         return response
       },
       async (error) => {
         if (error.response) {
           const { status, headers, data } = error.response
-          
+
           // Update rate limit info even on errors
           this.updateRateLimitInfo(headers)
-          
+
           // Handle specific Apollo API errors
           switch (status) {
             case 401:
               console.error('Apollo API: Invalid API key')
               throw new Error('Apollo API authentication failed. Please check your API key.')
-              
+
             case 403:
               console.error('Apollo API: Forbidden - insufficient permissions')
               throw new Error('Apollo API access forbidden. Please check your subscription plan.')
-              
+
             case 429:
               const retryAfter = headers['retry-after'] || headers['x-ratelimit-reset']
               console.error(`Apollo API: Rate limit exceeded. Retry after: ${retryAfter}`)
-              
+
               if (retryAfter) {
                 // Implement exponential backoff
                 const delay = parseInt(retryAfter) * 1000
                 await new Promise(resolve => setTimeout(resolve, Math.min(delay, 60000)))
-                
+
                 // Retry the request once
                 return this.client.request(error.config)
               }
               throw new Error(`Apollo API rate limit exceeded. Please try again later.`)
-              
+
             case 500:
               console.error('Apollo API: Internal server error')
               throw new Error('Apollo API is experiencing issues. Please try again later.')
-              
+
             default:
               console.error(`Apollo API Error ${status}:`, data)
               throw new Error(`Apollo API error: ${data?.message || 'Unknown error'}`)
@@ -165,7 +165,8 @@ let apolloHttpClient: ApolloHttpClient | null = null
 
 export function createApolloHttpClient(config?: Partial<ApolloConfig>): ApolloHttpClient {
   const apiKey = config?.apiKey || process.env.APOLLO_API_KEY
-  
+//   const apiKey = '8RfsmwxioluGragpDtJVeg'
+
   if (!apiKey) {
     throw new Error('Apollo API key is required. Please set APOLLO_API_KEY in your environment variables.')
   }
@@ -191,4 +192,4 @@ export function getApolloHttpClient(): ApolloHttpClient {
 // Export singleton instance
 export const apolloClient = getApolloHttpClient()
 
-export { ApolloHttpClient } 
+export { ApolloHttpClient }

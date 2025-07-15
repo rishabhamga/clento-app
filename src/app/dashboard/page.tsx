@@ -2,11 +2,11 @@
 
 import { useUser } from '@clerk/nextjs'
 import { useOrganization } from '@clerk/nextjs'
-import { 
-  Box, 
-  Heading, 
-  Text, 
-  VStack, 
+import {
+  Box,
+  Heading,
+  Text,
+  VStack,
   HStack,
   Grid,
   Input,
@@ -99,7 +99,7 @@ export default function Dashboard() {
 
       try {
         const response = await fetch('/api/user/profile')
-        
+
         if (!response.ok) {
           throw new Error('Failed to load profile')
         }
@@ -109,9 +109,9 @@ export default function Dashboard() {
 
         // If profile is not completed or user is new, redirect to onboarding
         if (!data.profile?.completed || data.isNewUser) {
-          console.log('Redirecting to onboarding:', { 
-            profileCompleted: data.profile?.completed, 
-            isNewUser: data.isNewUser 
+          console.log('Redirecting to onboarding:', {
+            profileCompleted: data.profile?.completed,
+            isNewUser: data.isNewUser
           })
           router.push('/onboarding')
           return
@@ -137,27 +137,29 @@ export default function Dashboard() {
         if (organization?.id) {
           params.append('organizationId', organization.id)
         }
-        
+
         const url = `/api/campaigns${params.toString() ? `?${params.toString()}` : ''}`
-        
+
         // Fetch campaigns from database with organization context
         const response = await fetch(url)
-        
+
+        console.log(response.json)
+
         if (!response.ok) {
           throw new Error('Failed to fetch campaigns')
         }
-        
+
         const data = await response.json()
-        
+
         if (data.campaigns && Array.isArray(data.campaigns)) {
           setDbCampaigns(data.campaigns)
-          
+
           // Convert DB campaigns to UI format
           const uiCampaigns = data.campaigns.map((campaign: DbCampaign) => {
             // Extract lead counts from settings or use defaults
             const leadCount = campaign.settings?.leadCount || 0
             const totalLeads = campaign.settings?.totalLeads || 0
-            
+
             // Determine campaign type based on template or settings
             let type: 'Standard' | 'Watchtower' | 'Local' = 'Standard'
             if (campaign.settings?.campaignType === 'watchtower') {
@@ -165,14 +167,14 @@ export default function Dashboard() {
             } else if (campaign.settings?.campaignType === 'local') {
               type = 'Local'
             }
-            
+
             // Get country info from settings or default to US
             const country = campaign.settings?.country || 'US'
             let flag = '🇺🇸'
             if (country === 'Global') flag = '🌍'
             else if (country === 'UK') flag = '🇬🇧'
             else if (country === 'CA') flag = '🇨🇦'
-            
+
             return {
               id: campaign.id,
               name: campaign.name,
@@ -187,14 +189,14 @@ export default function Dashboard() {
               status: campaign.status
             }
           })
-          
+
           setCampaigns(uiCampaigns)
-          
+
           // Calculate dashboard stats
           const active = data.campaigns.filter((c: DbCampaign) => c.status === 'active').length
-          const totalLeads = data.campaigns.reduce((sum: number, c: DbCampaign) => 
+          const totalLeads = data.campaigns.reduce((sum: number, c: DbCampaign) =>
             sum + (c.settings?.totalLeads || 0), 0)
-          
+
           setDashboardStats({
             activeCampaigns: active,
             totalLeads,
@@ -215,8 +217,8 @@ export default function Dashboard() {
   }, [isLoaded, user, organization?.id])
 
   const handleTogglePrivate = (campaignId: string) => {
-    setCampaigns(campaigns.map(campaign => 
-      campaign.id === campaignId 
+    setCampaigns(campaigns.map(campaign =>
+      campaign.id === campaignId
         ? { ...campaign, isPrivate: !campaign.isPrivate }
         : campaign
     ))
@@ -273,7 +275,7 @@ export default function Dashboard() {
               </Stat>
             </CardBody>
           </Card>
-          
+
           <Card bg={statCardBg} border="1px solid" borderColor={statCardBorder}>
             <CardBody>
               <Stat>
@@ -283,7 +285,7 @@ export default function Dashboard() {
               </Stat>
             </CardBody>
           </Card>
-          
+
           <Card bg={statCardBg} border="1px solid" borderColor={statCardBorder}>
             <CardBody>
               <Stat>
@@ -293,7 +295,7 @@ export default function Dashboard() {
               </Stat>
             </CardBody>
           </Card>
-          
+
           <Card bg={statCardBg} border="1px solid" borderColor={statCardBorder}>
             <CardBody>
               <Stat>
@@ -312,7 +314,7 @@ export default function Dashboard() {
             <Tab>Team Campaigns</Tab>
             <Tab>Templates</Tab>
           </TabList>
-          
+
           <TabPanels>
             <TabPanel px={0}>
               {/* Header */}
@@ -332,7 +334,7 @@ export default function Dashboard() {
                     </Text>
                   )}
                 </VStack>
-                
+
                 <GradientButton size="lg" onClick={() => router.push('/campaigns/new')}>
                   Create a Campaign
                 </GradientButton>
@@ -359,8 +361,8 @@ export default function Dashboard() {
               </InputGroup>
 
               {/* Campaign Grid */}
-              <Grid 
-                templateColumns="repeat(auto-fill, minmax(300px, 1fr))" 
+              <Grid
+                templateColumns="repeat(auto-fill, minmax(300px, 1fr))"
                 gap={6}
                 w="100%"
               >
@@ -391,7 +393,7 @@ export default function Dashboard() {
                 <Box textAlign="center" py={12}>
                   <VStack spacing={4}>
                     <Text color="gray.500" fontSize="lg">
-                      {organization 
+                      {organization
                         ? `No campaigns yet in ${organization.name}. Create your first campaign to get started!`
                         : "No campaigns yet. Create your first campaign to get started!"
                       }
@@ -403,13 +405,13 @@ export default function Dashboard() {
                 </Box>
               )}
             </TabPanel>
-            
+
             <TabPanel>
               <VStack spacing={4} align="center" py={8}>
                 <Text>Team campaigns feature coming soon!</Text>
               </VStack>
             </TabPanel>
-            
+
             <TabPanel>
               <VStack spacing={4} align="center" py={8}>
                 <Text>Campaign templates feature coming soon!</Text>
@@ -464,4 +466,4 @@ const sampleCampaigns: Campaign[] = [
     isPrivate: true,
     status: 'active'
   }
-] 
+]
