@@ -78,7 +78,7 @@ const AI_SDR_MESSAGES = {
   welcome: "Hi! I'm Alex, your AI SDR assistant. I'll help you find your perfect prospects. Just describe your ideal customer in natural language and I'll translate that into precise targeting filters.",
   thinking: "Let me analyze your target profile...",
   parsing: "Understanding your requirements and mapping to our database...",
-  validating: "Validating filters with Explorium's data platform...",
+  validating: "Validating filters with our data platform...",
   success: "Perfect! I've identified and validated your ideal customer profile. Here's what I found:",
   successWithWarnings: "Great! I've processed your ICP, though some terms needed adjustment for better accuracy.",
   error: "I had trouble understanding that. Could you be more specific about your target audience?",

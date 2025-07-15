@@ -33,7 +33,8 @@ import {
 } from '@/types/apollo'
 import { 
   type ExplorimFilters as ExplorimFiltersType,
-  type ICPFilterProfile 
+  type ICPFilterProfile,
+  ALL_COUNTRIES
 } from '@/types/explorium'
 import CSVUpload from '@/components/filters/CSVUpload'
 import type { CSVLeadData } from '@/types/csv'
@@ -87,61 +88,56 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
   const activeFilters: Array<{ label: string; value: string }> = []
 
   if (searchType === 'people') {
-    // People-specific filters
+    // People-specific filters (whitelisted only)
     if (filters.jobTitles?.length > 0) {
       activeFilters.push({ label: 'Job Titles', value: formatFilterValue(filters.jobTitles) })
     }
     if (filters.seniorities?.length > 0) {
-      activeFilters.push({ label: 'Seniority', value: formatFilterValue(filters.seniorities) })
+      activeFilters.push({ label: 'Job Levels (Seniority)', value: formatFilterValue(filters.seniorities) })
     }
     if (filters.personLocations?.length > 0) {
       activeFilters.push({ label: 'Person Locations', value: formatFilterValue(filters.personLocations) })
     }
     if (filters.organizationLocations?.length > 0) {
-      activeFilters.push({ label: 'Organization Locations', value: formatFilterValue(filters.organizationLocations) })
-    }
-    if (filters.hasEmail !== null) {
-      activeFilters.push({ label: 'Has Email', value: formatFilterValue(filters.hasEmail) })
-    }
-    if (filters.excludeJobTitles?.length > 0) {
-      activeFilters.push({ label: 'Exclude Job Titles', value: formatFilterValue(filters.excludeJobTitles) })
-    }
-    if (filters.excludePersonLocations?.length > 0) {
-      activeFilters.push({ label: 'Exclude Person Locations', value: formatFilterValue(filters.excludePersonLocations) })
-    }
-    if (filters.excludeOrganizationLocations?.length > 0) {
-      activeFilters.push({ label: 'Exclude Organization Locations', value: formatFilterValue(filters.excludeOrganizationLocations) })
+      activeFilters.push({ label: 'Company Locations', value: formatFilterValue(filters.organizationLocations) })
     }
   }
 
-  // Common filters for both people and companies
-  if (filters.industries?.length > 0) {
-    activeFilters.push({ label: 'Industries', value: formatFilterValue(filters.industries) })
-  }
+  // Common filters (people & company) – whitelisted only
   if (filters.companyHeadcount?.length > 0) {
-    activeFilters.push({ label: 'Company Size', value: formatFilterValue(filters.companyHeadcount) })
+    activeFilters.push({ label: 'Company Size (Employees)', value: formatFilterValue(filters.companyHeadcount) })
   }
-  if (filters.technologies?.length > 0) {
-    activeFilters.push({ label: 'Technologies', value: formatFilterValue(filters.technologies) })
+  if (filters.technologyUids?.length > 0) {
+    activeFilters.push({ label: 'Technologies Used (UIDs)', value: formatFilterValue(filters.technologyUids) })
   }
-  if (filters.intentTopics?.length > 0) {
-    activeFilters.push({ label: 'Intent Topics', value: formatFilterValue(filters.intentTopics) })
-  }
-  if (filters.keywords?.length > 0) {
-    activeFilters.push({ label: 'Keywords', value: formatFilterValue(filters.keywords) })
-  }
-  if (filters.companyDomains?.length > 0) {
-    activeFilters.push({ label: 'Company Domains', value: formatFilterValue(filters.companyDomains) })
+  if (filters.excludeTechnologyUids?.length > 0) {
+    activeFilters.push({ label: 'Exclude Technologies (UIDs)', value: formatFilterValue(filters.excludeTechnologyUids) })
   }
 
-  // Explorium-specific filters (that might not have Apollo equivalents)
-  // Check both prefixed and non-prefixed versions for prospect vs company search
+  // Annual revenue (Apollo / Explorium may attach via different keys)
   if (filters.annual_revenue?.length > 0 || filters.company_annual_revenue?.length > 0) {
     const value = filters.annual_revenue || filters.company_annual_revenue
     activeFilters.push({ label: 'Annual Revenue', value: formatFilterValue(value) })
   }
+  if ((filters.revenueMin !== undefined && filters.revenueMin !== null) || (filters.revenueMax !== undefined && filters.revenueMax !== null)) {
+    const minRev = filters.revenueMin !== null ? filters.revenueMin : 'Any'
+    const maxRev = filters.revenueMax !== null ? filters.revenueMax : 'Any'
+    activeFilters.push({ label: 'Annual Revenue', value: `${minRev} - ${maxRev}` })
+  }
 
-  
+  // Organization job related filters
+  if (filters.organizationJobTitles?.length > 0) {
+    activeFilters.push({ label: 'Organization Job Titles', value: formatFilterValue(filters.organizationJobTitles) })
+  }
+  if (filters.organizationJobLocations?.length > 0) {
+    activeFilters.push({ label: 'Organization Job Locations', value: formatFilterValue(filters.organizationJobLocations) })
+  }
+  if ((filters.organizationNumJobsMin !== undefined && filters.organizationNumJobsMin !== null) || 
+      (filters.organizationNumJobsMax !== undefined && filters.organizationNumJobsMax !== null)) {
+    const min = filters.organizationNumJobsMin !== null ? filters.organizationNumJobsMin : 'Any'
+    const max = filters.organizationNumJobsMax !== null ? filters.organizationNumJobsMax : 'Any'
+    activeFilters.push({ label: 'Number of Active Job Postings', value: `${min} - ${max}` })
+  }
 
   if (activeFilters.length === 0) {
     return null
@@ -251,6 +247,16 @@ function B2BFiltersContent() {
     'linear-gradient(45deg, #5b21b6, #7c3aed)'
   )
 
+  // Check if there are active Explorim filters
+  const hasActiveExplorimFilters = React.useMemo(() => {
+    return Object.keys(explorimFilters).some(key => {
+      const value = explorimFilters[key as keyof ExplorimFiltersType]
+      if (Array.isArray(value)) return value.length > 0
+      if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0
+      return value !== undefined && value !== null && value !== ''
+    })
+  }, [explorimFilters])
+
   // Handle URL parameter for search type
   useEffect(() => {
     const typeParam = searchParams.get('type')
@@ -306,6 +312,41 @@ function B2BFiltersContent() {
       ...prev,
       [field]: value
     }))
+
+    // Synchronize relevant explorim location filters with Apollo filters
+    const currentCountryCodes: string[] = field === 'country_code'
+      ? (Array.isArray(value) ? value : [])
+      : (explorimFilters.country_code || [])
+
+    const currentCityValues: string[] = field === 'city_region_country'
+      ? (Array.isArray(value) ? value : [])
+      : (explorimFilters.city_region_country || [])
+
+    // Recompute organization locations whenever countries or cities change
+    if (field === 'country_code' || field === 'city_region_country') {
+      // Map country codes to labels
+      const countryLabels = currentCountryCodes.map(code => {
+        const found = ALL_COUNTRIES.find(c => c.value === code)
+        return found ? found.label : code
+      })
+
+      // Transform city values (e.g., "Toronto, ON, CA" -> "Toronto, ON")
+      const cityLabels = currentCityValues.map(city => {
+        const parts = city.split(', ')
+        return parts.length >= 2 ? `${parts[0]}, ${parts[1]}` : city
+      })
+
+      const combined = Array.from(new Set([...countryLabels, ...cityLabels]))
+      handleFilterChange('organizationLocations', combined)
+    }
+  }
+
+  // Reset all filters - both Apollo and Explorium
+  const handleResetAllFilters = () => {
+    // Reset Apollo filters
+    resetFilters()
+    // Reset Explorium filters
+    setExplorimFilters({})
   }
 
   // Save ICP profile
@@ -462,57 +503,13 @@ function B2BFiltersContent() {
     router.push('/campaigns/new')
   }
 
-  // Check if we have active Explorium filters
-  const hasActiveExplorimFilters = Object.keys(explorimFilters).some(key => {
-    const value = explorimFilters[key as keyof ExplorimFiltersType]
-    if (Array.isArray(value)) return value.length > 0
-    if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0
-    if (typeof value === 'boolean') return value === true
-    return value !== undefined && value !== null && value !== ''
-  })
-
   // Combine Apollo filters and Explorium filters for display
-  const combinedFilters = {
-    // Apollo filters
-    ...filters,
-    // Explorium filters (map to Apollo-like field names for display)
-
-    ...(explorimFilters.country_code?.length && {
-      personLocations: [...((filters as any).personLocations || []), ...explorimFilters.country_code.map(code => 
-        code === 'us' ? 'United States' : code
-      )]
-    }),
-    ...(explorimFilters.job_title?.length && {
-      jobTitles: [...((filters as any).jobTitles || []), ...explorimFilters.job_title]
-    }),
-    ...(explorimFilters.job_level?.length && {
-      seniorities: [...((filters as any).seniorities || []), ...explorimFilters.job_level]
-    }),
-    ...(explorimFilters.company_size?.length && {
-      companyHeadcount: [...((filters as any).companyHeadcount || []), ...explorimFilters.company_size]
-    }),
-
-
-    // Include Explorium-specific filters directly
-    ...Object.keys(explorimFilters).reduce((acc, key) => {
-      const value = explorimFilters[key as keyof ExplorimFiltersType]
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value) && value.length > 0) {
-          acc[key] = value
-          // Also map prefixed versions to non-prefixed for display
-          if (key.startsWith('company_')) {
-            const unprefixedKey = key.replace('company_', '')
-            acc[unprefixedKey] = value
-          }
-        } else if (typeof value === 'object' && value !== null && Object.keys(value).length > 0) {
-          acc[key] = value
-        } else if (typeof value === 'boolean' && value === true) {
-          acc[key] = value
-        }
-      }
-      return acc
-    }, {} as any),
-  }
+  const combinedFilters = React.useMemo(() => {
+    return {
+      ...filters,
+      ...explorimFilters as any
+    }
+  }, [filters, explorimFilters])
 
   // Remove duplicates from combined arrays
   Object.keys(combinedFilters).forEach(key => {
@@ -630,12 +627,9 @@ function B2BFiltersContent() {
                                 }
                                 
                                 // Update Apollo filters (for search functionality)
-                                if (parsedICP.industries.length > 0) {
-                                  handleFilterChange('industries', parsedICP.industries)
+                                if (parsedICP.locations.length > 0) {
+                                  handleFilterChange('personLocations', parsedICP.locations)
                                 }
-                                        if (parsedICP.locations.length > 0) {
-          handleFilterChange('personLocations', parsedICP.locations)
-        }
                                 if (parsedICP.jobTitles.length > 0) {
                                   handleFilterChange('jobTitles', parsedICP.jobTitles)
                                 }
@@ -646,10 +640,7 @@ function B2BFiltersContent() {
                                   handleFilterChange('companyHeadcount', parsedICP.companySize)
                                 }
                                 if (parsedICP.technologies.length > 0) {
-                                  handleFilterChange('technologies', parsedICP.technologies)
-                                }
-                                if (parsedICP.keywords.length > 0) {
-                                  handleFilterChange('keywords', parsedICP.keywords)
+                                  handleFilterChange('technologyUids', parsedICP.technologies)
                                 }
 
                                 // Update Explorium filters (for UI display) with proper field mapping
@@ -751,7 +742,7 @@ function B2BFiltersContent() {
                       <Button
                         variant="outline"
                         size="md"
-                        onClick={resetFilters}
+                        onClick={handleResetAllFilters}
                         w="full"
                         bg="white"
                         color="purple.600"

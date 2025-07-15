@@ -67,7 +67,7 @@ export default function NewCampaignPage() {
   }
 
   const handleStartTargeting = () => {
-    router.push('/campaigns/new/targeting')
+    router.push('/campaigns/new/targeting/b2b-filters')
   }
 
   return (

@@ -84,6 +84,14 @@ Analyze this description and extract the following information in JSON format:
   "reasoning": "Brief explanation of how you interpreted the ICP description"
 }
 
+Additional guidelines:
+10. If the description includes generic phrases such as "decision makers", "key stakeholders", or "responsible person", infer suitable job titles based on context:
+   • For small companies (<= 200 employees) → ["CEO", "Founder", "Owner"]
+   • If the product/business context mentions "marketing" → include ["CMO", "Head of Marketing", "Marketing Director"].
+   • If context mentions "sales" → include ["Head of Sales", "VP Sales", "Sales Director"].
+   • If no clear department context, default to ["CEO", "Founder", "COO", "CTO"].
+11. Do NOT include placeholders like "Decision Maker" in jobTitles output.
+
 Guidelines for parsing:
 1. If job titles are mentioned, set searchType to "people"
 2. If only company characteristics are mentioned, set searchType to "company"
@@ -155,23 +163,51 @@ Respond ONLY with valid JSON.`
     try {
       const parsedData = JSON.parse(cleanedContent)
       const validatedICP = ParsedICPSchema.parse(parsedData)
+
+      // Heuristic fix: replace generic "Decision Maker" terms with concrete titles if LLM missed it
+      const normalizeJobTitles = (titles: string[], companySizeArr: string[]): string[] => {
+        const lowerTitles = titles.map(t => t.toLowerCase())
+        const hasGeneric = lowerTitles.some(t => t.includes('decision maker') || t.includes('key stakeholder'))
+        if (!hasGeneric) return titles
+
+        const isSmallCompany = companySizeArr.some(size => {
+          const [min] = size.split('-')
+          return parseInt(min) <= 200 || size.includes('1-10') || size.includes('11-50') || size.includes('51-200')
+        })
+
+        const extraTitles: string[] = []
+        if (isSmallCompany) {
+          extraTitles.push('CEO', 'Founder', 'Owner')
+        } else {
+          extraTitles.push('CEO', 'COO', 'CTO')
+        }
+        // Ensure uniqueness
+        return Array.from(new Set([...titles.filter(t => !hasGeneric || !t.toLowerCase().includes('decision maker') && !t.toLowerCase().includes('key stakeholder')), ...extraTitles]))
+      }
+
+      const normalizedJobTitles = normalizeJobTitles(validatedICP.jobTitles, validatedICP.companySize)
+
+      const validatedICPNormalized = {
+        ...validatedICP,
+        jobTitles: normalizedJobTitles
+      }
       
-      console.log('ICP parsing successful:', validatedICP)
+      console.log('ICP parsing successful:', validatedICPNormalized)
       
       // Perform provider-specific validation and autocomplete refinement
       let validationResults: any = null
-      let refinedICP = validatedICP
+      let refinedICP = validatedICPNormalized
       
       // Convert to unified format for validation
       const unifiedFilters = {
-        searchType: validatedICP.searchType,
-        industries: validatedICP.industries,
-        locations: validatedICP.locations,
-        jobTitles: validatedICP.jobTitles,
-        seniorities: validatedICP.seniorities,
-        companyHeadcount: validatedICP.companySize,
-        technologies: validatedICP.technologies,
-        keywords: validatedICP.keywords
+        searchType: validatedICPNormalized.searchType,
+        industries: validatedICPNormalized.industries,
+        locations: validatedICPNormalized.locations,
+        jobTitles: validatedICPNormalized.jobTitles,
+        seniorities: validatedICPNormalized.seniorities,
+        companyHeadcount: validatedICPNormalized.companySize,
+        technologies: validatedICPNormalized.technologies,
+        keywords: validatedICPNormalized.keywords
       }
       
       try {

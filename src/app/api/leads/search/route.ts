@@ -12,8 +12,12 @@ function transformFiltersToUnified(filters: any): UnifiedSearchFilters {
     totalSize: filters.totalSize || 1000
   }
 
-  // Location filters
-  if (filters.locations?.length > 0) {
+  // Location filters (support both personLocations from UI and generic locations)
+  if (filters.personLocations?.length > 0) {
+    unifiedFilters.locations = filters.personLocations
+  } else if (filters.organizationLocations?.length > 0) {
+    unifiedFilters.locations = filters.organizationLocations
+  } else if (filters.locations?.length > 0) {
     unifiedFilters.locations = filters.locations
   }
 
@@ -57,8 +61,14 @@ function transformFiltersToUnified(filters: any): UnifiedSearchFilters {
     unifiedFilters.industries = filters.industries
   }
 
-  if (filters.technologies?.length > 0) {
+  if (filters.technologyUids?.length > 0) {
+    unifiedFilters.technologies = filters.technologyUids
+  } else if (filters.technologies?.length > 0) {
     unifiedFilters.technologies = filters.technologies
+  }
+
+  if (filters.excludeTechnologyUids?.length > 0) {
+    unifiedFilters.excludeTechnologyUids = filters.excludeTechnologyUids
   }
 
   if (filters.keywords?.length > 0) {
