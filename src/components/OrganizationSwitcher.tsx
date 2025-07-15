@@ -30,10 +30,10 @@ import {
   Icon,
   Spinner
 } from '@chakra-ui/react'
-import { 
-  OrganizationSwitcher as ClerkOrganizationSwitcher, 
-  useOrganization, 
-  useOrganizationList, 
+import {
+  OrganizationSwitcher as ClerkOrganizationSwitcher,
+  useOrganization,
+  useOrganizationList,
   useUser,
   CreateOrganization
 } from '@clerk/nextjs'
@@ -63,7 +63,7 @@ export default function OrganizationSwitcher({ onOrganizationChange }: Organizat
   const { isOpen, onOpen, onClose } = useDisclosure()
   const toast = useToast()
   const customToast = createCustomToast(toast)
-  
+
   const [isLoading, setIsLoading] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [formData, setFormData] = useState({
@@ -88,7 +88,7 @@ export default function OrganizationSwitcher({ onOrganizationChange }: Organizat
     try {
       await setActive({ organization: orgId })
       onOrganizationChange?.(orgId)
-      
+
       customToast.success({
         title: 'Organization Switched',
         description: 'Successfully switched to the new organization',
@@ -118,7 +118,7 @@ export default function OrganizationSwitcher({ onOrganizationChange }: Organizat
       // This will trigger the organization creation flow
       setShowCreateForm(false)
       onClose()
-      
+
       customToast.info({
         title: 'Creating organization...',
         description: 'Your organization is being set up',
@@ -197,9 +197,9 @@ export default function OrganizationSwitcher({ onOrganizationChange }: Organizat
                   _hover={{ bg: hoverBg }}
                 >
                   <HStack spacing={3} w="full">
-                    <Avatar 
-                      src={membership.organization.imageUrl} 
-                      size="sm" 
+                    <Avatar
+                      src={membership.organization.imageUrl}
+                      size="sm"
                       name={membership.organization.name}
                       icon={<HiOutlineOfficeBuilding />}
                     />
@@ -251,7 +251,7 @@ export default function OrganizationSwitcher({ onOrganizationChange }: Organizat
             {!showCreateForm ? (
               // Use Clerk's built-in CreateOrganization component
               <Box>
-                <CreateOrganization 
+                <CreateOrganization
                   afterCreateOrganizationUrl="/dashboard"
                   appearance={{
                     elements: {
@@ -333,4 +333,4 @@ export default function OrganizationSwitcher({ onOrganizationChange }: Organizat
       </Modal>
     </>
   )
-} 
+}
