@@ -1,211 +1,287 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { apolloProvider, type ApolloSearchFilters } from '@/lib/data-integrations/apollo-provider'
-import { getApolloThrottleManager } from '@/lib/utils/apollo-throttle'
-import ApolloValidator from '@/lib/utils/apollo-validator'
-import { type ApolloFilterInput } from '@/types/apollo'
+import { getDataProviderManager, getCurrentProvider } from '@/lib/data-providers/provider-manager'
+import { type UnifiedSearchFilters } from '@/lib/data-providers/provider-manager'
 
-// Transform UI filter input to Apollo API format
-function transformFiltersToApollo(filters: ApolloFilterInput): ApolloSearchFilters {
-  const apolloFilters: ApolloSearchFilters = {
+// Transform UI filter input to unified format
+function transformFiltersToUnified(filters: any): UnifiedSearchFilters {
+  const unifiedFilters: UnifiedSearchFilters = {
+    searchType: filters.searchType || 'people',
     page: filters.page || 1,
-    per_page: filters.perPage || 20
+    pageSize: filters.pageSize || 25,
+    totalSize: filters.totalSize || 1000
   }
 
-  // Person-level filters
+  // Location filters
+  if (filters.locations?.length > 0) {
+    unifiedFilters.locations = filters.locations
+  }
+
+  // Job-level filters
   if (filters.jobTitles?.length > 0) {
-    apolloFilters.person_titles = filters.jobTitles
+    unifiedFilters.jobTitles = filters.jobTitles
   }
 
   if (filters.seniorities?.length > 0) {
-    apolloFilters.person_seniorities = filters.seniorities
+    unifiedFilters.seniorities = filters.seniorities
   }
 
-  if (filters.locations?.length > 0) {
-    apolloFilters.person_locations = filters.locations
-  }
-
+  // Experience filters
   if (filters.timeInCurrentRole?.length > 0) {
-    apolloFilters.person_time_in_current_role = filters.timeInCurrentRole
+    unifiedFilters.timeInCurrentRole = filters.timeInCurrentRole
   }
 
   if (filters.totalYearsExperience?.length > 0) {
-    apolloFilters.person_total_years_experience = filters.totalYearsExperience
+    unifiedFilters.totalYearsExperience = filters.totalYearsExperience
   }
 
+  // Contact filters
   if (typeof filters.hasEmail === 'boolean') {
-    apolloFilters.has_email = filters.hasEmail
+    unifiedFilters.hasEmail = filters.hasEmail
   }
 
-  // Company-level filters
-  if (filters.industries?.length > 0) {
-    apolloFilters.company_industries = filters.industries
+  if (typeof filters.hasPhone === 'boolean') {
+    unifiedFilters.hasPhone = filters.hasPhone
   }
 
+  // Company filters
   if (filters.companyHeadcount?.length > 0) {
-    apolloFilters.company_headcount = filters.companyHeadcount
+    unifiedFilters.companyHeadcount = filters.companyHeadcount
   }
 
-  if (filters.companyDomains?.length > 0) {
-    apolloFilters.company_domains = filters.companyDomains
+  if (filters.companyRevenue?.length > 0) {
+    unifiedFilters.companyRevenue = filters.companyRevenue
   }
 
-  if (filters.intentTopics?.length > 0) {
-    apolloFilters.company_intent_topics = filters.intentTopics
+  if (filters.industries?.length > 0) {
+    unifiedFilters.industries = filters.industries
   }
 
-  return apolloFilters
+  if (filters.technologies?.length > 0) {
+    unifiedFilters.technologies = filters.technologies
+  }
+
+  if (filters.keywords?.length > 0) {
+    unifiedFilters.keywords = filters.keywords
+  }
+
+  console.log('Original filters:', filters)
+  console.log('Unified filters:', unifiedFilters)
+
+  return unifiedFilters
+}
+
+// Transform results to expected UI format
+function transformResultsToUI(results: any, provider: string) {
+  // For Apollo API, we want to preserve the rich structure
+  const transformApolloProspect = (prospect: any) => {
+    return {
+      // Basic Apollo fields
+      id: prospect.id || prospect.external_id,
+      name: prospect.name || `${prospect.first_name || ''} ${prospect.last_name || ''}`.trim(),
+      first_name: prospect.first_name,
+      last_name: prospect.last_name,
+      full_name: prospect.name || `${prospect.first_name || ''} ${prospect.last_name || ''}`.trim(),
+      title: prospect.title,
+      headline: prospect.headline,
+      email: prospect.email,
+      phone: prospect.phone,
+      linkedin_url: prospect.linkedin_url,
+      twitter_url: prospect.twitter_url,
+      facebook_url: prospect.facebook_url,
+      github_url: prospect.github_url,
+      
+      // Location fields
+      city: prospect.city,
+      state: prospect.state,
+      country: prospect.country,
+      
+      // Job information
+      seniority: prospect.seniority,
+      seniority_level: prospect.seniority_level,
+      departments: prospect.departments || [],
+      subdepartments: prospect.subdepartments || [],
+      functions: prospect.functions || [],
+      
+      // Company information from nested objects
+      company: prospect.organization?.name || prospect.account?.name,
+      company_id: prospect.organization_id || prospect.account_id,
+      company_website: prospect.organization?.website_url || prospect.account?.website_url,
+      company_linkedin: prospect.organization?.linkedin_url || prospect.account?.linkedin_url,
+      
+      // Image URLs
+      photo_url: prospect.photo_url,
+      company_logo_url: prospect.organization?.logo_url || prospect.account?.logo_url,
+      
+      // Apollo-specific fields
+      email_status: prospect.email_status,
+      employment_history: prospect.employment_history || [],
+      organization: prospect.organization,
+      organization_id: prospect.organization_id,
+      account: prospect.account,
+      account_id: prospect.account_id,
+      extrapolated_email_confidence: prospect.extrapolated_email_confidence,
+      email_domain_catchall: prospect.email_domain_catchall,
+      revealed_for_current_team: prospect.revealed_for_current_team,
+      intent_strength: prospect.intent_strength,
+      show_intent: prospect.show_intent,
+      
+      // Additional fields that might be present
+      skills: prospect.skills || [],
+      technologies: prospect.technologies || [],
+      confidence: prospect.confidence || 0,
+      
+      // Data source
+      data_source: provider,
+      _raw: prospect
+    }
+  }
+
+  // Handle different result formats based on provider
+  let transformedProspects = []
+  
+  if (provider === 'apollo' && results.prospects) {
+    // Apollo returns people in prospects array
+    transformedProspects = results.prospects.map(transformApolloProspect)
+  } else if (results.people) {
+    // Direct people array
+    transformedProspects = results.people.map(transformApolloProspect)
+  } else {
+    // Fallback for other formats
+    transformedProspects = (results.prospects || []).map(transformApolloProspect)
+  }
+
+  return {
+    people: transformedProspects,
+    pagination: {
+      page: results.pagination?.page || 1,
+      per_page: results.pagination?.pageSize || results.pagination?.per_page || 25,
+      total_entries: results.totalProspects || results.total_entries || 0,
+      total_pages: results.pagination?.totalPages || results.pagination?.total_pages || 1,
+      has_more: results.pagination?.hasMore || false
+    },
+    search_id: results.searchId || results.search_id || '',
+    breadcrumbs: results.breadcrumbs || [{
+      label: `${results.totalProspects || results.total_entries || 0} prospects found`,
+      signal_field_name: 'total_results',
+      value: results.totalProspects || results.total_entries || 0,
+      display_name: `${results.totalProspects || results.total_entries || 0} results`
+    }]
+  }
 }
 
 export async function POST(request: NextRequest) {
-  const startTime = Date.now()
-  let requestId: string = ''
-
   try {
-    const { userId: clerkUserId } = await auth()
-
-    if (!clerkUserId) {
-      return NextResponse.json({ 
-        error: 'Unauthorized',
-        code: 'AUTH_REQUIRED' 
+    // Check authentication
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'UNAUTHORIZED',
+        message: 'Authentication required'
       }, { status: 401 })
     }
 
     const body = await request.json()
-    const { filters } = body as {
-      filters: ApolloFilterInput
-    }
+    const { filters, page = 1, pageSize = 25, totalSize = 1000 } = body
 
     if (!filters) {
-      return NextResponse.json({ 
-        error: 'Filters are required',
-        code: 'MISSING_FILTERS' 
-      }, { status: 400 })
-    }
-
-    // Transform UI filters to Apollo format
-    const apolloFilters = transformFiltersToApollo(filters)
-
-    // Validate filters
-    const validation = ApolloValidator.validateSearchFilters(apolloFilters)
-    
-    if (!validation.isValid) {
-      console.warn(`Apollo: Validation failed for user ${clerkUserId}:`, validation.errors)
       return NextResponse.json({
-        error: 'Invalid filters provided',
-        code: 'VALIDATION_FAILED',
-        details: validation.errors,
-        warnings: validation.warnings
+        success: false,
+        error: 'MISSING_FILTERS',
+        message: 'Filters are required'
       }, { status: 400 })
     }
 
-    // Log validation warnings if any
-    if (validation.warnings.length > 0) {
-      console.warn(`Apollo: Validation warnings for user ${clerkUserId}:`, validation.warnings)
-    }
+    console.log('📋 Received search request:', { filters, page, pageSize, totalSize })
 
-    // Use cleaned filters from validation
-    const cleanedFilters = validation.cleanedFilters!
+    // Get the current provider
+    const currentProvider = getCurrentProvider()
+    console.log('🔧 Using data provider:', currentProvider)
 
-    // Get throttle manager and execute request with rate limiting
-    const throttleManager = getApolloThrottleManager()
+    // Transform filters to unified format
+    const unifiedFilters = transformFiltersToUnified({
+      ...filters,
+      page,
+      pageSize,
+      totalSize
+    })
     
-    console.log(`Apollo: Starting search for user ${clerkUserId} with ${Object.keys(cleanedFilters).length} filter groups`)
+    console.log('🔄 Unified filters:', unifiedFilters)
 
-    const searchResult = await throttleManager.executeRequest(
-      () => apolloProvider.searchPeople(cleanedFilters),
-      {
-        userId: clerkUserId,
-        requestType: 'search',
-        priority: 'medium'
-      }
-    )
+    // Get provider manager and perform search
+    const dataProviderManager = getDataProviderManager()
+    const searchResults = await dataProviderManager.searchProspects(unifiedFilters)
 
-    requestId = searchResult.search_id
+    console.log('✅ Search results:', {
+      provider: searchResults.provider,
+      prospects: searchResults.prospects?.length || 0,
+      companies: searchResults.companies?.length || 0,
+      totalProspects: searchResults.totalProspects,
+      totalCompanies: searchResults.totalCompanies
+    })
 
-    // Log successful request
-    const responseTime = Date.now() - startTime
-    console.log(`Apollo: Search completed for user ${clerkUserId} in ${responseTime}ms. Found ${searchResult.people.length} results (${searchResult.pagination.total_entries} total)`)
+    // Transform results to expected UI format
+    const transformedResults = transformResultsToUI(searchResults, currentProvider)
 
-    // Return successful response with comprehensive data
     return NextResponse.json({
       success: true,
-      data: {
-        people: searchResult.people,
-        pagination: searchResult.pagination,
-        breadcrumbs: searchResult.breadcrumbs,
-        search_id: searchResult.search_id,
-        validation_warnings: validation.warnings.length > 0 ? validation.warnings : undefined
-      },
+      data: transformedResults,
       meta: {
-        request_id: requestId,
-        response_time_ms: responseTime,
-        rate_limit_info: throttleManager.getMetrics(),
-        queue_status: throttleManager.getQueueStatus()
+        provider: currentProvider,
+        total_results: searchResults.totalProspects,
+        search_id: searchResults.searchId,
+        filters_used: unifiedFilters
       }
     })
 
-  } catch (error: any) {
-    const responseTime = Date.now() - startTime
+  } catch (error) {
+    console.error('❌ Search error:', error)
     
-    // Enhanced error logging
-    console.error('Apollo search error:', {
-      error: error.message,
-      requestId,
-      responseTime,
-      stack: error.stack
-    })
+    // Return more specific error information
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+    const isProviderError = errorMessage.includes('API key not configured') || 
+                           errorMessage.includes('Apollo API error') || 
+                           errorMessage.includes('Explorium')
 
-    // Handle specific Apollo errors
-    if (error.message?.includes('API key')) {
-      return NextResponse.json({
-        error: 'Apollo API configuration error',
-        code: 'API_KEY_ERROR',
-        meta: { request_id: requestId, response_time_ms: responseTime }
-      }, { status: 503 })
-    }
-
-    if (error.message?.includes('rate limit')) {
-      const throttleManager = getApolloThrottleManager()
-      const waitTime = throttleManager.getEstimatedWaitTime()
-      
-      return NextResponse.json({
-        error: 'Rate limit exceeded. Please try again later.',
-        code: 'RATE_LIMIT_EXCEEDED',
-        retry_after_ms: waitTime,
-        meta: { 
-          request_id: requestId, 
-          response_time_ms: responseTime,
-          estimated_wait_time_ms: waitTime
-        }
-      }, { status: 429 })
-    }
-
-    if (error.message?.includes('validation')) {
-      return NextResponse.json({
-        error: 'Request validation failed',
-        code: 'VALIDATION_ERROR',
-        details: error.details || error.message,
-        meta: { request_id: requestId, response_time_ms: responseTime }
-      }, { status: 400 })
-    }
-
-    // Generic error response
     return NextResponse.json({
-      error: 'Search request failed. Please try again.',
-      code: 'SEARCH_FAILED',
-      meta: { 
-        request_id: requestId, 
-        response_time_ms: responseTime,
-        error_type: error.constructor.name
-      }
-    }, { status: 500 })
+      success: false,
+      error: isProviderError ? 'PROVIDER_ERROR' : 'INTERNAL_ERROR',
+      message: isProviderError ? errorMessage : 'Internal server error occurred',
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    }, { 
+      status: isProviderError ? 503 : 500 
+    })
   }
 }
 
 export async function GET() {
-  return NextResponse.json({ 
-    error: 'Method not allowed. Use POST to search leads.',
-    code: 'METHOD_NOT_ALLOWED'
-  }, { status: 405 })
+  try {
+    const currentProvider = getCurrentProvider()
+    const dataProviderManager = getDataProviderManager()
+    const providerConfig = dataProviderManager.getProviderInfo()
+    const filterOptions = dataProviderManager.getFilterOptions()
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        currentProvider,
+        providerConfig: {
+          type: providerConfig.type,
+          baseUrl: providerConfig.baseUrl,
+          rateLimit: providerConfig.rateLimit,
+          features: providerConfig.features
+        },
+        filterOptions,
+        available: !!providerConfig.apiKey
+      }
+    })
+  } catch (error) {
+    console.error('❌ Provider info error:', error)
+    return NextResponse.json({
+      success: false,
+      error: 'PROVIDER_INFO_ERROR',
+      message: 'Failed to get provider information'
+    }, { status: 500 })
+  }
 } 

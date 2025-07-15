@@ -18,6 +18,21 @@ export interface ApolloSearchFilters {
   company_headcount?: string[]
   company_domains?: string[]
   company_intent_topics?: string[]
+  
+  // Organization location filters
+  'organization_locations[]'?: string[]
+  
+  // Revenue range filters
+  'revenue_range[min]'?: number
+  'revenue_range[max]'?: number
+  
+  // Technology filters (Apollo UIDs)
+  'currently_using_any_of_technology_uids[]'?: string[]
+  'currently_not_using_any_of_technology_uids[]'?: string[]
+  
+  // Organization job-related filters
+  'q_organization_job_titles[]'?: string[]
+  'organization_job_locations[]'?: string[]
 
   // Pagination
   page?: number
@@ -397,6 +412,50 @@ class ApolloProviderService {
         .slice(0, 30)
     }
 
+    // Organization location filters
+    if (filters['organization_locations[]']?.length) {
+      cleaned['organization_locations[]'] = filters['organization_locations[]']
+        .filter(location => location.trim().length > 0)
+        .slice(0, 50)
+    }
+
+    // Revenue range filters (ensure integers only)
+    if (typeof filters['revenue_range[min]'] === 'number' && filters['revenue_range[min]'] >= 0) {
+      cleaned['revenue_range[min]'] = Math.floor(filters['revenue_range[min]'])
+    }
+
+    if (typeof filters['revenue_range[max]'] === 'number' && filters['revenue_range[max]'] >= 0) {
+      cleaned['revenue_range[max]'] = Math.floor(filters['revenue_range[max]'])
+    }
+
+    // Technology UIDs filter
+    if (filters['currently_using_any_of_technology_uids[]']?.length) {
+      cleaned['currently_using_any_of_technology_uids[]'] = filters['currently_using_any_of_technology_uids[]']
+        .filter(uid => uid.trim().length > 0)
+        .slice(0, 50) // Apollo supports up to 50 technology filters
+    }
+
+    // Exclude Technology UIDs filter
+    if (filters['currently_not_using_any_of_technology_uids[]']?.length) {
+      cleaned['currently_not_using_any_of_technology_uids[]'] = filters['currently_not_using_any_of_technology_uids[]']
+        .filter(uid => uid.trim().length > 0)
+        .slice(0, 50) // Apollo supports up to 50 technology filters
+    }
+
+    // Organization job titles filter
+    if (filters['q_organization_job_titles[]']?.length) {
+      cleaned['q_organization_job_titles[]'] = filters['q_organization_job_titles[]']
+        .filter(title => title.trim().length > 0)
+        .slice(0, 30)
+    }
+
+    // Organization job locations filter
+    if (filters['organization_job_locations[]']?.length) {
+      cleaned['organization_job_locations[]'] = filters['organization_job_locations[]']
+        .filter(location => location.trim().length > 0)
+        .slice(0, 30)
+    }
+
     return cleaned
   }
 
@@ -646,6 +705,93 @@ class ApolloProviderService {
     if (monthsDiff <= 60) return '3-5_years'
     if (monthsDiff <= 120) return '5-10_years'
     return '10+_years'
+  }
+
+  /**
+   * Transform UI filter input to Apollo API search filters format
+   */
+  public transformUIFiltersToAPIFilters(uiFilters: import('@/types/apollo').ApolloFilterInput): ApolloSearchFilters {
+    const apiFilters: ApolloSearchFilters = {
+      page: uiFilters.page || 1,
+      per_page: uiFilters.perPage || 20
+    }
+
+    // Person-level filters
+    if (uiFilters.jobTitles?.length) {
+      apiFilters.person_titles = uiFilters.jobTitles
+    }
+
+    if (uiFilters.seniorities?.length) {
+      apiFilters.person_seniorities = uiFilters.seniorities
+    }
+
+    if (uiFilters.personLocations?.length) {
+      apiFilters.person_locations = uiFilters.personLocations
+    }
+
+    if (typeof uiFilters.hasEmail === 'boolean') {
+      apiFilters.has_email = uiFilters.hasEmail
+    }
+
+    // Company-level filters
+    if (uiFilters.industries?.length) {
+      apiFilters.company_industries = uiFilters.industries
+    }
+
+    if (uiFilters.companyHeadcount?.length) {
+      apiFilters.company_headcount = uiFilters.companyHeadcount
+    }
+
+    if (uiFilters.companyDomains?.length) {
+      apiFilters.company_domains = uiFilters.companyDomains
+    }
+
+    if (uiFilters.intentTopics?.length) {
+      apiFilters.company_intent_topics = uiFilters.intentTopics
+    }
+
+    // Organization location filters
+    if (uiFilters.organizationLocations?.length) {
+      apiFilters['organization_locations[]'] = uiFilters.organizationLocations
+    }
+
+    // Revenue range filters (ensure integers)
+    if (typeof uiFilters.revenueMin === 'number' && uiFilters.revenueMin >= 0) {
+      apiFilters['revenue_range[min]'] = Math.floor(uiFilters.revenueMin)
+    }
+
+    if (typeof uiFilters.revenueMax === 'number' && uiFilters.revenueMax >= 0) {
+      apiFilters['revenue_range[max]'] = Math.floor(uiFilters.revenueMax)
+    }
+
+    // Technology UIDs (Apollo format)
+    if (uiFilters.technologyUids?.length) {
+      apiFilters['currently_using_any_of_technology_uids[]'] = uiFilters.technologyUids
+    }
+
+    // Exclude Technology UIDs (Apollo format)
+    if (uiFilters.excludeTechnologyUids?.length) {
+      apiFilters['currently_not_using_any_of_technology_uids[]'] = uiFilters.excludeTechnologyUids
+    }
+
+    // Organization job-related filters
+    if (uiFilters.organizationJobTitles?.length) {
+      apiFilters['q_organization_job_titles[]'] = uiFilters.organizationJobTitles
+    }
+
+    if (uiFilters.organizationJobLocations?.length) {
+      apiFilters['organization_job_locations[]'] = uiFilters.organizationJobLocations
+    }
+
+    return apiFilters
+  }
+
+  /**
+   * Search people using UI filter format (convenience method)
+   */
+  async searchPeopleWithUIFilters(uiFilters: import('@/types/apollo').ApolloFilterInput): Promise<SearchResponse> {
+    const apiFilters = this.transformUIFiltersToAPIFilters(uiFilters)
+    return this.searchPeople(apiFilters)
   }
 }
 

@@ -119,17 +119,35 @@ function transformToApolloFilters(filters: FilterState, page: number = 1, limit:
     jobTitles: filters.jobTitles || [],
     excludeJobTitles: filters.excludeJobTitles || [],
     seniorities: filters.seniorityLevels as any || [],
-    locations: filters.locations || [],
-    excludeLocations: filters.excludeLocations || [],
-    timeInCurrentRole: [],
-    totalYearsExperience: [],
+    personLocations: filters.locations || [], // Person's location (where they live)
+    excludePersonLocations: filters.excludeLocations || [],
+    organizationLocations: [], // Company headquarters locations (separate from person location)
+    excludeOrganizationLocations: [],
     hasEmail: null,
     industries: filters.industries || [],
     companyHeadcount: [],
     companyDomains: [],
     intentTopics: [],
     technologies: filters.technologies || [],
+    technologyUids: [], // Apollo technology UIDs
+    excludeTechnologyUids: [], // Apollo technology UIDs for exclusion
     keywords: [filters.keywords, filters.companyKeywords].filter(Boolean),
+    organizationJobTitles: [], // Organization job titles
+    organizationJobLocations: [], // Organization job locations
+    organizationNumJobsMin: null,
+    organizationNumJobsMax: null,
+    organizationJobPostedAtMin: null,
+    organizationJobPostedAtMax: null,
+    revenueMin: filters.revenueMin || null,
+    revenueMax: filters.revenueMax || null,
+    fundingStages: [],
+    fundingAmountMin: null,
+    fundingAmountMax: null,
+    foundedYearMin: null,
+    foundedYearMax: null,
+    jobPostings: null,
+    newsEvents: null,
+    webTraffic: null,
     page,
     perPage: limit
   }
@@ -166,7 +184,8 @@ async function searchApollo(filters: FilterState, page: number = 1, limit: numbe
     const apolloSearchFilters = {
       person_titles: apolloFilters.jobTitles,
       person_seniorities: apolloFilters.seniorities,
-      person_locations: apolloFilters.locations,
+      person_locations: apolloFilters.personLocations,
+      organization_locations: apolloFilters.organizationLocations,
       has_email: true, // Default to requiring email for campaigns
       company_industries: apolloFilters.industries,
       page: apolloFilters.page,

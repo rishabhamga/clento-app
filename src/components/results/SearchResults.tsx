@@ -173,13 +173,26 @@ function PersonCard({ person }: PersonCardProps) {
   }
 
   const getCompanyLogo = (companyName?: string, websiteUrl?: string) => {
+    // Try organization logo first
+    if (person.organization?.logo_url) {
+      return person.organization.logo_url
+    }
+    
+    // Try account logo
+    if (person.account?.logo_url) {
+      return person.account.logo_url
+    }
+    
     if (person.company_logo_url) {
       return person.company_logo_url
     }
     
     // Fallback to domain-based logo
-    if (websiteUrl) {
-      const domain = websiteUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+    const domain = person.organization?.primary_domain || 
+                   person.account?.primary_domain || 
+                   person.company_website?.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+    
+    if (domain) {
       return `https://logo.clearbit.com/${domain}`
     }
     
@@ -191,7 +204,10 @@ function PersonCard({ person }: PersonCardProps) {
     
     try {
       const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue
-      return date.toLocaleDateString()
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short' 
+      })
     } catch {
       return undefined
     }
@@ -207,11 +223,53 @@ function PersonCard({ person }: PersonCardProps) {
       <Badge 
         colorScheme={isPositive ? 'green' : percentage < 0 ? 'red' : 'gray'}
         size="sm"
+        fontWeight="medium"
       >
         {isPositive ? '+' : ''}{percentage}%
       </Badge>
     )
   }
+
+  const getEmailStatusColor = (status?: string) => {
+    switch (status) {
+      case 'verified': return 'green'
+      case 'likely': return 'blue'
+      case 'guessed': return 'yellow'
+      case 'unavailable': return 'red'
+      default: return 'gray'
+    }
+  }
+
+  const getEmailStatusText = (status?: string) => {
+    switch (status) {
+      case 'verified': return 'Verified'
+      case 'likely': return 'Likely'
+      case 'guessed': return 'Guessed'
+      case 'unavailable': return 'Not Available'
+      default: return 'Unknown'
+    }
+  }
+
+  const getCurrentCompany = () => {
+    return person.organization || person.account
+  }
+
+  const getCompanySize = () => {
+    const org = getCurrentCompany()
+    if (!org) return null
+    
+    // For now, we'll use a placeholder since headcount isn't directly in the response
+    // This could be enhanced with actual employee count data
+    return null
+  }
+
+  const formatPhoneNumber = (phone?: string) => {
+    if (!phone) return null
+    // Simple phone formatting - could be enhanced
+    return phone.replace(/^\+?1?/, '').replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3')
+  }
+
+  const currentCompany = getCurrentCompany()
 
   return (
     <Card
@@ -223,286 +281,427 @@ function PersonCard({ person }: PersonCardProps) {
       cursor="pointer"
       onClick={handleCardClick}
       _hover={{
-        shadow: 'lg',
+        shadow: 'xl',
         transform: 'translateY(-2px)',
-        borderColor: 'purple.300',
+        borderColor: 'blue.400',
       }}
-      transition="all 0.2s ease"
+      transition="all 0.3s ease"
       position="relative"
     >
-      <CardBody p={4}>
-        <VStack spacing={3} align="stretch">
-          {/* Header with person info */}
-          <HStack spacing={3} align="start">
-            <Avatar
-              size="md"
-              src={person.photo_url}
-              name={person.full_name}
-              bg="purple.500"
-              color="white"
-            />
-            <Box flex={1} minW={0}>
-              <HStack justify="space-between" align="start">
-                <VStack align="start" spacing={0} flex={1} minW={0}>
-                  <Text fontWeight="bold" fontSize="md" noOfLines={1}>
-                    {person.full_name}
+      <CardBody p={0}>
+        {/* Header Section - Always Visible */}
+        <Box p={6} pb={4}>
+          <VStack spacing={4} align="stretch">
+            {/* Person Info Row */}
+            <HStack spacing={4} align="start">
+              <Avatar
+                size="lg"
+                src={person.photo_url}
+                name={person.name || `${person.first_name} ${person.last_name}`}
+                bg="blue.500"
+                color="white"
+                border="3px solid"
+                borderColor="blue.100"
+              />
+              <Box flex={1} minW={0}>
+                <VStack align="start" spacing={1}>
+                  <Text fontWeight="bold" fontSize="xl" noOfLines={1} color="gray.800">
+                    {person.name || `${person.first_name} ${person.last_name}`}
                   </Text>
                   {person.title && (
-                    <Text fontSize="sm" color="gray.600" noOfLines={1}>
+                    <Text fontSize="md" color="gray.600" noOfLines={1} fontWeight="medium">
                       {person.title}
                     </Text>
                   )}
+                  {person.headline && (
+                    <Text fontSize="sm" color="gray.500" noOfLines={2}>
+                      {person.headline}
+                    </Text>
+                  )}
                 </VStack>
-                {person.confidence && (
+              </Box>
+              
+              {/* Email Status Badge */}
+              {person.email_status && (
+                <VStack align="end" spacing={1}>
                   <Badge 
-                    colorScheme="purple" 
+                    colorScheme={getEmailStatusColor(person.email_status)}
                     variant="subtle"
                     fontSize="xs"
                     px={2}
+                    py={1}
                   >
-                    {Math.round(person.confidence * 100)}% MATCH
+                    {getEmailStatusText(person.email_status)}
+                  </Badge>
+                  {person.confidence && (
+                    <Badge 
+                      colorScheme="purple" 
+                      variant="solid"
+                      fontSize="xs"
+                      px={2}
+                      py={1}
+                    >
+                      {Math.round(person.confidence * 100)}% MATCH
+                    </Badge>
+                  )}
+                </VStack>
+              )}
+            </HStack>
+
+            {/* Company Info Row */}
+            {currentCompany && (
+              <HStack spacing={3} align="center" bg="gray.50" p={3} borderRadius="lg">
+                <Avatar
+                  size="sm"
+                  src={getCompanyLogo()}
+                  name={currentCompany.name}
+                  bg="gray.400"
+                  color="white"
+                />
+                <VStack align="start" spacing={0} flex={1}>
+                  <Text fontSize="md" fontWeight="semibold" color="gray.800" noOfLines={1}>
+                    {currentCompany.name}
+                  </Text>
+                  <HStack spacing={4}>
+                    {currentCompany.primary_domain && (
+                      <Text fontSize="xs" color="gray.500">
+                        {currentCompany.primary_domain}
+                      </Text>
+                    )}
+                    {currentCompany.founded_year && (
+                      <Text fontSize="xs" color="gray.500">
+                        Founded {currentCompany.founded_year}
+                      </Text>
+                    )}
+                  </HStack>
+                </VStack>
+                
+                {/* Growth Indicators */}
+                <HStack spacing={2}>
+                  {currentCompany.organization_headcount_six_month_growth !== undefined && (
+                    <VStack spacing={0} align="center">
+                      <Text fontSize="xs" color="gray.500">6M</Text>
+                      {formatGrowthPercentage(currentCompany.organization_headcount_six_month_growth)}
+                    </VStack>
+                  )}
+                  {currentCompany.organization_headcount_twelve_month_growth !== undefined && (
+                    <VStack spacing={0} align="center">
+                      <Text fontSize="xs" color="gray.500">12M</Text>
+                      {formatGrowthPercentage(currentCompany.organization_headcount_twelve_month_growth)}
+                    </VStack>
+                  )}
+                </HStack>
+              </HStack>
+            )}
+
+            {/* Quick Info Row */}
+            <HStack spacing={4} justify="space-between" align="center">
+              <HStack spacing={3}>
+                {/* Location */}
+                {(person.city || person.state || person.country) && (
+                  <HStack spacing={1}>
+                    <FiMapPin size={14} color="gray" />
+                    <Text fontSize="sm" color="gray.600">
+                      {[person.city, person.state, person.country].filter(Boolean).join(', ')}
+                    </Text>
+                  </HStack>
+                )}
+                
+                {/* Seniority */}
+                {person.seniority && (
+                  <Badge colorScheme="blue" variant="subtle" size="sm">
+                    {person.seniority.replace('_', ' ').toUpperCase()}
+                  </Badge>
+                )}
+                
+                {/* Departments */}
+                {person.departments && person.departments.length > 0 && (
+                  <Badge colorScheme="purple" variant="subtle" size="sm">
+                    {person.departments[0].replace('_', ' ').toUpperCase()}
                   </Badge>
                 )}
               </HStack>
-            </Box>
-          </HStack>
-
-          {/* Company info */}
-          {person.company && (
-            <HStack spacing={2} align="center">
-              <Avatar
-                size="xs"
-                src={getCompanyLogo(person.company, person.company_website)}
-                name={person.company}
-                bg="gray.500"
-              />
-              <Text fontSize="sm" fontWeight="medium" color="gray.700" noOfLines={1}>
-                {person.company}
-              </Text>
+              
+              {/* Contact Actions */}
+              <HStack spacing={2}>
+                {person.email && person.email_status !== 'unavailable' && (
+                  <Tooltip label={person.email}>
+                    <IconButton
+                      aria-label="Email"
+                      icon={<FiMail />}
+                      size="sm"
+                      variant="ghost"
+                      color="blue.500"
+                      _hover={{ bg: 'blue.50' }}
+                    />
+                  </Tooltip>
+                )}
+                {person.linkedin_url && (
+                  <Tooltip label="LinkedIn Profile">
+                    <IconButton
+                      aria-label="LinkedIn"
+                      icon={<FiLinkedin />}
+                      size="sm"
+                      variant="ghost"
+                      color="blue.600"
+                      _hover={{ bg: 'blue.50' }}
+                      as={Link}
+                      href={person.linkedin_url}
+                      isExternal
+                    />
+                  </Tooltip>
+                )}
+                {currentCompany?.primary_phone && (
+                  <Tooltip label={formatPhoneNumber(currentCompany.primary_phone.number)}>
+                    <IconButton
+                      aria-label="Phone"
+                      icon={<FiPhone />}
+                      size="sm"
+                      variant="ghost"
+                      color="green.500"
+                      _hover={{ bg: 'green.50' }}
+                    />
+                  </Tooltip>
+                )}
+                
+                <IconButton
+                  aria-label={isExpanded ? "Show less" : "Show more"}
+                  icon={isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                  size="sm"
+                  variant="ghost"
+                  color="gray.500"
+                  _hover={{ bg: 'gray.50' }}
+                />
+              </HStack>
             </HStack>
-          )}
+          </VStack>
+        </Box>
 
-          {/* Quick contact info */}
-          <HStack spacing={4} justify="space-between">
-            <HStack spacing={3}>
-              {person.email && (
-                <Tooltip label={person.email}>
-                  <IconButton
-                    aria-label="Email"
-                    icon={<FiMail />}
-                    size="sm"
-                    variant="ghost"
-                    color="blue.500"
-                    _hover={{ bg: 'blue.50' }}
-                  />
-                </Tooltip>
-              )}
-              {person.linkedin_url && (
-                <Tooltip label="LinkedIn Profile">
-                  <IconButton
-                    aria-label="LinkedIn"
-                    icon={<FiLinkedin />}
-                    size="sm"
-                    variant="ghost"
-                    color="blue.600"
-                    _hover={{ bg: 'blue.50' }}
-                    as={Link}
-                    href={person.linkedin_url}
-                    isExternal
-                  />
-                </Tooltip>
-              )}
-              {person.phone && (
-                <Tooltip label={person.phone}>
-                  <IconButton
-                    aria-label="Phone"
-                    icon={<FiPhone />}
-                    size="sm"
-                    variant="ghost"
-                    color="green.500"
-                    _hover={{ bg: 'green.50' }}
-                  />
-                </Tooltip>
-              )}
-            </HStack>
-            
-            <IconButton
-              aria-label={isExpanded ? "Show less" : "Show more"}
-              icon={isExpanded ? <FiChevronUp /> : <FiChevronDown />}
-              size="sm"
-              variant="ghost"
-              color="gray.500"
-            />
-          </HStack>
-
-          {/* Expanded content */}
-          <Collapse in={isExpanded} animateOpacity>
-            <VStack spacing={4} align="stretch" pt={4}>
+        {/* Expanded Content */}
+        <Collapse in={isExpanded} animateOpacity>
+          <Box px={6} pb={6}>
+            <VStack spacing={5} align="stretch">
               <Divider />
               
-              {/* Location and basic info */}
-              <SimpleGrid columns={2} spacing={3}>
-                {person.location && (
-                  <HStack spacing={2}>
-                    <FiMapPin color="gray" size={14} />
-                    <Text fontSize="sm" color="gray.600">
-                      {person.location}
-                    </Text>
-                  </HStack>
-                )}
-                
-                {person.seniority_level && (
-                  <HStack spacing={2}>
-                    <FiBriefcase color="gray" size={14} />
-                    <Text fontSize="sm" color="gray.600" textTransform="capitalize">
-                      {person.seniority_level.replace('_', ' ')}
-                    </Text>
-                  </HStack>
-                )}
-                
-                {person.years_experience && (
-                  <HStack spacing={2}>
-                    <FiCalendar color="gray" size={14} />
-                    <Text fontSize="sm" color="gray.600">
-                      {person.years_experience} years exp.
-                    </Text>
-                  </HStack>
-                )}
-                
-                {person.department && (
-                  <HStack spacing={2}>
-                    <FiTarget color="gray" size={14} />
-                    <Text fontSize="sm" color="gray.600" textTransform="capitalize">
-                      {person.department}
-                    </Text>
-                  </HStack>
-                )}
-              </SimpleGrid>
-
-              {/* Company details */}
-              {(person.industry || person.company_size || person.company_website) && (
-                <>
-                  <Divider />
-                  <Box>
-                    <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={2}>
-                      Company Details
-                    </Text>
-                    <SimpleGrid columns={1} spacing={2}>
-                      {person.industry && (
-                        <HStack spacing={2}>
-                          <Text fontSize="xs" color="gray.500" minW="60px">Industry:</Text>
-                          <Text fontSize="sm" color="gray.600">{person.industry}</Text>
-                        </HStack>
-                      )}
-                      
-                      {person.company_size && (
-                        <HStack spacing={2}>
-                          <FiUsers color="gray" size={12} />
-                          <Text fontSize="sm" color="gray.600">
-                            {person.company_size.toLocaleString()} employees
-                          </Text>
-                        </HStack>
-                      )}
-                      
-                      {person.company_revenue && (
-                        <HStack spacing={2}>
-                          <FiDollarSign color="gray" size={12} />
-                          <Text fontSize="sm" color="gray.600">
-                            ${(person.company_revenue / 1000000).toFixed(1)}M revenue
-                          </Text>
-                        </HStack>
-                      )}
-                      
-                      {person.company_website && (
-                        <HStack spacing={2}>
-                          <FiGlobe color="gray" size={12} />
-                          <Link 
-                            href={person.company_website} 
-                            isExternal 
-                            fontSize="sm" 
-                            color="blue.500"
-                            _hover={{ textDecoration: 'underline' }}
-                          >
-                            {person.company_website.replace(/^https?:\/\//, '')}
-                          </Link>
-                        </HStack>
-                      )}
-                    </SimpleGrid>
-                  </Box>
-                </>
+              {/* Career History */}
+              {person.employment_history && person.employment_history.length > 0 && (
+                <Box>
+                  <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={3}>
+                    Career History
+                  </Text>
+                  <VStack align="stretch" spacing={3}>
+                    {person.employment_history.slice(0, 4).map((job, index) => (
+                      <HStack key={job.id || index} spacing={3} align="start">
+                        <Box 
+                          w="8px" 
+                          h="8px" 
+                          bg={job.current ? "green.400" : "gray.300"}
+                          borderRadius="full" 
+                          mt={1}
+                          flexShrink={0}
+                        />
+                        <Box flex={1}>
+                          <VStack align="start" spacing={0}>
+                            <Text fontSize="sm" fontWeight="medium" color="gray.800">
+                              {job.title}
+                            </Text>
+                            <Text fontSize="sm" color="gray.600">
+                              {job.organization_name}
+                            </Text>
+                            <Text fontSize="xs" color="gray.500">
+                              {formatDate(job.start_date)} - {job.current ? 'Present' : formatDate(job.end_date)}
+                            </Text>
+                          </VStack>
+                        </Box>
+                        {job.current && (
+                          <Badge colorScheme="green" size="xs" variant="solid">
+                            Current
+                          </Badge>
+                        )}
+                      </HStack>
+                    ))}
+                    {person.employment_history.length > 4 && (
+                      <Text fontSize="xs" color="gray.500" fontStyle="italic" textAlign="center">
+                        +{person.employment_history.length - 4} more positions
+                      </Text>
+                    )}
+                  </VStack>
+                </Box>
               )}
 
-              {/* Growth metrics */}
-              {(person.company_headcount_six_month_growth || 
-                person.company_headcount_twelve_month_growth || 
-                person.company_headcount_twenty_four_month_growth) && (
-                <>
-                  <Divider />
-                  <Box>
-                    <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={2}>
-                      Company Growth
-                    </Text>
-                    <HStack spacing={4} wrap="wrap">
-                      {person.company_headcount_six_month_growth !== undefined && (
-                        <VStack spacing={1} align="center">
-                          <Text fontSize="xs" color="gray.500">6 months</Text>
-                          {formatGrowthPercentage(person.company_headcount_six_month_growth)}
-                        </VStack>
-                      )}
-                      
-                      {person.company_headcount_twelve_month_growth !== undefined && (
-                        <VStack spacing={1} align="center">
-                          <Text fontSize="xs" color="gray.500">12 months</Text>
-                          {formatGrowthPercentage(person.company_headcount_twelve_month_growth)}
-                        </VStack>
-                      )}
-                      
-                      {person.company_headcount_twenty_four_month_growth !== undefined && (
-                        <VStack spacing={1} align="center">
-                          <Text fontSize="xs" color="gray.500">24 months</Text>
-                          {formatGrowthPercentage(person.company_headcount_twenty_four_month_growth)}
-                        </VStack>
-                      )}
+              {/* Skills & Functions */}
+              {((person.skills && person.skills.length > 0) || 
+                (person.functions && person.functions.length > 0) || 
+                (person.subdepartments && person.subdepartments.length > 0)) && (
+                <Box>
+                  <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={3}>
+                    Skills & Expertise
+                  </Text>
+                  <VStack align="stretch" spacing={3}>
+                    {person.functions && person.functions.length > 0 && (
+                      <Box>
+                        <Text fontSize="sm" color="gray.600" mb={2}>Functions</Text>
+                        <Flex wrap="wrap" gap={2}>
+                          {person.functions.map((func, index) => (
+                            <Badge key={index} colorScheme="blue" variant="subtle" size="sm">
+                              {func.replace('_', ' ').toUpperCase()}
+                            </Badge>
+                          ))}
+                        </Flex>
+                      </Box>
+                    )}
+                    
+                    {person.subdepartments && person.subdepartments.length > 0 && (
+                      <Box>
+                        <Text fontSize="sm" color="gray.600" mb={2}>Specializations</Text>
+                        <Flex wrap="wrap" gap={2}>
+                          {person.subdepartments.map((dept, index) => (
+                            <Badge key={index} colorScheme="purple" variant="subtle" size="sm">
+                              {dept.replace('_', ' ').toUpperCase()}
+                            </Badge>
+                          ))}
+                        </Flex>
+                      </Box>
+                    )}
+                    
+                    {person.skills && person.skills.length > 0 && (
+                      <Box>
+                        <Text fontSize="sm" color="gray.600" mb={2}>Skills</Text>
+                        <Flex wrap="wrap" gap={2}>
+                          {person.skills.slice(0, 12).map((skill, index) => (
+                            <Badge key={index} colorScheme="gray" variant="outline" size="sm">
+                              {skill}
+                            </Badge>
+                          ))}
+                          {person.skills.length > 12 && (
+                            <Badge colorScheme="gray" variant="solid" size="sm">
+                              +{person.skills.length - 12} more
+                            </Badge>
+                          )}
+                        </Flex>
+                      </Box>
+                    )}
+                  </VStack>
+                </Box>
+              )}
+
+              {/* Company Details */}
+              {currentCompany && (
+                <Box>
+                  <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={3}>
+                    Company Information
+                  </Text>
+                  <SimpleGrid columns={2} spacing={4}>
+                    {currentCompany.website_url && (
+                      <HStack spacing={2}>
+                        <FiGlobe size={14} color="gray" />
+                        <Link 
+                          href={currentCompany.website_url} 
+                          isExternal 
+                          fontSize="sm" 
+                          color="blue.500"
+                          _hover={{ textDecoration: 'underline' }}
+                        >
+                          {currentCompany.website_url.replace(/^https?:\/\//, '')}
+                        </Link>
+                      </HStack>
+                    )}
+                    
+                    {currentCompany.linkedin_url && (
+                      <HStack spacing={2}>
+                        <FiLinkedin size={14} color="gray" />
+                        <Link 
+                          href={currentCompany.linkedin_url} 
+                          isExternal 
+                          fontSize="sm" 
+                          color="blue.500"
+                          _hover={{ textDecoration: 'underline' }}
+                        >
+                          Company LinkedIn
+                        </Link>
+                      </HStack>
+                    )}
+                    
+                    {currentCompany.primary_phone && (
+                      <HStack spacing={2}>
+                        <FiPhone size={14} color="gray" />
+                        <Text fontSize="sm" color="gray.600">
+                          {formatPhoneNumber(currentCompany.primary_phone.number)}
+                        </Text>
+                      </HStack>
+                    )}
+                    
+                    {(currentCompany.city || currentCompany.state || currentCompany.country) && (
+                      <HStack spacing={2}>
+                        <FiMapPin size={14} color="gray" />
+                        <Text fontSize="sm" color="gray.600">
+                          {[currentCompany.city, currentCompany.state, currentCompany.country].filter(Boolean).join(', ')}
+                        </Text>
+                      </HStack>
+                    )}
+                  </SimpleGrid>
+                </Box>
+              )}
+
+              {/* Contact Information */}
+              <Box>
+                <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={3}>
+                  Contact Information
+                </Text>
+                <VStack align="stretch" spacing={2}>
+                  {person.email && person.email_status !== 'unavailable' && (
+                    <HStack justify="space-between">
+                      <HStack spacing={2}>
+                        <FiMail size={14} color="gray" />
+                        <Text fontSize="sm" color="gray.600">
+                          {person.email}
+                        </Text>
+                      </HStack>
+                      <Badge 
+                        colorScheme={getEmailStatusColor(person.email_status)}
+                        size="sm"
+                        variant="subtle"
+                      >
+                        {getEmailStatusText(person.email_status)}
+                      </Badge>
                     </HStack>
-                  </Box>
-                </>
-              )}
-
-              {/* Technologies */}
-              {person.technologies && person.technologies.length > 0 && (
-                <>
-                  <Divider />
-                  <Box>
-                    <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={2}>
-                      Technologies
-                    </Text>
-                    <Flex wrap="wrap" gap={1}>
-                      {person.technologies.slice(0, 8).map((tech, index) => (
-                        <Badge key={index} variant="outline" colorScheme="blue" fontSize="xs">
-                          {tech}
-                        </Badge>
-                      ))}
-                      {person.technologies.length > 8 && (
-                        <Badge variant="outline" colorScheme="gray" fontSize="xs">
-                          +{person.technologies.length - 8} more
-                        </Badge>
-                      )}
-                    </Flex>
-                  </Box>
-                </>
-              )}
-
-              {/* Metadata */}
-              <Divider />
-              <HStack justify="space-between" fontSize="xs" color="gray.500">
-                <Text>Source: {person.data_source === 'apollo' ? 'Apollo' : 'CSV Upload'}</Text>
-                {person.last_updated && (
-                  <Text>Updated: {formatDate(person.last_updated)}</Text>
-                )}
-              </HStack>
+                  )}
+                  
+                  {person.linkedin_url && (
+                    <HStack spacing={2}>
+                      <FiLinkedin size={14} color="gray" />
+                      <Link 
+                        href={person.linkedin_url} 
+                        isExternal 
+                        fontSize="sm" 
+                        color="blue.500"
+                        _hover={{ textDecoration: 'underline' }}
+                        isTruncated
+                      >
+                        {person.linkedin_url}
+                      </Link>
+                    </HStack>
+                  )}
+                  
+                  {person.twitter_url && (
+                    <HStack spacing={2}>
+                      <Text fontSize="sm" color="gray.400">𝕏</Text>
+                      <Link 
+                        href={person.twitter_url} 
+                        isExternal 
+                        fontSize="sm" 
+                        color="blue.500"
+                        _hover={{ textDecoration: 'underline' }}
+                      >
+                        Twitter Profile
+                      </Link>
+                    </HStack>
+                  )}
+                </VStack>
+              </Box>
             </VStack>
-          </Collapse>
-        </VStack>
+          </Box>
+        </Collapse>
       </CardBody>
     </Card>
   )

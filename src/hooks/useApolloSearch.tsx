@@ -412,7 +412,8 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
       return !!(
         filters.jobTitles.length ||
         filters.seniorities.length ||
-        filters.locations.length ||
+        filters.personLocations.length ||
+        filters.organizationLocations.length ||
         filters.industries.length ||
         filters.companyHeadcount.length ||
         filters.technologies.length ||

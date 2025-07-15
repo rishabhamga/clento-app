@@ -260,7 +260,7 @@ function TargetingResultsContent() {
     if (selectedLeads.length === 0) {
       customToast.warning({
         title: 'No leads selected',
-        description: 'Please select leads to save',
+        description: 'Please select leads to proceed',
       })
       return
     }
@@ -270,50 +270,31 @@ function TargetingResultsContent() {
     try {
       const selectedLeadData = leads.filter(lead => selectedLeads.includes(lead.id))
       
-      // Save leads to database
-      const response = await fetch('/api/leads/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          leads: selectedLeadData.map(lead => ({
-            firstName: lead.firstName,
-            lastName: lead.lastName,
-            email: lead.email,
-            phone: lead.phone,
-            title: lead.title,
-            company: lead.company,
-            industry: lead.industry,
-            location: lead.location,
-            linkedin: lead.linkedinUrl,
-            source: lead.source,
-            verified: lead.verified,
-          }))
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to save leads')
+      // Update the targeting configuration to include the results count
+      const targetingConfig = JSON.parse(localStorage.getItem('campaignTargeting') || '{}')
+      const updatedTargeting = {
+        ...targetingConfig,
+        hasResults: true,
+        resultsCount: selectedLeadData.length,
+        selectedLeadsCount: selectedLeadData.length,
+        searchCompleted: true
       }
-
-      const result = await response.json()
+      
+      localStorage.setItem('campaignTargeting', JSON.stringify(updatedTargeting))
 
       customToast.success({
-        title: 'Leads saved successfully',
-        description: `Saved ${result.count} leads to your database`,
+        title: 'Targeting Complete',
+        description: `Proceeding with ${selectedLeadData.length} selected leads`,
       })
 
-      // Store selected leads in session storage for the campaign creation
-      sessionStorage.setItem('selectedLeads', JSON.stringify(selectedLeadData))
-      
-      // Navigate to campaign creation
-      router.push('/campaigns/new/pitch')
+      setTimeout(() => {
+        router.push('/campaigns/new/pitch')
+      }, 1000)
 
     } catch (error) {
-      console.error('Error saving leads:', error)
+      console.error('Error proceeding to pitch:', error)
       customToast.error({
-        title: 'Error saving leads',
+        title: 'Error proceeding',
         description: 'Please try again',
       })
     } finally {
@@ -562,7 +543,7 @@ function TargetingResultsContent() {
               isLoading={isSaving}
               isDisabled={selectedLeads.length === 0}
             >
-              Save & Create Campaign ({selectedLeads.length})
+              Proceed to Pitch ({selectedLeads.length})
             </Button>
           </HStack>
         </HStack>

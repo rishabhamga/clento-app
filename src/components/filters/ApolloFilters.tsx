@@ -38,8 +38,6 @@ import {
   type CompanyFilterInput,
   type SearchType,
   SENIORITY_OPTIONS,
-  TIME_IN_ROLE_OPTIONS,
-  EXPERIENCE_OPTIONS,
   HEADCOUNT_OPTIONS,
   REVENUE_RANGE_OPTIONS,
   FUNDING_STAGE_OPTIONS,
@@ -48,6 +46,7 @@ import {
   COMMON_INTENT_TOPICS,
   COMMON_TECHNOLOGIES,
 } from '@/types/apollo'
+import { TechnologySelect } from './TechnologySelect'
 
 // Base component for adding tags (locations, industries, etc.)
 interface TagInputProps {
@@ -317,8 +316,8 @@ export function NumberRange({
 
 // People-specific filter components
 interface PeopleFiltersProps {
-  filters: any
-  onChange: (field: string, value: unknown) => void
+  filters: ApolloFilterInput
+  onChange: (field: keyof ApolloFilterInput, value: any) => void
 }
 
 export function PeopleFilters({ filters, onChange }: PeopleFiltersProps) {
@@ -369,32 +368,6 @@ export function PeopleFilters({ filters, onChange }: PeopleFiltersProps) {
         </CardBody>
       </Card>
 
-      {/* Experience & Career */}
-      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-        <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">Experience & Career</Text>
-        </CardHeader>
-        <CardBody pt={2}>
-          <VStack spacing={4} align="stretch">
-            <MultiSelect
-              label="Time in Current Role"
-              options={TIME_IN_ROLE_OPTIONS}
-              values={filters.timeInCurrentRole}
-              onChange={(values) => onChange('timeInCurrentRole', values)}
-              description="How long they've been in their current position"
-            />
-
-            <MultiSelect
-              label="Total Years Experience"
-              options={EXPERIENCE_OPTIONS}
-              values={filters.totalYearsExperience}
-              onChange={(values) => onChange('totalYearsExperience', values)}
-              description="Total professional experience"
-            />
-          </VStack>
-        </CardBody>
-      </Card>
-
       {/* Location */}
       <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
@@ -403,22 +376,22 @@ export function PeopleFilters({ filters, onChange }: PeopleFiltersProps) {
         <CardBody pt={2}>
           <VStack spacing={4} align="stretch">
             <TagInput
-              label="Include Locations"
-              placeholder="e.g., San Francisco, New York, London"
-              values={filters.locations}
-              onAdd={(value) => onChange('locations', [...filters.locations, value])}
-              onRemove={(value) => onChange('locations', filters.locations.filter(item => item !== value))}
+              label="Person Locations"
+              placeholder="e.g., California, Ireland, Chicago"
+              values={filters.personLocations}
+              onAdd={(value) => onChange('personLocations', [...filters.personLocations, value])}
+              onRemove={(value) => onChange('personLocations', filters.personLocations.filter(item => item !== value))}
               maxTags={50}
-              description="Target people in these locations"
+              description="Where people live (cities, states, countries)"
               colorScheme="blue"
             />
 
             <TagInput
-              label="Exclude Locations"
+              label="Exclude Person Locations"
               placeholder="e.g., Remote, International"
-              values={filters.excludeLocations}
-              onAdd={(value) => onChange('excludeLocations', [...filters.excludeLocations, value])}
-              onRemove={(value) => onChange('excludeLocations', filters.excludeLocations.filter(item => item !== value))}
+              values={filters.excludePersonLocations}
+              onAdd={(value) => onChange('excludePersonLocations', [...filters.excludePersonLocations, value])}
+              onRemove={(value) => onChange('excludePersonLocations', filters.excludePersonLocations.filter(item => item !== value))}
               maxTags={50}
               description="Exclude people from these locations"
               colorScheme="red"
@@ -454,8 +427,8 @@ export function PeopleFilters({ filters, onChange }: PeopleFiltersProps) {
 
 // Company-specific filter components
 interface CompanyFiltersProps {
-  filters: any
-  onChange: (field: string, value: unknown) => void
+  filters: ApolloFilterInput
+  onChange: (field: keyof ApolloFilterInput, value: any) => void
 }
 
 export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
@@ -472,37 +445,124 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
         <CardBody pt={2}>
           <VStack spacing={4} align="stretch">
             <TagInput
-              label="Company Names"
-              placeholder="e.g., Google, Microsoft, Salesforce"
-              values={filters.companyNames}
-              onAdd={(value) => onChange('companyNames', [...filters.companyNames, value])}
-              onRemove={(value) => onChange('companyNames', filters.companyNames.filter(item => item !== value))}
+              label="Company Domains"
+              placeholder="e.g., google.com, microsoft.com, salesforce.com"
+              values={filters.companyDomains || []}
+              onAdd={(value) => onChange('companyDomains', [...(filters.companyDomains || []), value])}
+              onRemove={(value) => onChange('companyDomains', (filters.companyDomains || []).filter(item => item !== value))}
               maxTags={100}
-              description="Target specific companies"
+              description="Target specific company domains"
               colorScheme="green"
             />
 
             <TagInput
-              label="Exclude Companies"
-              placeholder="e.g., Competitors, Existing Clients"
-              values={filters.excludeCompanyNames}
-              onAdd={(value) => onChange('excludeCompanyNames', [...filters.excludeCompanyNames, value])}
-              onRemove={(value) => onChange('excludeCompanyNames', filters.excludeCompanyNames.filter(item => item !== value))}
+              label="Industries"
+              placeholder="e.g., Technology, Healthcare, Finance"
+              values={filters.industries || []}
+              onAdd={(value) => onChange('industries', [...(filters.industries || []), value])}
+              onRemove={(value) => onChange('industries', (filters.industries || []).filter(item => item !== value))}
               maxTags={100}
               description="Exclude these companies"
               colorScheme="red"
             />
 
+          </VStack>
+        </CardBody>
+      </Card>
+
+      {/* Organization Location */}
+      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+        <CardHeader pb={2}>
+          <Text fontSize="lg" fontWeight="semibold">🏢 Organization Location</Text>
+        </CardHeader>
+        <CardBody pt={2}>
+          <VStack spacing={4} align="stretch">
             <TagInput
-              label="Domains"
-              placeholder="e.g., google.com, microsoft.com"
-              values={filters.companyDomains}
-              onAdd={(value) => onChange('companyDomains', [...filters.companyDomains, value])}
-              onRemove={(value) => onChange('companyDomains', filters.companyDomains.filter(item => item !== value))}
+              label="Organization Locations"
+              placeholder="e.g., San Francisco, New York, London"
+              values={filters.organizationLocations}
+              onAdd={(value) => onChange('organizationLocations', [...filters.organizationLocations, value])}
+              onRemove={(value) => onChange('organizationLocations', filters.organizationLocations.filter(item => item !== value))}
               maxTags={50}
-              description="Target companies with specific domains"
+              description="Company headquarters locations"
+              colorScheme="green"
+            />
+
+            <TagInput
+              label="Exclude Organization Locations"
+              placeholder="e.g., Remote, International"
+              values={filters.excludeOrganizationLocations}
+              onAdd={(value) => onChange('excludeOrganizationLocations', [...filters.excludeOrganizationLocations, value])}
+              onRemove={(value) => onChange('excludeOrganizationLocations', filters.excludeOrganizationLocations.filter(item => item !== value))}
+              maxTags={50}
+              description="Exclude companies from these locations"
+              colorScheme="red"
+            />
+          </VStack>
+        </CardBody>
+      </Card>
+
+      {/* Organization Job Details */}
+      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+        <CardHeader pb={2}>
+          <Text fontSize="lg" fontWeight="semibold">💼 Organization Job Details</Text>
+        </CardHeader>
+        <CardBody pt={2}>
+          <VStack spacing={4} align="stretch">
+            <TagInput
+              label="Organization Job Titles"
+              placeholder="e.g., sales manager, research analyst"
+              values={filters.organizationJobTitles || []}
+              onAdd={(value) => onChange('organizationJobTitles', [...(filters.organizationJobTitles || []), value])}
+              onRemove={(value) => onChange('organizationJobTitles', (filters.organizationJobTitles || []).filter(item => item !== value))}
+              maxTags={20}
+              description="Job titles listed in active job postings at the company"
+              colorScheme="purple"
+            />
+
+            <TagInput
+              label="Organization Job Locations"
+              placeholder="e.g., Atlanta, Japan"
+              values={filters.organizationJobLocations || []}
+              onAdd={(value) => onChange('organizationJobLocations', [...(filters.organizationJobLocations || []), value])}
+              onRemove={(value) => onChange('organizationJobLocations', (filters.organizationJobLocations || []).filter(item => item !== value))}
+              maxTags={20}
+              description="Locations of active job postings"
               colorScheme="blue"
             />
+
+            {/* Number of Active Job Postings Range */}
+            <NumberRange
+              label="Number of Active Job Postings"
+              minValue={filters.organizationNumJobsMin ?? 0}
+              maxValue={filters.organizationNumJobsMax ?? 0}
+              onMinChange={(val) => onChange('organizationNumJobsMin', val)}
+              onMaxChange={(val) => onChange('organizationNumJobsMax', val)}
+              min={0}
+              max={10000}
+              step={10}
+              description="Set a range for the count of open roles at the company"
+            />
+
+            {/* Job Posted Date Range */}
+            <FormControl>
+              <FormLabel fontSize="sm">Job Posted Date Range</FormLabel>
+              <HStack>
+                <Input
+                  type="date"
+                  value={filters.organizationJobPostedAtMin || ''}
+                  onChange={(e) => onChange('organizationJobPostedAtMin', e.target.value || null)}
+                  size="sm"
+                />
+                <Input
+                  type="date"
+                  value={filters.organizationJobPostedAtMax || ''}
+                  onChange={(e) => onChange('organizationJobPostedAtMax', e.target.value || null)}
+                  size="sm"
+                />
+              </HStack>
+              <Text fontSize="xs" color="gray.600" mt={1}>Filter companies based on when jobs were posted</Text>
+            </FormControl>
           </VStack>
         </CardBody>
       </Card>
@@ -517,19 +577,22 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
             <MultiSelect
               label="Company Headcount"
               options={HEADCOUNT_OPTIONS}
-              values={filters.headcountRanges}
-              onChange={(values) => onChange('headcountRanges', values)}
+              values={filters.companyHeadcount || []}
+              onChange={(values) => onChange('companyHeadcount', values)}
               description="Filter by number of employees"
               columns={2}
             />
 
-            <MultiSelect
+            <NumberRange
               label="Revenue Range"
-              options={REVENUE_RANGE_OPTIONS}
-              values={filters.revenueRanges}
-              onChange={(values) => onChange('revenueRanges', values)}
-              description="Filter by estimated annual revenue"
-              columns={2}
+              minValue={filters.revenueMin || 0}
+              maxValue={filters.revenueMax || 1000000000}
+              onMinChange={(value) => onChange('revenueMin', Math.floor(value))} 
+              onMaxChange={(value) => onChange('revenueMax', Math.floor(value))}
+              min={0}
+              max={1000000000}
+              step={1000}
+              description="Filter by estimated annual revenue (integers only, no commas or currency symbols)"
             />
           </VStack>
         </CardBody>
@@ -542,6 +605,7 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
         </CardHeader>
         <CardBody pt={2}>
           <VStack spacing={4} align="stretch">
+            {/* Funding Stage not available in ApolloFilterInput for people search
             <MultiSelect
               label="Funding Stage"
               options={FUNDING_STAGE_OPTIONS}
@@ -550,7 +614,9 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
               description="Filter by funding stage"
               columns={2}
             />
+            */}
 
+            {/* Founded Year Range not available in ApolloFilterInput for people search
             <NumberRange
               label="Founded Year Range"
               minValue={filters.foundedYearMin || 1900}
@@ -561,6 +627,7 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
               max={new Date().getFullYear()}
               description="Filter by when the company was founded"
             />
+            */}
 
             <NumberRange
               label="Funding Amount (Million USD)"
@@ -577,37 +644,7 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
         </CardBody>
       </Card>
 
-      {/* Location */}
-      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-        <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">📍 Location</Text>
-        </CardHeader>
-        <CardBody pt={2}>
-          <VStack spacing={4} align="stretch">
-            <TagInput
-              label="Include Locations"
-              placeholder="e.g., San Francisco, New York, London"
-              values={filters.locations}
-              onAdd={(value) => onChange('locations', [...filters.locations, value])}
-              onRemove={(value) => onChange('locations', filters.locations.filter(item => item !== value))}
-              maxTags={50}
-              description="Target companies in these locations"
-              colorScheme="blue"
-            />
 
-            <TagInput
-              label="Exclude Locations"
-              placeholder="e.g., International, Remote"
-              values={filters.excludeLocations}
-              onAdd={(value) => onChange('excludeLocations', [...filters.excludeLocations, value])}
-              onRemove={(value) => onChange('excludeLocations', filters.excludeLocations.filter(item => item !== value))}
-              maxTags={50}
-              description="Exclude companies from these locations"
-              colorScheme="red"
-            />
-          </VStack>
-        </CardBody>
-      </Card>
 
       {/* Engagement Signals */}
       <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
@@ -654,6 +691,50 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
           </VStack>
         </CardBody>
       </Card>
+
+      {/* Technologies */}
+      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+        <CardHeader pb={2}>
+          <Text fontSize="lg" fontWeight="semibold">⚙️ Technologies</Text>
+        </CardHeader>
+        <CardBody pt={2}>
+          <VStack spacing={4} align="stretch">
+            <TagInput
+              label="Technologies Used (Apollo UIDs)"
+              placeholder="e.g., salesforce, workday, hubspot"
+              values={filters.technologyUids || []}
+              onAdd={(value) => onChange('technologyUids', [...(filters.technologyUids || []), value])}
+              onRemove={(value) => onChange('technologyUids', (filters.technologyUids || []).filter(item => item !== value))}
+              maxTags={20}
+              description="Technologies the company uses (Apollo verified list)"
+              colorScheme="orange"
+            />
+
+            <TagInput
+              label="Exclude Technologies (Apollo UIDs)"
+              placeholder="e.g., microsoft, oracle, sap"
+              values={filters.excludeTechnologyUids || []}
+              onAdd={(value) => onChange('excludeTechnologyUids', [...(filters.excludeTechnologyUids || []), value])}
+              onRemove={(value) => onChange('excludeTechnologyUids', (filters.excludeTechnologyUids || []).filter(item => item !== value))}
+              maxTags={20}
+              description="Exclude companies that use these technologies"
+              colorScheme="red"
+            />
+
+            <TagInput
+              label="Additional Technologies (Free Text)"
+              placeholder="e.g., Salesforce, AWS, React"
+              values={filters.technologies}
+              onAdd={(value) => onChange('technologies', [...filters.technologies, value])}
+              onRemove={(value) => onChange('technologies', filters.technologies.filter(item => item !== value))}
+              suggestions={COMMON_TECHNOLOGIES}
+              maxTags={50}
+              description="Additional technologies or keywords"
+              colorScheme="purple"
+            />
+          </VStack>
+        </CardBody>
+      </Card>
     </VStack>
   )
 }
@@ -661,8 +742,8 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
 // Common filters (industries, technologies, keywords) that apply to both
 interface CommonFiltersProps {
   searchType: SearchType
-  filters: any
-  onChange: (field: string, value: unknown) => void
+  filters: ApolloFilterInput
+  onChange: (field: keyof ApolloFilterInput, value: any) => void
 }
 
 export function CommonFilters({ searchType, filters, onChange }: CommonFiltersProps) {
@@ -697,17 +778,37 @@ export function CommonFilters({ searchType, filters, onChange }: CommonFiltersPr
           <Text fontSize="lg" fontWeight="semibold">⚙️ Technologies</Text>
         </CardHeader>
         <CardBody pt={2}>
-          <TagInput
-            label="Technologies Used"
-            placeholder="e.g., Salesforce, AWS, React"
-            values={filters.technologies}
-            onAdd={(value) => onChange('technologies', [...filters.technologies, value])}
-            onRemove={(value) => onChange('technologies', filters.technologies.filter(item => item !== value))}
-            suggestions={COMMON_TECHNOLOGIES}
-            maxTags={20}
-            description={searchType === 'people' ? 'Technologies they work with' : 'Technologies the company uses'}
-            colorScheme="orange"
-          />
+          <VStack spacing={4} align="stretch">
+            <TechnologySelect
+              label="Technologies Used (Apollo UIDs)"
+              values={filters.technologyUids || []}
+              onChange={(values) => onChange('technologyUids', values)}
+              description={searchType === 'people' ? 'Technologies their company uses (Apollo verified list)' : 'Technologies the company uses (Apollo verified list)'}
+              maxTags={20}
+              colorScheme="orange"
+            />
+
+            <TechnologySelect
+              label="Exclude Technologies (Apollo UIDs)"
+              values={filters.excludeTechnologyUids || []}
+              onChange={(values) => onChange('excludeTechnologyUids', values)}
+              description={searchType === 'people' ? 'Exclude people whose companies use these technologies' : 'Exclude companies that use these technologies'}
+              maxTags={20}
+              colorScheme="red"
+            />
+
+            <TagInput
+              label="Additional Technologies (Free Text)"
+              placeholder="e.g., Salesforce, AWS, React"
+              values={filters.technologies}
+              onAdd={(value) => onChange('technologies', [...filters.technologies, value])}
+              onRemove={(value) => onChange('technologies', filters.technologies.filter(item => item !== value))}
+              suggestions={COMMON_TECHNOLOGIES}
+              maxTags={10}
+              description="Additional technology keywords for broader search"
+              colorScheme="gray"
+            />
+          </VStack>
         </CardBody>
       </Card>
 
@@ -761,6 +862,26 @@ export function CommonFilters({ searchType, filters, onChange }: CommonFiltersPr
   )
 }
 
-export default function ApolloFilters() {
-  return <Box>Apollo Filters Component</Box>
+interface ApolloFiltersProps {
+  filters: ApolloFilterInput
+  onChange: (field: keyof ApolloFilterInput, value: any) => void
+  savedProfiles?: any[]
+  onSaveProfile?: (name: string, description?: string) => void
+  onLoadProfile?: (profile: any) => void
+}
+
+export default function ApolloFilters({ 
+  filters, 
+  onChange, 
+  savedProfiles = [], 
+  onSaveProfile, 
+  onLoadProfile 
+}: ApolloFiltersProps) {
+  return (
+    <VStack spacing={6} align="stretch">
+      <PeopleFilters filters={filters} onChange={onChange} />
+      <CompanyFilters filters={filters} onChange={onChange} />
+      <CommonFilters searchType="people" filters={filters} onChange={onChange} />
+    </VStack>
+  )
 } 
