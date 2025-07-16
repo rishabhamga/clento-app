@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     const prompt = buildConversationalPrompt(userMessage, conversationContext, currentProvider)
 
     console.log('🤖 Sending conversational request to OpenAI...')
-    
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -78,23 +78,23 @@ export async function POST(request: NextRequest) {
 
     // Parse the response
     const parsedResponse = parseConversationalResponse(responseContent)
-    
+
     // Calculate filter changes
     const filterChanges = calculateFilterChanges(conversation.currentFilters, parsedResponse.updatedFilters)
-    
+
     // Update conversation state
     conversationStorage.updateFilters(
-      conversation.conversationId, 
+      conversation.conversationId,
       parsedResponse.updatedFilters,
       filterChanges
     )
-    
+
     // Add assistant message to conversation
     conversationStorage.addMessage(
-      conversation.conversationId, 
-      'assistant', 
+      conversation.conversationId,
+      'assistant',
       parsedResponse.assistantMessage,
-      { 
+      {
         confidence: parsedResponse.confidence,
         filtersApplied: filterChanges.map(fc => fc.field)
       }
@@ -114,11 +114,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Log enhanced intelligence features for debugging
-    if (parsedResponse.conflictsDetected?.length > 0) {
+    if (parsedResponse.conflictsDetected && parsedResponse.conflictsDetected?.length > 0) {
       console.log(`⚠️  Conflicts detected in conversation ${conversation.conversationId}:`, parsedResponse.conflictsDetected)
     }
-    
-    if (parsedResponse.clarificationNeeded?.length > 0) {
+
+    if (parsedResponse.clarificationNeeded && parsedResponse.clarificationNeeded?.length > 0) {
       console.log(`❓ Clarification needed for conversation ${conversation.conversationId}:`, parsedResponse.clarificationNeeded)
     }
 
@@ -139,8 +139,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Conversation API error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         details: error instanceof z.ZodError ? error.errors : undefined
       },
@@ -213,7 +213,7 @@ export async function DELETE(request: NextRequest) {
 function buildConversationContext(conversation: ConversationState, provider: string): string {
   const recentMessages = conversation.messages.slice(-6) // Last 6 messages for context
   const currentFilters = conversation.currentFilters
-  
+
   // Summarize current filter state
   const filterSummary: string[] = []
   if (currentFilters.jobTitles.length > 0) filterSummary.push(`Job Titles: ${currentFilters.jobTitles.join(', ')}`)
@@ -226,7 +226,7 @@ function buildConversationContext(conversation: ConversationState, provider: str
   let context = `CONVERSATION CONTEXT:\n`
   context += `Provider: ${provider}\n`
   context += `Current Filter State: ${filterSummary.length > 0 ? filterSummary.join(' | ') : 'No filters set'}\n\n`
-  
+
   if (recentMessages.length > 0) {
     context += `Recent Conversation:\n`
     recentMessages.forEach(msg => {
@@ -243,11 +243,11 @@ function buildConversationalPrompt(userMessage: string, context: string, provide
 
 NEW USER MESSAGE: "${userMessage}"
 
-You are Alex, an expert AI SDR with advanced conversation intelligence. The user wants to update their target audience filters based on their message. 
+You are Alex, an expert AI SDR with advanced conversation intelligence. The user wants to update their target audience filters based on their message.
 
 ADVANCED CONVERSATION INTELLIGENCE CAPABILITIES:
 
-1. **NEGATION HANDLING**: 
+1. **NEGATION HANDLING**:
    - "not CTO" → excludeJobTitles: ["CTO"]
    - "exclude startups" → excludeIndustries: ["Startup"] or companySize excludes small ranges
    - "don't want remote" → excludePersonLocations: ["Remote"]
@@ -369,18 +369,18 @@ function parseConversationalResponse(responseContent: string): {
 } {
   // Clean the response content
   let cleanedContent = responseContent.trim()
-  
+
   if (cleanedContent.startsWith('```json')) {
     cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '')
   } else if (cleanedContent.startsWith('```')) {
     cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '')
   }
-  
+
   cleanedContent = cleanedContent.replace(/^`+|`+$/g, '')
 
   try {
     const parsed = JSON.parse(cleanedContent)
-    
+
     // Validate that required fields are present
     if (!parsed.assistantMessage || !parsed.updatedFilters || typeof parsed.confidence !== 'number') {
       throw new Error('Missing required response fields')
@@ -396,7 +396,7 @@ function parseConversationalResponse(responseContent: string): {
     if (parsed.conflictsDetected?.length > 0) {
       console.log('🚨 Conflicts detected:', parsed.conflictsDetected)
     }
-    
+
     if (parsed.clarificationNeeded?.length > 0) {
       console.log('❓ Clarification needed:', parsed.clarificationNeeded)
     }
@@ -470,4 +470,4 @@ function calculateFilterChanges(oldFilters: ConversationState['currentFilters'],
   })
 
   return changes
-} 
+}
