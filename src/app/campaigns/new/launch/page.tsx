@@ -126,7 +126,7 @@ export default function LaunchPage() {
         const outreach = JSON.parse(localStorage.getItem('campaignOutreachData') || '{}')
         const workflow = JSON.parse(localStorage.getItem('campaignWorkflow') || '{}')
         const savedLaunch = JSON.parse(localStorage.getItem('campaignLaunch') || '{}')
-        
+
         setCampaignData({
           targeting,
           pitch,
@@ -166,22 +166,23 @@ export default function LaunchPage() {
 
     try {
       // Get targeting data (filters/ICP) instead of selected leads
-      const targetingData = typeof window !== 'undefined' 
+      const targetingData = typeof window !== 'undefined'
         ? JSON.parse(localStorage.getItem('campaignTargeting') || '{}')
         : {}
-      
+
       console.log('Launch: Using targeting data/filters:', targetingData)
-      
+
       const campaignPayload = {
         campaignName: launchSettings.campaignName,
+        organizationId: organization?.id,
         targeting: targetingData,
-        pitchData: typeof window !== 'undefined' 
+        pitchData: typeof window !== 'undefined'
           ? JSON.parse(localStorage.getItem('campaignPitchData') || '{}')
           : {},
-        outreachData: typeof window !== 'undefined' 
+        outreachData: typeof window !== 'undefined'
           ? JSON.parse(localStorage.getItem('campaignOutreachData') || '{}')
           : {},
-        workflow: typeof window !== 'undefined' 
+        workflow: typeof window !== 'undefined'
           ? JSON.parse(localStorage.getItem('campaignWorkflow') || '{}')
           : {},
         launchSettings
@@ -215,7 +216,7 @@ export default function LaunchPage() {
 
       customToast.success({
         title: 'Campaign Launched!',
-        description: organization 
+        description: organization
           ? `"${launchSettings.campaignName}" has been successfully created in ${organization.name} and is ready to start.`
           : `"${launchSettings.campaignName}" has been successfully created and is ready to start.`,
         duration: 5000,
@@ -243,7 +244,7 @@ export default function LaunchPage() {
   }
 
   return (
-    <Box 
+    <Box
       minH="100vh"
       bg={gradientBg}
       position="relative"
@@ -282,9 +283,9 @@ export default function LaunchPage() {
 
           {/* Page Title */}
           <Box textAlign="center" mb={8}>
-            <Heading 
-              as="h1" 
-              size="2xl" 
+            <Heading
+              as="h1"
+              size="2xl"
               mb={4}
               bgGradient="linear(to-r, white, purple.100)"
               bgClip="text"
@@ -294,8 +295,8 @@ export default function LaunchPage() {
             >
               Launch Your Campaign
             </Heading>
-            <Text 
-              fontSize="xl" 
+            <Text
+              fontSize="xl"
               color="whiteAlpha.900"
               fontWeight="500"
               maxW="2xl"
@@ -304,11 +305,11 @@ export default function LaunchPage() {
               Review your campaign settings and launch your AI-powered outreach to start generating leads
             </Text>
             {organization && (
-              <Badge 
-                colorScheme="purple" 
-                mt={3} 
-                px={4} 
-                py={2} 
+              <Badge
+                colorScheme="purple"
+                mt={3}
+                px={4}
+                py={2}
                 borderRadius="full"
                 fontSize="sm"
               >
@@ -321,7 +322,7 @@ export default function LaunchPage() {
           </Box>
 
           {/* Launch Settings */}
-          <Card 
+          <Card
             bg={cardBg}
             backdropFilter="blur(10px)"
             border="1px solid"
@@ -459,7 +460,7 @@ export default function LaunchPage() {
                   <Text fontSize="md" fontWeight="semibold" color="gray.600">
                     Advanced Options
                   </Text>
-                  
+
                   <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
                     {/* Autopilot Mode */}
                     <FormControl>
@@ -537,7 +538,7 @@ export default function LaunchPage() {
 
           {/* Progress Indicator */}
           {isLaunching && (
-            <Card 
+            <Card
               bg={cardBg}
               backdropFilter="blur(10px)"
               border="1px solid"
@@ -619,4 +620,4 @@ export default function LaunchPage() {
       </Container>
     </Box>
   )
-} 
+}
