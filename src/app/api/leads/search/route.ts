@@ -12,8 +12,12 @@ function transformFiltersToUnified(filters: any): UnifiedSearchFilters {
     totalSize: filters.totalSize || 1000
   }
 
-  // Location filters
-  if (filters.locations?.length > 0) {
+  // Location filters (support both personLocations from UI and generic locations)
+  if (filters.personLocations?.length > 0) {
+    unifiedFilters.locations = filters.personLocations
+  } else if (filters.organizationLocations?.length > 0) {
+    unifiedFilters.locations = filters.organizationLocations
+  } else if (filters.locations?.length > 0) {
     unifiedFilters.locations = filters.locations
   }
 
@@ -57,12 +61,56 @@ function transformFiltersToUnified(filters: any): UnifiedSearchFilters {
     unifiedFilters.industries = filters.industries
   }
 
-  if (filters.technologies?.length > 0) {
+  if (filters.technologyUids?.length > 0) {
+    unifiedFilters.technologies = filters.technologyUids
+  } else if (filters.technologies?.length > 0) {
     unifiedFilters.technologies = filters.technologies
+  }
+
+  if (filters.excludeTechnologyUids?.length > 0) {
+    unifiedFilters.excludeTechnologyUids = filters.excludeTechnologyUids
   }
 
   if (filters.keywords?.length > 0) {
     unifiedFilters.keywords = filters.keywords
+  }
+
+  // Organization job filters
+  if (filters.organizationJobTitles?.length > 0) {
+    unifiedFilters.organizationJobTitles = filters.organizationJobTitles
+  }
+
+  if (filters.organizationJobLocations?.length > 0) {
+    unifiedFilters.organizationJobLocations = filters.organizationJobLocations
+  }
+
+  if (typeof filters.organizationNumJobsMin === 'number' && !isNaN(filters.organizationNumJobsMin)) {
+    unifiedFilters.organizationNumJobsMin = filters.organizationNumJobsMin
+  }
+
+  if (typeof filters.organizationNumJobsMax === 'number' && !isNaN(filters.organizationNumJobsMax)) {
+    unifiedFilters.organizationNumJobsMax = filters.organizationNumJobsMax
+  }
+
+  if (filters.organizationJobPostedAtMin) {
+    unifiedFilters.organizationJobPostedAtMin = filters.organizationJobPostedAtMin
+  }
+
+  if (filters.organizationJobPostedAtMax) {
+    unifiedFilters.organizationJobPostedAtMax = filters.organizationJobPostedAtMax
+  }
+
+  // Organization activity filters
+  if (typeof filters.jobPostings === 'boolean') {
+    unifiedFilters.jobPostings = filters.jobPostings
+  }
+
+  if (typeof filters.newsEvents === 'boolean') {
+    unifiedFilters.newsEvents = filters.newsEvents
+  }
+
+  if (typeof filters.webTraffic === 'boolean') {
+    unifiedFilters.webTraffic = filters.webTraffic
   }
 
   console.log('Original filters:', filters)

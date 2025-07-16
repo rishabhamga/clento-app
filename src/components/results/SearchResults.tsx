@@ -126,9 +126,9 @@ function SearchResults({ className }: SearchResultsProps) {
           </Text>
         </Flex>
 
-        {/* Results grid */}
+        {/* Results grid with improved spacing */}
         <Box flex={1} overflow="auto" pr={2}>
-          <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
+          <SimpleGrid columns={{ base: 1, lg: 1 }} spacing={6}>
             {results
               .sort((a, b) => (b.confidence || 0) - (a.confidence || 0)) // Sort by confidence descending
               .map((result) => 
@@ -230,26 +230,6 @@ function PersonCard({ person }: PersonCardProps) {
     )
   }
 
-  const getEmailStatusColor = (status?: string) => {
-    switch (status) {
-      case 'verified': return 'green'
-      case 'likely': return 'blue'
-      case 'guessed': return 'yellow'
-      case 'unavailable': return 'red'
-      default: return 'gray'
-    }
-  }
-
-  const getEmailStatusText = (status?: string) => {
-    switch (status) {
-      case 'verified': return 'Verified'
-      case 'likely': return 'Likely'
-      case 'guessed': return 'Guessed'
-      case 'unavailable': return 'Not Available'
-      default: return 'Unknown'
-    }
-  }
-
   const getCurrentCompany = () => {
     return person.organization || person.account
   }
@@ -290,10 +270,10 @@ function PersonCard({ person }: PersonCardProps) {
     >
       <CardBody p={0}>
         {/* Header Section - Always Visible */}
-        <Box p={6} pb={4}>
-          <VStack spacing={4} align="stretch">
-            {/* Person Info Row */}
-            <HStack spacing={4} align="start">
+        <Box p={6}>
+          <VStack spacing={5} align="stretch">
+            {/* Person Info Row - Improved layout */}
+            <HStack spacing={5} align="start">
               <Avatar
                 size="lg"
                 src={person.photo_url}
@@ -304,7 +284,7 @@ function PersonCard({ person }: PersonCardProps) {
                 borderColor="blue.100"
               />
               <Box flex={1} minW={0}>
-                <VStack align="start" spacing={1}>
+                <VStack align="start" spacing={2}>
                   <Text fontWeight="bold" fontSize="xl" noOfLines={1} color="gray.800">
                     {person.name || `${person.first_name} ${person.last_name}`}
                   </Text>
@@ -313,171 +293,120 @@ function PersonCard({ person }: PersonCardProps) {
                       {person.title}
                     </Text>
                   )}
-                  {person.headline && (
-                    <Text fontSize="sm" color="gray.500" noOfLines={2}>
-                      {person.headline}
-                    </Text>
+                  
+                  {/* Location - With improved styling */}
+                  {(person.city || person.state || person.country) && (
+                    <HStack spacing={2} mt={1}>
+                      <FiMapPin size={16} color="#718096" />
+                      <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                        {[person.city, person.state, person.country].filter(Boolean).join(', ')}
+                      </Text>
+                    </HStack>
                   )}
+                  
+                  {/* Seniority & Department - Moved here for better organization */}
+                  <HStack spacing={3} mt={1}>
+                    {person.seniority && (
+                      <Badge colorScheme="blue" variant="subtle" fontSize="xs" px={2} py={1}>
+                        {person.seniority.replace('_', ' ').toUpperCase()}
+                      </Badge>
+                    )}
+                    
+                    {person.departments && person.departments.length > 0 && (
+                      <Badge colorScheme="purple" variant="subtle" fontSize="xs" px={2} py={1}>
+                        {person.departments[0].replace('_', ' ').toUpperCase()}
+                      </Badge>
+                    )}
+                  </HStack>
                 </VStack>
               </Box>
               
-              {/* Email Status Badge */}
-              {person.email_status && (
-                <VStack align="end" spacing={1}>
-                  <Badge 
-                    colorScheme={getEmailStatusColor(person.email_status)}
-                    variant="subtle"
-                    fontSize="xs"
-                    px={2}
-                    py={1}
-                  >
-                    {getEmailStatusText(person.email_status)}
-                  </Badge>
-                  {person.confidence && (
-                    <Badge 
-                      colorScheme="purple" 
-                      variant="solid"
-                      fontSize="xs"
-                      px={2}
-                      py={1}
-                    >
-                      {Math.round(person.confidence * 100)}% MATCH
-                    </Badge>
-                  )}
-                </VStack>
+              {/* Confidence Badge - Enhanced */}
+              {person.confidence && (
+                <Badge 
+                  colorScheme="purple" 
+                  variant="solid"
+                  fontSize="xs"
+                  px={2}
+                  py={1}
+                  borderRadius="md"
+                >
+                  {Math.round(person.confidence * 100)}% MATCH
+                </Badge>
               )}
             </HStack>
 
-            {/* Company Info Row */}
+            {/* Company Info Row - Enhanced */}
             {currentCompany && (
-              <HStack spacing={3} align="center" bg="gray.50" p={3} borderRadius="lg">
-                <Avatar
-                  size="sm"
-                  src={getCompanyLogo()}
-                  name={currentCompany.name}
-                  bg="gray.400"
-                  color="white"
-                />
-                <VStack align="start" spacing={0} flex={1}>
-                  <Text fontSize="md" fontWeight="semibold" color="gray.800" noOfLines={1}>
-                    {currentCompany.name}
-                  </Text>
-                  <HStack spacing={4}>
-                    {currentCompany.primary_domain && (
-                      <Text fontSize="xs" color="gray.500">
-                        {currentCompany.primary_domain}
-                      </Text>
+              <Box 
+                bg="gray.50" 
+                p={4} 
+                borderRadius="lg" 
+                border="1px solid" 
+                borderColor="gray.200"
+              >
+                <HStack spacing={4} align="center">
+                  <Avatar
+                    size="sm"
+                    src={getCompanyLogo()}
+                    name={currentCompany.name}
+                    bg="gray.400"
+                    color="white"
+                  />
+                  <VStack align="start" spacing={0} flex={1}>
+                    <Text fontSize="md" fontWeight="semibold" color="gray.800" noOfLines={1}>
+                      {currentCompany.name}
+                    </Text>
+                    <HStack spacing={4}>
+                      {currentCompany.primary_domain && (
+                        <Text fontSize="xs" color="gray.500">
+                          {currentCompany.primary_domain}
+                        </Text>
+                      )}
+                      {currentCompany.founded_year && (
+                        <Text fontSize="xs" color="gray.500">
+                          Founded {currentCompany.founded_year}
+                        </Text>
+                      )}
+                    </HStack>
+                  </VStack>
+                  
+                  {/* Growth Indicators */}
+                  <HStack spacing={3}>
+                    {currentCompany.organization_headcount_six_month_growth !== undefined && (
+                      <VStack spacing={0} align="center">
+                        <Text fontSize="xs" color="gray.500" fontWeight="medium">6M</Text>
+                        {formatGrowthPercentage(currentCompany.organization_headcount_six_month_growth)}
+                      </VStack>
                     )}
-                    {currentCompany.founded_year && (
-                      <Text fontSize="xs" color="gray.500">
-                        Founded {currentCompany.founded_year}
-                      </Text>
+                    {currentCompany.organization_headcount_twelve_month_growth !== undefined && (
+                      <VStack spacing={0} align="center">
+                        <Text fontSize="xs" color="gray.500" fontWeight="medium">12M</Text>
+                        {formatGrowthPercentage(currentCompany.organization_headcount_twelve_month_growth)}
+                      </VStack>
                     )}
                   </HStack>
-                </VStack>
-                
-                {/* Growth Indicators */}
-                <HStack spacing={2}>
-                  {currentCompany.organization_headcount_six_month_growth !== undefined && (
-                    <VStack spacing={0} align="center">
-                      <Text fontSize="xs" color="gray.500">6M</Text>
-                      {formatGrowthPercentage(currentCompany.organization_headcount_six_month_growth)}
-                    </VStack>
-                  )}
-                  {currentCompany.organization_headcount_twelve_month_growth !== undefined && (
-                    <VStack spacing={0} align="center">
-                      <Text fontSize="xs" color="gray.500">12M</Text>
-                      {formatGrowthPercentage(currentCompany.organization_headcount_twelve_month_growth)}
-                    </VStack>
-                  )}
                 </HStack>
-              </HStack>
+              </Box>
             )}
 
-            {/* Quick Info Row */}
-            <HStack spacing={4} justify="space-between" align="center">
-              <HStack spacing={3}>
-                {/* Location */}
-                {(person.city || person.state || person.country) && (
-                  <HStack spacing={1}>
-                    <FiMapPin size={14} color="gray" />
-                    <Text fontSize="sm" color="gray.600">
-                      {[person.city, person.state, person.country].filter(Boolean).join(', ')}
-                    </Text>
-                  </HStack>
-                )}
-                
-                {/* Seniority */}
-                {person.seniority && (
-                  <Badge colorScheme="blue" variant="subtle" size="sm">
-                    {person.seniority.replace('_', ' ').toUpperCase()}
-                  </Badge>
-                )}
-                
-                {/* Departments */}
-                {person.departments && person.departments.length > 0 && (
-                  <Badge colorScheme="purple" variant="subtle" size="sm">
-                    {person.departments[0].replace('_', ' ').toUpperCase()}
-                  </Badge>
-                )}
-              </HStack>
-              
-              {/* Contact Actions */}
-              <HStack spacing={2}>
-                {person.email && person.email_status !== 'unavailable' && (
-                  <Tooltip label={person.email}>
-                    <IconButton
-                      aria-label="Email"
-                      icon={<FiMail />}
-                      size="sm"
-                      variant="ghost"
-                      color="blue.500"
-                      _hover={{ bg: 'blue.50' }}
-                    />
-                  </Tooltip>
-                )}
-                {person.linkedin_url && (
-                  <Tooltip label="LinkedIn Profile">
-                    <IconButton
-                      aria-label="LinkedIn"
-                      icon={<FiLinkedin />}
-                      size="sm"
-                      variant="ghost"
-                      color="blue.600"
-                      _hover={{ bg: 'blue.50' }}
-                      as={Link}
-                      href={person.linkedin_url}
-                      isExternal
-                    />
-                  </Tooltip>
-                )}
-                {currentCompany?.primary_phone && (
-                  <Tooltip label={formatPhoneNumber(currentCompany.primary_phone.number)}>
-                    <IconButton
-                      aria-label="Phone"
-                      icon={<FiPhone />}
-                      size="sm"
-                      variant="ghost"
-                      color="green.500"
-                      _hover={{ bg: 'green.50' }}
-                    />
-                  </Tooltip>
-                )}
-                
-                <IconButton
-                  aria-label={isExpanded ? "Show less" : "Show more"}
-                  icon={isExpanded ? <FiChevronUp /> : <FiChevronDown />}
-                  size="sm"
-                  variant="ghost"
-                  color="gray.500"
-                  _hover={{ bg: 'gray.50' }}
-                />
-              </HStack>
-            </HStack>
+            {/* Show More Button - Centered */}
+            <Flex justify="center">
+              <Button
+                size="sm"
+                variant="ghost"
+                rightIcon={isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                color="gray.500"
+                _hover={{ bg: 'gray.50' }}
+                fontWeight="normal"
+              >
+                {isExpanded ? "Show less" : "Show more details"}
+              </Button>
+            </Flex>
           </VStack>
         </Box>
 
-        {/* Expanded Content */}
+        {/* Expanded content remains unchanged */}
         <Collapse in={isExpanded} animateOpacity>
           <Box px={6} pb={6}>
             <VStack spacing={5} align="stretch">
@@ -658,11 +587,11 @@ function PersonCard({ person }: PersonCardProps) {
                         </Text>
                       </HStack>
                       <Badge 
-                        colorScheme={getEmailStatusColor(person.email_status)}
+                        colorScheme={person.email_status === 'verified' ? 'green' : person.email_status === 'likely' ? 'blue' : person.email_status === 'guessed' ? 'yellow' : 'red'}
                         size="sm"
                         variant="subtle"
                       >
-                        {getEmailStatusText(person.email_status)}
+                        {person.email_status === 'verified' ? 'Verified' : person.email_status === 'likely' ? 'Likely' : person.email_status === 'guessed' ? 'Guessed' : 'Not Available'}
                       </Badge>
                     </HStack>
                   )}
@@ -758,91 +687,95 @@ function CompanyCard({ company }: CompanyCardProps) {
       }}
       transition="all 0.2s ease"
     >
-      <CardBody p={4}>
-        <VStack spacing={3} align="stretch">
-          {/* Header with company info */}
-          <HStack spacing={3} align="start">
+      <CardBody p={5}>
+        <VStack spacing={4} align="stretch">
+          {/* Header with company info - Improved layout */}
+          <HStack spacing={4} align="start">
             <Avatar
-              size="md"
+              size="lg"
               src={getCompanyLogo()}
               name={company.name}
               bg="blue.500"
               color="white"
+              border="2px solid"
+              borderColor="blue.100"
             />
             <Box flex={1} minW={0}>
-              <HStack justify="space-between" align="start">
-                <VStack align="start" spacing={0} flex={1} minW={0}>
-                  <Text fontWeight="bold" fontSize="md" noOfLines={1}>
-                    {company.name}
+              <VStack align="start" spacing={2} flex={1} minW={0}>
+                <Text fontWeight="bold" fontSize="lg" noOfLines={1}>
+                  {company.name}
+                </Text>
+                {company.industry && (
+                  <Text fontSize="sm" color="gray.600" noOfLines={1}>
+                    {company.industry}
                   </Text>
-                  {company.industry && (
-                    <Text fontSize="sm" color="gray.600" noOfLines={1}>
-                      {company.industry}
-                    </Text>
-                  )}
-                </VStack>
-                {company.confidence && (
-                  <Badge 
-                    colorScheme="blue" 
-                    variant="subtle"
-                    fontSize="xs"
-                    px={2}
-                  >
-                    {Math.round(company.confidence * 100)}% MATCH
-                  </Badge>
                 )}
-              </HStack>
+                
+                {/* Location - With improved styling */}
+                {company.headquarters_city && (
+                  <HStack spacing={2} mt={1}>
+                    <FiMapPin color="#718096" size={16} />
+                    <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                      {[company.headquarters_city, company.headquarters_state, company.headquarters_country]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </Text>
+                  </HStack>
+                )}
+                
+                {/* Company metrics - Better organized */}
+                <HStack spacing={6} mt={1}>
+                  {company.employee_count && (
+                    <HStack spacing={2}>
+                      <FiUsers color="#718096" size={16} />
+                      <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                        {company.employee_count.toLocaleString()} employees
+                      </Text>
+                    </HStack>
+                  )}
+                  
+                  {company.estimated_annual_revenue && (
+                    <HStack spacing={2}>
+                      <FiDollarSign color="#718096" size={16} />
+                      <Text fontSize="sm" color="gray.600" fontWeight="medium">
+                        {formatRevenue(company.estimated_annual_revenue)} revenue
+                      </Text>
+                    </HStack>
+                  )}
+                </HStack>
+              </VStack>
+              
+              {/* Confidence badge - Enhanced */}
+              {company.confidence && (
+                <Badge 
+                  colorScheme="blue" 
+                  variant="solid"
+                  fontSize="xs"
+                  px={2}
+                  py={1}
+                  borderRadius="md"
+                >
+                  {Math.round(company.confidence * 100)}% MATCH
+                </Badge>
+              )}
             </Box>
           </HStack>
 
-          {/* Quick company metrics */}
-          <HStack spacing={4} justify="space-between">
-            <HStack spacing={3}>
-              {company.employee_count && (
-                <HStack spacing={1}>
-                  <FiUsers color="gray" size={14} />
-                  <Text fontSize="sm" color="gray.600">
-                    {company.employee_count.toLocaleString()}
-                  </Text>
-                </HStack>
-              )}
-              
-              {company.estimated_annual_revenue && (
-                <HStack spacing={1}>
-                  <FiDollarSign color="gray" size={14} />
-                  <Text fontSize="sm" color="gray.600">
-                    {formatRevenue(company.estimated_annual_revenue)}
-                  </Text>
-                </HStack>
-              )}
-              
-              {company.website_url && (
-                <Tooltip label={company.website_url}>
-                  <IconButton
-                    aria-label="Website"
-                    icon={<FiGlobe />}
-                    size="sm"
-                    variant="ghost"
-                    color="blue.500"
-                    _hover={{ bg: 'blue.50' }}
-                    as={Link}
-                    href={company.website_url}
-                    isExternal
-                  />
-                </Tooltip>
-              )}
-            </HStack>
-            
-            <IconButton
-              aria-label={isExpanded ? "Show less" : "Show more"}
-              icon={isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+          {/* Show More Button - Centered */}
+          <Flex justify="center">
+            <Button
               size="sm"
               variant="ghost"
+              rightIcon={isExpanded ? <FiChevronUp /> : <FiChevronDown />}
               color="gray.500"
-            />
-          </HStack>
+              _hover={{ bg: 'gray.50' }}
+              fontWeight="normal"
+            >
+              {isExpanded ? "Show less" : "Show more details"}
+            </Button>
+          </Flex>
 
-          {/* Expanded content */}
+          {/* Expanded content remains unchanged */}
           <Collapse in={isExpanded} animateOpacity>
             <VStack spacing={4} align="stretch" pt={4}>
               <Divider />

@@ -414,23 +414,23 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
         filters.seniorities.length ||
         filters.personLocations.length ||
         filters.organizationLocations.length ||
-        filters.industries.length ||
         filters.companyHeadcount.length ||
-        filters.technologies.length ||
-        filters.keywords.length ||
-        filters.hasEmail !== null
+        filters.technologyUids.length ||
+        filters.excludeTechnologyUids.length ||
+        filters.organizationJobTitles.length ||
+        filters.organizationJobLocations.length ||
+        (filters.organizationNumJobsMin !== null && filters.organizationNumJobsMin !== undefined) ||
+        (filters.organizationNumJobsMax !== null && filters.organizationNumJobsMax !== undefined) ||
+        (filters.revenueMin !== null && filters.revenueMin !== undefined) ||
+        (filters.revenueMax !== null && filters.revenueMax !== undefined)
       )
     } else {
       const filters = state.companyFilters
       return !!(
-        filters.companyNames.length ||
-        filters.industries.length ||
-        filters.locations.length ||
         filters.headcountRanges.length ||
+        filters.revenueRanges.length ||
         filters.technologies.length ||
-        filters.keywords.length ||
-        filters.fundingStages.length ||
-        filters.revenueRanges.length
+        filters.excludeTechnologies.length
       )
     }
   }, [state.searchType, state.peopleFilters, state.companyFilters])

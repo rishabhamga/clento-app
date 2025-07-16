@@ -39,16 +39,55 @@ const typingStyle = {
 }
 
 interface ParsedICP {
+  // Basic search info
   searchType: 'people' | 'company'
-  industries: string[]
-  locations: string[]
+  
+  // Person-level filters
   jobTitles: string[]
+  excludeJobTitles?: string[]
   seniorities: string[]
+  personLocations?: string[]
+  excludePersonLocations?: string[]
+  
+  // Company-level filters
+  industries: string[]
+  excludeIndustries?: string[]
+  organizationLocations?: string[]
+  excludeOrganizationLocations?: string[]
   companySize: string[]
+  revenueMin?: number | null
+  revenueMax?: number | null
   technologies: string[]
+  excludeTechnologies?: string[]
+  
+  // Organization job filters (hiring signals)
+  organizationJobTitles?: string[]
+  organizationJobLocations?: string[]
+  organizationNumJobsMin?: number | null
+  organizationNumJobsMax?: number | null
+  organizationJobPostedAtMin?: string | null
+  organizationJobPostedAtMax?: string | null
+  
+  // Funding & growth signals
+  fundingStages?: string[]
+  fundingAmountMin?: number | null
+  fundingAmountMax?: number | null
+  foundedYearMin?: number | null
+  foundedYearMax?: number | null
+  
+  // Activity signals
+  jobPostings?: boolean | null
+  newsEvents?: boolean | null
+  webTraffic?: boolean | null
+  
+  // Other filters
   keywords: string[]
+  intentTopics?: string[]
+  companyDomains?: string[]
+  
+  // Metadata
   confidence: number
-  reasoning: string
+  reasoning?: string
 }
 
 interface ValidationResults {
@@ -78,7 +117,7 @@ const AI_SDR_MESSAGES = {
   welcome: "Hi! I'm Alex, your AI SDR assistant. I'll help you find your perfect prospects. Just describe your ideal customer in natural language and I'll translate that into precise targeting filters.",
   thinking: "Let me analyze your target profile...",
   parsing: "Understanding your requirements and mapping to our database...",
-  validating: "Validating filters with Explorium's data platform...",
+  validating: "Validating filters with our data platform...",
   success: "Perfect! I've identified and validated your ideal customer profile. Here's what I found:",
   successWithWarnings: "Great! I've processed your ICP, though some terms needed adjustment for better accuracy.",
   error: "I had trouble understanding that. Could you be more specific about your target audience?",
@@ -410,10 +449,32 @@ export function NaturalLanguageICP({ onICPParsed, onReset, disabled = false }: N
                         <Text fontSize="sm" color={mutedColor}>{parsedICP.jobTitles.join(', ')}</Text>
                       </HStack>
                     )}
-                    {parsedICP.locations.length > 0 && (
+                    {(parsedICP.personLocations?.length || parsedICP.organizationLocations?.length) && (
+                      <VStack align="start" spacing={1}>
+                        {parsedICP.personLocations?.length && (
+                          <HStack>
+                            <Text fontSize="sm" fontWeight="medium" minW="100px">Person Locations:</Text>
+                            <Text fontSize="sm" color={mutedColor}>{parsedICP.personLocations?.join(', ')}</Text>
+                          </HStack>
+                        )}
+                        {parsedICP.organizationLocations?.length && (
+                          <HStack>
+                            <Text fontSize="sm" fontWeight="medium" minW="100px">Company HQ:</Text>
+                            <Text fontSize="sm" color={mutedColor}>{parsedICP.organizationLocations?.join(', ')}</Text>
+                          </HStack>
+                        )}
+                      </VStack>
+                    )}
+                    {parsedICP.organizationJobTitles?.length && (
                       <HStack>
-                        <Text fontSize="sm" fontWeight="medium" minW="100px">Locations:</Text>
-                        <Text fontSize="sm" color={mutedColor}>{parsedICP.locations.join(', ')}</Text>
+                        <Text fontSize="sm" fontWeight="medium" minW="100px">Hiring For:</Text>
+                        <Text fontSize="sm" color={mutedColor}>{parsedICP.organizationJobTitles?.join(', ')}</Text>
+                      </HStack>
+                    )}
+                    {parsedICP.organizationJobLocations?.length && (
+                      <HStack>
+                        <Text fontSize="sm" fontWeight="medium" minW="100px">Job Locations:</Text>
+                        <Text fontSize="sm" color={mutedColor}>{parsedICP.organizationJobLocations?.join(', ')}</Text>
                       </HStack>
                     )}
                     {parsedICP.companySize.length > 0 && (

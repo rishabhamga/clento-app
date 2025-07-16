@@ -12,6 +12,8 @@ export interface ApolloSearchParams {
   organization_locations?: string[]
   organization_ids?: string[]
   organization_num_employees_ranges?: string[]
+  organization_job_titles?: string[]
+  organization_job_locations?: string[]
   revenue_range?: {
     min?: number
     max?: number
@@ -22,6 +24,11 @@ export interface ApolloSearchParams {
     min?: number
     max?: number
   }
+  organization_latest_job_posted_at_min?: string
+  organization_latest_job_posted_at_max?: string
+  has_job_postings?: boolean
+  organization_recent_news_events?: boolean
+  organization_has_web_traffic?: boolean
   page?: number
   per_page?: number
 }
@@ -225,6 +232,75 @@ export class ApolloProviderService implements DataProvider {
       errors.push('Page size too large (max 100)')
     }
 
+    // Validate organization job filters
+    if (filters.organizationJobTitles && filters.organizationJobTitles.length > 50) {
+      errors.push('Too many organization job titles specified (max 50)')
+    }
+
+    if (filters.organizationJobLocations && filters.organizationJobLocations.length > 30) {
+      errors.push('Too many organization job locations specified (max 30)')
+    }
+
+    // Validate job posting count range
+    if (filters.organizationNumJobsMin !== undefined && filters.organizationNumJobsMin !== null) {
+      if (filters.organizationNumJobsMin < 0) {
+        errors.push('Minimum job postings count cannot be negative')
+      }
+      if (filters.organizationNumJobsMin > 10000) {
+        warnings.push('Very high minimum job postings count may limit results significantly')
+      }
+    }
+
+    if (filters.organizationNumJobsMax !== undefined && filters.organizationNumJobsMax !== null) {
+      if (filters.organizationNumJobsMax < 0) {
+        errors.push('Maximum job postings count cannot be negative')
+      }
+      if (filters.organizationNumJobsMin && filters.organizationNumJobsMax && 
+          filters.organizationNumJobsMin > filters.organizationNumJobsMax) {
+        errors.push('Minimum job postings count cannot exceed maximum')
+      }
+    }
+
+    // Validate job posting date range
+    if (filters.organizationJobPostedAtMin && !this.isValidDate(filters.organizationJobPostedAtMin)) {
+      errors.push('Invalid minimum job posting date format (expected YYYY-MM-DD)')
+    }
+
+    if (filters.organizationJobPostedAtMax && !this.isValidDate(filters.organizationJobPostedAtMax)) {
+      errors.push('Invalid maximum job posting date format (expected YYYY-MM-DD)')
+    }
+
+    if (filters.organizationJobPostedAtMin && filters.organizationJobPostedAtMax) {
+      const minDate = new Date(filters.organizationJobPostedAtMin)
+      const maxDate = new Date(filters.organizationJobPostedAtMax)
+      if (minDate > maxDate) {
+        errors.push('Minimum job posting date cannot be later than maximum date')
+      }
+    }
+
+    // Validate date ranges aren't too far in the past (Apollo limitation)
+    const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
+    if (filters.organizationJobPostedAtMin) {
+      const minDate = new Date(filters.organizationJobPostedAtMin)
+      if (minDate < oneYearAgo) {
+        warnings.push('Job posting dates older than 1 year may have limited data')
+      }
+    }
+
+    console.log('🔍 Apollo filter validation completed:', {
+      organizationJobFiltersFound: !!(
+        filters.organizationJobTitles?.length ||
+        filters.organizationJobLocations?.length ||
+        filters.organizationNumJobsMin !== undefined ||
+        filters.organizationNumJobsMax !== undefined ||
+        filters.organizationJobPostedAtMin ||
+        filters.organizationJobPostedAtMax ||
+        filters.jobPostings !== undefined
+      ),
+      errors: errors.length,
+      warnings: warnings.length
+    })
+
     return {
       isValid: errors.length === 0,
       errors,
@@ -249,8 +325,17 @@ export class ApolloProviderService implements DataProvider {
       params.person_titles = filters.jobTitles
     }
 
-    if (filters.locations?.length) {
+    // Person locations – prefer explicit personLocations (if present in extended filter type) but fall back to generic locations
+    const personLocs = (filters as any).personLocations as string[] | undefined
+    if (personLocs && personLocs.length) {
+      params.person_locations = this.transformLocations(personLocs)
+    } else if (filters.locations?.length) {
       params.person_locations = this.transformLocations(filters.locations)
+    }
+
+    // Company (organization) headquarters locations
+    if (filters.organizationLocations?.length) {
+      params.organization_locations = this.transformLocations(filters.organizationLocations)
     }
 
     if (filters.seniorities?.length) {
@@ -262,21 +347,95 @@ export class ApolloProviderService implements DataProvider {
       params.organization_num_employees_ranges = this.transformCompanyHeadcount(filters.companyHeadcount)
     }
 
-    if (filters.revenueMin !== null || filters.revenueMax !== null) {
+    // Revenue range – include only when valid numeric values are present
+    const hasValidRevenueMin = typeof filters.revenueMin === 'number' && !isNaN(filters.revenueMin)
+    const hasValidRevenueMax = typeof filters.revenueMax === 'number' && !isNaN(filters.revenueMax)
+    if (hasValidRevenueMin || hasValidRevenueMax) {
       params.revenue_range = {}
-      if (filters.revenueMin !== null) {
-        params.revenue_range.min = filters.revenueMin
+      if (hasValidRevenueMin) {
+        params.revenue_range.min = filters.revenueMin as number
       }
-      if (filters.revenueMax !== null) {
-        params.revenue_range.max = filters.revenueMax
+      if (hasValidRevenueMax) {
+        params.revenue_range.max = filters.revenueMax as number
       }
     }
 
-    if (filters.technologies?.length) {
+    // Technologies – include and exclude
+    if (filters.technologyUids?.length) {
+      params.currently_using_any_of_technology_uids = filters.technologyUids
+    } else if (filters.technologies?.length) {
       params.currently_using_any_of_technology_uids = this.transformTechnologies(filters.technologies)
     }
 
+    if (filters.excludeTechnologyUids?.length) {
+      params.currently_not_using_any_of_technology_uids = filters.excludeTechnologyUids
+    }
+
+    // Organization job filters (FIXED PARAMETER NAMES)
+    if (filters.organizationJobTitles?.length) {
+      // Use the correct Apollo API parameter name for organization job titles
+      params.organization_job_titles = filters.organizationJobTitles
+      console.log('🎯 Set organization job titles:', filters.organizationJobTitles)
+    }
+
+    if (filters.organizationJobLocations?.length) {
+      params.organization_job_locations = this.transformLocations(filters.organizationJobLocations)
+      console.log('🌍 Set organization job locations:', filters.organizationJobLocations)
+    }
+
+    // Organization job postings count range
+    const hasValidJobsMin = typeof filters.organizationNumJobsMin === 'number' && !isNaN(filters.organizationNumJobsMin) && filters.organizationNumJobsMin >= 0
+    const hasValidJobsMax = typeof filters.organizationNumJobsMax === 'number' && !isNaN(filters.organizationNumJobsMax) && filters.organizationNumJobsMax >= 0
+    if (hasValidJobsMin || hasValidJobsMax) {
+      params.organization_num_jobs_range = {}
+      if (hasValidJobsMin) {
+        params.organization_num_jobs_range.min = filters.organizationNumJobsMin as number
+        console.log('📊 Set min job postings:', filters.organizationNumJobsMin)
+      }
+      if (hasValidJobsMax) {
+        params.organization_num_jobs_range.max = filters.organizationNumJobsMax as number
+        console.log('📊 Set max job postings:', filters.organizationNumJobsMax)
+      }
+    }
+
+    // Organization job posting date filters (with validation)
+    if (filters.organizationJobPostedAtMin && this.isValidDate(filters.organizationJobPostedAtMin)) {
+      params.organization_latest_job_posted_at_min = filters.organizationJobPostedAtMin
+      console.log('📅 Set job posted min date:', filters.organizationJobPostedAtMin)
+    }
+
+    if (filters.organizationJobPostedAtMax && this.isValidDate(filters.organizationJobPostedAtMax)) {
+      params.organization_latest_job_posted_at_max = filters.organizationJobPostedAtMax
+      console.log('📅 Set job posted max date:', filters.organizationJobPostedAtMax)
+    }
+
+    // Organization activity filters
+    if (typeof filters.jobPostings === 'boolean') {
+      params.has_job_postings = filters.jobPostings
+      console.log('💼 Set job postings filter:', filters.jobPostings)
+    }
+
+    if (typeof filters.newsEvents === 'boolean') {
+      params.organization_recent_news_events = filters.newsEvents
+    }
+
+    if (typeof filters.webTraffic === 'boolean') {
+      params.organization_has_web_traffic = filters.webTraffic
+    }
+
     console.log('🔄 Transformed filters for Apollo:', params)
+    
+    // Validate organization job filters are being set correctly
+    const orgJobFiltersSet = Object.keys(params).filter(key => key.includes('organization_job') || key.includes('has_job_postings')).length > 0
+    if (orgJobFiltersSet) {
+      console.log('✅ Organization job filters detected and applied:', {
+        organizationJobTitles: params.organization_job_titles,
+        organizationJobLocations: params.organization_job_locations,
+        organizationNumJobsRange: params.organization_num_jobs_range,
+        hasJobPostings: params.has_job_postings
+      })
+    }
+    
     return params
   }
 
@@ -481,5 +640,13 @@ export class ApolloProviderService implements DataProvider {
       console.error('Apollo API request failed:', error)
       throw error
     }
+  }
+
+  private isValidDate(dateString: string): boolean {
+    if (!dateString || typeof dateString !== 'string') return false
+    const date = new Date(dateString)
+    const isValidTimestamp = !isNaN(date.getTime())
+    const matchesFormat = /^\d{4}-\d{2}-\d{2}$/.test(dateString)
+    return isValidTimestamp && matchesFormat
   }
 } 
