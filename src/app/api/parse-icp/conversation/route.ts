@@ -114,11 +114,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Log enhanced intelligence features for debugging
-    if (parsedResponse.conflictsDetected?.length > 0) {
+    if (parsedResponse.conflictsDetected && parsedResponse.conflictsDetected.length > 0) {
       console.log(`⚠️  Conflicts detected in conversation ${conversation.conversationId}:`, parsedResponse.conflictsDetected)
     }
     
-    if (parsedResponse.clarificationNeeded?.length > 0) {
+    if (parsedResponse.clarificationNeeded && parsedResponse.clarificationNeeded.length > 0) {
       console.log(`❓ Clarification needed for conversation ${conversation.conversationId}:`, parsedResponse.clarificationNeeded)
     }
 
