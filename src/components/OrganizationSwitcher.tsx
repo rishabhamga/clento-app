@@ -43,7 +43,7 @@ import { HiOutlineOfficeBuilding } from 'react-icons/hi'
 import { GradientButton } from './ui/GradientButton'
 import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
-interface Organization {
+export interface Organization {
   id: string
   name: string
   slug: string

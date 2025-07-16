@@ -32,14 +32,14 @@ import { GradientButton } from '@/components/ui/GradientButton'
 interface ParsedICP {
   // Basic search info
   searchType: 'people' | 'company'
-  
+
   // Person-level filters
   jobTitles: string[]
   excludeJobTitles?: string[]
   seniorities: string[]
   personLocations?: string[]
   excludePersonLocations?: string[]
-  
+
   // Company-level filters
   industries: string[]
   excludeIndustries?: string[]
@@ -50,7 +50,7 @@ interface ParsedICP {
   revenueMax?: number | null
   technologies: string[]
   excludeTechnologies?: string[]
-  
+
   // Organization job filters (hiring signals)
   organizationJobTitles?: string[]
   organizationJobLocations?: string[]
@@ -58,24 +58,24 @@ interface ParsedICP {
   organizationNumJobsMax?: number | null
   organizationJobPostedAtMin?: string | null
   organizationJobPostedAtMax?: string | null
-  
+
   // Funding & growth signals
   fundingStages?: string[]
   fundingAmountMin?: number | null
   fundingAmountMax?: number | null
   foundedYearMin?: number | null
   foundedYearMax?: number | null
-  
+
   // Activity signals
   jobPostings?: boolean | null
   newsEvents?: boolean | null
   webTraffic?: boolean | null
-  
+
   // Other filters
   keywords: string[]
   intentTopics?: string[]
   companyDomains?: string[]
-  
+
   // Metadata
   confidence: number
   reasoning?: string
@@ -188,6 +188,13 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
+    const ta = e.currentTarget
+    ta.style.height = 'auto'                    // reset to measure
+    ta.style.height = ta.scrollHeight + 'px'    // grow to fit
+    setInput(ta.value)                          // update input state
+  }
+
   const addMessage = (role: 'user' | 'assistant', content: string, metadata?: any) => {
     const message: ConversationMessage = {
       id: `${role}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -242,7 +249,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
 
       if (data.success && data.conversation) {
         const conversation = data.conversation
-        
+
         // Update conversation ID if this is the first message
         if (!conversationId) {
           setConversationId(conversation.conversationId)
@@ -282,7 +289,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
     } catch (error) {
       console.error('Error in conversation:', error)
       setError(error instanceof Error ? error.message : 'Unknown error occurred')
-      
+
       // Add error message from Alex
       addMessage('assistant', AI_SDR_MESSAGES.error + ' ' + (error instanceof Error ? error.message : ''))
     } finally {
@@ -305,9 +312,9 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
     setError(null)
     setShowWelcome(true)
     setShowSampleMessages(true) // Show sample messages again for new conversation
-    
+
     if (onReset) onReset()
-    
+
     toast({
       title: 'New Conversation Started',
       description: 'You can now describe a new ideal customer profile',
@@ -326,7 +333,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
           <Text fontSize="sm" color={mutedColor} mb={3} textAlign="center">
             💡 Try these examples to get started:
           </Text>
-          
+
           <VStack spacing={2} align="stretch">
             {SAMPLE_MESSAGES.slice(0, 4).map((sample, index) => (
               <Card
@@ -334,8 +341,8 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                 size="sm"
                 variant="outline"
                 cursor="pointer"
-                _hover={{ 
-                  borderColor: 'purple.300', 
+                _hover={{
+                  borderColor: 'purple.300',
                   transform: 'translateY(-1px)',
                   shadow: 'sm'
                 }}
@@ -346,7 +353,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
               >
                 <CardBody p={3}>
                   <HStack spacing={3}>
-                    <Icon 
+                    <Icon
                       as={
                         sample.category === 'basic' ? FiTarget :
                         sample.category === 'hiring' ? FiZap :
@@ -354,8 +361,8 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                         sample.category === 'funding' ? FiArrowRight :
                         sample.category === 'location' ? FiUser :
                         FiRefreshCw
-                      } 
-                      color="purple.500" 
+                      }
+                      color="purple.500"
                       flexShrink={0}
                     />
                     <VStack align="start" spacing={1} flex={1}>
@@ -372,7 +379,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
               </Card>
             ))}
           </VStack>
-          
+
           <Text fontSize="xs" color={mutedColor} mt={3} textAlign="center">
             Click on any example above or type your own message below
           </Text>
@@ -385,7 +392,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
     if (!conversationId || !currentFilters) return null
 
     const refinementSamples = SAMPLE_MESSAGES.filter(sample => sample.category === 'refine').slice(0, 2)
-    
+
     return (
       <Box mt={2} mb={2}>
         <Text fontSize="xs" color={mutedColor} mb={2} textAlign="center">
@@ -415,8 +422,8 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
 
     return (
       <Fade key={message.id} in={true}>
-        <Flex 
-          justify={isUser ? 'flex-end' : 'flex-start'} 
+        <Flex
+          justify={isUser ? 'flex-end' : 'flex-start'}
           mb={4}
           align="flex-start"
         >
@@ -429,7 +436,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
               flexShrink={0}
             />
           )}
-          
+
           <Box
             maxW="80%"
             bg={isUser ? userMessageBg : assistantMessageBg}
@@ -479,11 +486,11 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                 )}
               </HStack>
             )}
-            
+
             <Text fontSize="sm" whiteSpace="pre-wrap">
               {message.content}
             </Text>
-            
+
             {message.metadata?.filtersApplied && message.metadata.filtersApplied.length > 0 && (
               <HStack mt={2} spacing={1} flexWrap="wrap">
                 <Text fontSize="xs" opacity={0.7}>
@@ -523,12 +530,12 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                 <Text fontSize="sm" whiteSpace="pre-wrap">{message.metadata.clarificationNeeded.join(', ')}</Text>
               </Box>
             )}
-            
+
             <Text fontSize="xs" opacity={0.6} mt={1}>
               {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </Box>
-          
+
           {isUser && (
             <Avatar
               size="sm"
@@ -561,7 +568,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
               {conversationId ? 'Conversation active' : 'Ready to help you target the perfect audience'}
             </Text>
           </VStack>
-          
+
           <Tooltip label="Start new conversation" hasArrow>
             <IconButton
               aria-label="Start new conversation"
@@ -578,10 +585,10 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
         <Box flex={1} overflowY="auto" p={4}>
           <VStack spacing={0} align="stretch">
             {messages.map(renderMessage)}
-            
+
             {/* Sample Messages */}
             {renderSampleMessages()}
-            
+
             {isProcessing && (
               <ScaleFade in={isProcessing} initialScale={0.8}>
                 <Flex justify="flex-start" mb={4}>
@@ -616,24 +623,24 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                     <HStack spacing={3}>
                       <Box>
                         <Box display="flex" alignItems="center" gap={1}>
-                          <Box 
-                            w="3px" 
-                            h="3px" 
-                            bg="purple.400" 
+                          <Box
+                            w="3px"
+                            h="3px"
+                            bg="purple.400"
                             borderRadius="full"
                             animation="pulse 1.5s ease-in-out infinite"
                           />
-                          <Box 
-                            w="3px" 
-                            h="3px" 
-                            bg="purple.400" 
+                          <Box
+                            w="3px"
+                            h="3px"
+                            bg="purple.400"
                             borderRadius="full"
                             animation="pulse 1.5s ease-in-out infinite 0.2s"
                           />
-                          <Box 
-                            w="3px" 
-                            h="3px" 
-                            bg="purple.400" 
+                          <Box
+                            w="3px"
+                            h="3px"
+                            bg="purple.400"
                             borderRadius="full"
                             animation="pulse 1.5s ease-in-out infinite 0.4s"
                           />
@@ -647,7 +654,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                 </Flex>
               </ScaleFade>
             )}
-            
+
             <div ref={messagesEndRef} />
           </VStack>
         </Box>
@@ -666,7 +673,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
         <Box p={4} borderTop="1px solid" borderColor={borderColor} flexShrink={0}>
           {/* Refinement Suggestions */}
           {renderRefinementSuggestions()}
-          
+
           <Box
             position="relative"
             bg={useColorModeValue('white', 'gray.800')}
@@ -685,7 +692,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
               <Textarea
                 ref={inputRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onInput={handleInput}
                 onKeyPress={handleKeyPress}
                 placeholder={conversationId ? "Tell me how to refine your targeting..." : "Describe your ideal customer (e.g., 'CTOs at SaaS companies hiring developers')"}
                 resize="none"
@@ -693,7 +700,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                 disabled={disabled || isProcessing}
                 bg="transparent"
                 border="none"
-                _focus={{ 
+                _focus={{
                   border: 'none',
                   boxShadow: 'none'
                 }}
@@ -701,7 +708,8 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                 lineHeight="1.4"
                 py={3}
                 px={4}
-                minH="48px"
+                minH="60px"
+                maxH="200px"
               />
               <Box p={2}>
                 <IconButton
@@ -722,19 +730,19 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
               </Box>
             </HStack>
           </Box>
-          
+
           <HStack mt={2} spacing={4} justify="space-between">
             <Text fontSize="xs" color={mutedColor}>
               {conversationId ? `Conversation: ${conversationId.slice(-8)}` : 'Press Enter to send'}
             </Text>
-            
+
             {currentFilters && (
               <HStack spacing={2}>
                 <Text fontSize="xs" color={mutedColor}>
                   Active filters:
                 </Text>
                 <Badge size="xs" colorScheme="purple">
-                  {Object.values(currentFilters).filter(val => 
+                  {Object.values(currentFilters).filter(val =>
                     Array.isArray(val) ? val.length > 0 : val !== null && val !== undefined
                   ).length} applied
                 </Badge>
@@ -745,4 +753,4 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
       </CardBody>
     </Card>
   )
-} 
+}
