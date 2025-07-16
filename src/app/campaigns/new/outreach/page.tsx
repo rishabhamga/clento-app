@@ -545,7 +545,7 @@ ${signOffs[0]},
           </CardHeader>
           <CardBody>
             <Text fontSize="sm" color="gray.600" mb={6}>
-              Select the sources you want Ava to use to personalize your messages. Ava will automatically 
+              Select the sources you want us to use to personalize your messages. We will automatically 
               select the personalization most likely to garner a response from the lead.
             </Text>
             
