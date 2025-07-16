@@ -25,7 +25,7 @@ import { GradientButton } from '@/components/ui/GradientButton'
 import { CampaignStepper } from '@/components/ui/CampaignStepper'
 import { ApolloSearchProvider } from '@/hooks/useApolloSearch'
 import { ExplorimFilters } from '@/components/filters/ExplorimFilters'
-import { NaturalLanguageICP } from '@/components/filters/NaturalLanguageICP'
+import { ConversationalICP } from '@/components/filters/ConversationalICP'
 import SearchResults from '@/components/results/SearchResults'
 import { useSearchFilters, useApolloSearch } from '@/hooks/useApolloSearch'
 import { 
@@ -78,6 +78,10 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
     if (typeof value === 'boolean') {
       return value ? 'Yes' : 'No'
     }
+    if (typeof value === 'number') {
+      // Format large numbers with commas
+      return value.toLocaleString()
+    }
     if (typeof value === 'string' && value.trim()) {
       return value
     }
@@ -118,11 +122,21 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
   if (filters.annual_revenue?.length > 0 || filters.company_annual_revenue?.length > 0) {
     const value = filters.annual_revenue || filters.company_annual_revenue
     activeFilters.push({ label: 'Annual Revenue', value: formatFilterValue(value) })
-  }
-  if ((filters.revenueMin !== undefined && filters.revenueMin !== null) || (filters.revenueMax !== undefined && filters.revenueMax !== null)) {
-    const minRev = filters.revenueMin !== null ? filters.revenueMin : 'Any'
-    const maxRev = filters.revenueMax !== null ? filters.revenueMax : 'Any'
-    activeFilters.push({ label: 'Annual Revenue', value: `${minRev} - ${maxRev}` })
+  } 
+  else if ((typeof filters.revenueMin === 'number' && !isNaN(filters.revenueMin)) || 
+          (typeof filters.revenueMax === 'number' && !isNaN(filters.revenueMax))) {
+    // Format revenue values in a human-readable way
+    const formatRevenue = (value: number | null | undefined) => {
+      if (value === null || value === undefined || isNaN(value)) return 'Any';
+      if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
+      if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+      if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
+      return `$${value}`;
+    };
+    
+    const minRev = formatRevenue(filters.revenueMin);
+    const maxRev = formatRevenue(filters.revenueMax);
+    activeFilters.push({ label: 'Annual Revenue Range', value: `${minRev} - ${maxRev}` });
   }
 
   // Organization job related filters
@@ -314,16 +328,21 @@ function B2BFiltersContent() {
     }))
 
     // Synchronize relevant explorim location filters with Apollo filters
-    const currentCountryCodes: string[] = field === 'country_code'
-      ? (Array.isArray(value) ? value : [])
-      : (explorimFilters.country_code || [])
+    const currentCountryCodes: string[] =
+      field === 'country_code' || field === 'company_country_code'
+        ? (Array.isArray(value) ? value : [])
+        : ([...(explorimFilters.country_code || []), ...(explorimFilters.company_country_code || [])])
 
-    const currentCityValues: string[] = field === 'city_region_country'
-      ? (Array.isArray(value) ? value : [])
-      : (explorimFilters.city_region_country || [])
+    const currentCityValues: string[] =
+      field === 'city_region_country' || field === 'company_city_region_country'
+        ? (Array.isArray(value) ? value : [])
+        : ([...(explorimFilters.city_region_country || []), ...(explorimFilters.company_city_region_country || [])])
 
-    // Recompute organization locations whenever countries or cities change
-    if (field === 'country_code' || field === 'city_region_country') {
+    // Recompute organization locations whenever relevant location fields change
+    if (
+      field === 'country_code' || field === 'city_region_country' ||
+      field === 'company_country_code' || field === 'company_city_region_country'
+    ) {
       // Map country codes to labels
       const countryLabels = currentCountryCodes.map(code => {
         const found = ALL_COUNTRIES.find(c => c.value === code)
@@ -338,6 +357,111 @@ function B2BFiltersContent() {
 
       const combined = Array.from(new Set([...countryLabels, ...cityLabels]))
       handleFilterChange('organizationLocations', combined)
+    }
+
+    // Map Explorium prospect filters to Apollo people filters
+    if (field === 'job_level') {
+      // Explorium job levels directly correspond to Apollo seniority levels
+      if (Array.isArray(value)) {
+        handleFilterChange('seniorities', value)
+      }
+    }
+
+    if (field === 'job_title') {
+      // Map selected job titles to Apollo jobTitles filter
+      if (Array.isArray(value)) {
+        handleFilterChange('jobTitles', value)
+      }
+    }
+
+    // Map company size (Explorium) to Apollo companyHeadcount filter
+    if (field === 'company_size') {
+      if (Array.isArray(value)) {
+        handleFilterChange('companyHeadcount', value)
+      }
+    }
+
+    // Map technology UID filters
+    if (field === 'currently_using_any_of_technology_uids' || field === 'company_currently_using_any_of_technology_uids') {
+      if (Array.isArray(value)) {
+        handleFilterChange('technologyUids', value)
+      }
+    }
+
+    if (field === 'currently_not_using_any_of_technology_uids' || field === 'company_currently_not_using_any_of_technology_uids') {
+      if (Array.isArray(value)) {
+        handleFilterChange('excludeTechnologyUids', value)
+      }
+    }
+
+    // Map organization job related filters
+    if (field === 'organization_job_titles' || field === 'company_organization_job_titles') {
+      if (Array.isArray(value)) {
+        handleFilterChange('organizationJobTitles', value)
+      }
+    }
+
+    if (field === 'organization_job_locations' || field === 'company_organization_job_locations') {
+      if (Array.isArray(value)) {
+        handleFilterChange('organizationJobLocations', value)
+      }
+    }
+
+    if (field === 'organization_num_jobs_range_min' || field === 'company_organization_num_jobs_range_min') {
+      if (typeof value === 'number') {
+        handleFilterChange('organizationNumJobsMin', value)
+      }
+    }
+
+    if (field === 'organization_num_jobs_range_max' || field === 'company_organization_num_jobs_range_max') {
+      if (typeof value === 'number') {
+        handleFilterChange('organizationNumJobsMax', value)
+      }
+    }
+
+    // Map annual revenue ranges (string array like "25M-50M")
+    if (field === 'annual_revenue' || field === 'company_annual_revenue') {
+      if (Array.isArray(value) && value.length > 0) {
+        const rangeStr = value[0] as string
+        const [minStr, maxStr] = rangeStr.split('-')
+        const parseMoney = (str: string | undefined) => {
+          if (!str) return undefined
+          if (str.toUpperCase().endsWith('M')) {
+            return parseFloat(str) * 1_000_000
+          }
+          if (str.toUpperCase().endsWith('K')) {
+            return parseFloat(str) * 1_000
+          }
+          if (str.toUpperCase().endsWith('B')) {
+            return parseFloat(str) * 1_000_000_000
+          }
+          return parseFloat(str)
+        }
+        const minVal = parseMoney(minStr)
+        const maxVal = parseMoney(maxStr)
+        
+        // Only set values if they are valid numbers
+        handleFilterChange('revenueMin', minVal !== undefined && !isNaN(minVal) ? minVal : null)
+        handleFilterChange('revenueMax', maxVal !== undefined && !isNaN(maxVal) ? maxVal : null)
+      } else {
+        // Clear revenue range when no values are selected
+        handleFilterChange('revenueMin', null)
+        handleFilterChange('revenueMax', null)
+      }
+    }
+
+    // Map email requirement
+    if (field === 'has_email') {
+      if (typeof value === 'boolean') {
+        handleFilterChange('hasEmail', value)
+      }
+    }
+
+    // Map prospect location to personLocations when provided directly
+    if (field === 'person_locations') {
+      if (Array.isArray(value)) {
+        handleFilterChange('personLocations', value)
+      }
     }
   }
 
@@ -590,7 +714,7 @@ function B2BFiltersContent() {
           <SelectedFiltersDisplay filters={combinedFilters} searchType={searchType} />
 
           {/* Filters and Results Grid */}
-          <Grid templateColumns={{ base: "1fr", lg: "380px 1fr" }} gap={6} alignItems="start">
+          <Grid templateColumns={{ base: "1fr", lg: "450px 1fr" }} gap={6} alignItems="start">
             {/* Filters Column */}
             <GridItem>
               <VStack spacing={6} align="stretch">
@@ -618,66 +742,192 @@ function B2BFiltersContent() {
                         
                         <Box flex={1} overflow="auto" pr={2}>
                           <VStack spacing={6} align="stretch">
-                            {/* Natural Language ICP Input */}
-                            <NaturalLanguageICP
+                            {/* Conversational ICP Input with Alex */}
+                            <ConversationalICP
                               onICPParsed={(parsedICP) => {
                                 // Set search type based on parsed ICP
                                 if (parsedICP.searchType !== searchType) {
                                   setSearchType(parsedICP.searchType)
                                 }
                                 
-                                // Update Apollo filters (for search functionality)
-                                if (parsedICP.locations.length > 0) {
-                                  handleFilterChange('personLocations', parsedICP.locations)
-                                }
-                                if (parsedICP.jobTitles.length > 0) {
+                                // Update Apollo filters (for search functionality) - ENHANCED WITH ALL FIELDS
+                                
+                                // Person-level filters
+                                if (parsedICP.jobTitles && parsedICP.jobTitles.length > 0) {
                                   handleFilterChange('jobTitles', parsedICP.jobTitles)
                                 }
-                                if (parsedICP.seniorities.length > 0) {
+                                if (parsedICP.excludeJobTitles && parsedICP.excludeJobTitles.length > 0) {
+                                  handleFilterChange('excludeJobTitles', parsedICP.excludeJobTitles)
+                                }
+                                if (parsedICP.seniorities && parsedICP.seniorities.length > 0) {
                                   handleFilterChange('seniorities', parsedICP.seniorities)
                                 }
-                                if (parsedICP.companySize.length > 0) {
+                                if (parsedICP.personLocations && parsedICP.personLocations.length > 0) {
+                                  handleFilterChange('personLocations', parsedICP.personLocations)
+                                }
+                                if (parsedICP.excludePersonLocations && parsedICP.excludePersonLocations.length > 0) {
+                                  handleFilterChange('excludePersonLocations', parsedICP.excludePersonLocations)
+                                }
+                                
+                                // Company-level filters
+                                if (parsedICP.industries && parsedICP.industries.length > 0) {
+                                  handleFilterChange('industries', parsedICP.industries)
+                                }
+                                if (parsedICP.excludeIndustries && parsedICP.excludeIndustries.length > 0) {
+                                  handleFilterChange('excludeIndustries', parsedICP.excludeIndustries)
+                                }
+                                if (parsedICP.organizationLocations && parsedICP.organizationLocations.length > 0) {
+                                  handleFilterChange('organizationLocations', parsedICP.organizationLocations)
+                                }
+                                if (parsedICP.excludeOrganizationLocations && parsedICP.excludeOrganizationLocations.length > 0) {
+                                  handleFilterChange('excludeOrganizationLocations', parsedICP.excludeOrganizationLocations)
+                                }
+                                if (parsedICP.companySize?.length > 0) {
                                   handleFilterChange('companyHeadcount', parsedICP.companySize)
                                 }
-                                if (parsedICP.technologies.length > 0) {
+                                if (parsedICP.revenueMin !== null && parsedICP.revenueMin !== undefined) {
+                                  handleFilterChange('revenueMin', parsedICP.revenueMin)
+                                }
+                                if (parsedICP.revenueMax !== null && parsedICP.revenueMax !== undefined) {
+                                  handleFilterChange('revenueMax', parsedICP.revenueMax)
+                                }
+                                if (parsedICP.technologies && parsedICP.technologies.length > 0) {
                                   handleFilterChange('technologyUids', parsedICP.technologies)
+                                }
+                                if (parsedICP.excludeTechnologies && parsedICP.excludeTechnologies.length > 0) {
+                                  handleFilterChange('excludeTechnologyUids', parsedICP.excludeTechnologies)
+                                }
+                                if (parsedICP.companyDomains && parsedICP.companyDomains.length > 0) {
+                                  handleFilterChange('companyDomains', parsedICP.companyDomains)
+                                }
+                                
+                                // Organization job filters (HIRING SIGNALS) - THE KEY MISSING PIECE
+                                if (parsedICP.organizationJobTitles && parsedICP.organizationJobTitles.length > 0) {
+                                  handleFilterChange('organizationJobTitles', parsedICP.organizationJobTitles)
+                                }
+                                if (parsedICP.organizationJobLocations && parsedICP.organizationJobLocations.length > 0) {
+                                  handleFilterChange('organizationJobLocations', parsedICP.organizationJobLocations)
+                                }
+                                if (parsedICP.organizationNumJobsMin !== null && parsedICP.organizationNumJobsMin !== undefined) {
+                                  handleFilterChange('organizationNumJobsMin', parsedICP.organizationNumJobsMin)
+                                }
+                                if (parsedICP.organizationNumJobsMax !== null && parsedICP.organizationNumJobsMax !== undefined) {
+                                  handleFilterChange('organizationNumJobsMax', parsedICP.organizationNumJobsMax)
+                                }
+                                if (parsedICP.organizationJobPostedAtMin) {
+                                  handleFilterChange('organizationJobPostedAtMin', parsedICP.organizationJobPostedAtMin)
+                                }
+                                if (parsedICP.organizationJobPostedAtMax) {
+                                  handleFilterChange('organizationJobPostedAtMax', parsedICP.organizationJobPostedAtMax)
+                                }
+                                
+                                // Funding & growth filters
+                                if (parsedICP.fundingStages && parsedICP.fundingStages.length > 0) {
+                                  handleFilterChange('fundingStages', parsedICP.fundingStages)
+                                }
+                                if (parsedICP.fundingAmountMin !== null && parsedICP.fundingAmountMin !== undefined) {
+                                  handleFilterChange('fundingAmountMin', parsedICP.fundingAmountMin)
+                                }
+                                if (parsedICP.fundingAmountMax !== null && parsedICP.fundingAmountMax !== undefined) {
+                                  handleFilterChange('fundingAmountMax', parsedICP.fundingAmountMax)
+                                }
+                                if (parsedICP.foundedYearMin !== null && parsedICP.foundedYearMin !== undefined) {
+                                  handleFilterChange('foundedYearMin', parsedICP.foundedYearMin)
+                                }
+                                if (parsedICP.foundedYearMax !== null && parsedICP.foundedYearMax !== undefined) {
+                                  handleFilterChange('foundedYearMax', parsedICP.foundedYearMax)
+                                }
+                                
+                                // Activity signals
+                                if (parsedICP.jobPostings !== null && parsedICP.jobPostings !== undefined) {
+                                  handleFilterChange('jobPostings', parsedICP.jobPostings)
+                                }
+                                if (parsedICP.newsEvents !== null && parsedICP.newsEvents !== undefined) {
+                                  handleFilterChange('newsEvents', parsedICP.newsEvents)
+                                }
+                                if (parsedICP.webTraffic !== null && parsedICP.webTraffic !== undefined) {
+                                  handleFilterChange('webTraffic', parsedICP.webTraffic)
+                                }
+                                
+                                // Other filters
+                                if (parsedICP.keywords && parsedICP.keywords.length > 0) {
+                                  handleFilterChange('keywords', parsedICP.keywords)
+                                }
+                                if (parsedICP.intentTopics && parsedICP.intentTopics.length > 0) {
+                                  handleFilterChange('intentTopics', parsedICP.intentTopics)
                                 }
 
                                 // Update Explorium filters (for UI display) with proper field mapping
                                 setExplorimFilters(prev => ({
                                   ...prev,
 
-                                  // Map locations to country codes (simplified - US mapping)
-                                  ...(parsedICP.locations.length > 0 && {
-                                    country_code: parsedICP.locations.includes('United States') ? ['us'] : parsedICP.locations
+                                  // Map person locations to country codes (simplified - US mapping)
+                                  ...(parsedICP.personLocations && parsedICP.personLocations.length > 0 && {
+                                    country_code: parsedICP.personLocations.includes('United States') ? ['us'] : parsedICP.personLocations
                                   }),
                                   // Map job titles
-                                  ...(parsedICP.jobTitles.length > 0 && {
+                                  ...(parsedICP.jobTitles && parsedICP.jobTitles.length > 0 && {
                                     job_title: parsedICP.jobTitles
                                   }),
                                   // Map seniorities to job levels  
-                                  ...(parsedICP.seniorities.length > 0 && {
+                                  ...(parsedICP.seniorities && parsedICP.seniorities.length > 0 && {
                                     job_level: parsedICP.seniorities.map(s => s.toLowerCase().replace('-', '_'))
                                   }),
                                   // Map company size
-                                  ...(parsedICP.companySize.length > 0 && {
+                                  ...(parsedICP.companySize && parsedICP.companySize.length > 0 && {
                                     company_size: parsedICP.companySize
                                   }),
-
+                                  // Map organization job filters to Explorium format with correct field names
+                                  ...(parsedICP.organizationJobTitles && parsedICP.organizationJobTitles.length > 0 && {
+                                    company_organization_job_titles: parsedICP.organizationJobTitles
+                                  }),
+                                  ...(parsedICP.organizationJobLocations && parsedICP.organizationJobLocations.length > 0 && {
+                                    company_organization_job_locations: parsedICP.organizationJobLocations
+                                  }),
+                                  ...(parsedICP.organizationNumJobsMin !== null && parsedICP.organizationNumJobsMin !== undefined && {
+                                    company_organization_num_jobs_range_min: parsedICP.organizationNumJobsMin
+                                  }),
+                                  ...(parsedICP.organizationNumJobsMax !== null && parsedICP.organizationNumJobsMax !== undefined && {
+                                    company_organization_num_jobs_range_max: parsedICP.organizationNumJobsMax
+                                  }),
+                                  ...(parsedICP.organizationJobPostedAtMin && {
+                                    company_organization_job_posted_at_range_min: parsedICP.organizationJobPostedAtMin
+                                  }),
+                                  ...(parsedICP.organizationJobPostedAtMax && {
+                                    company_organization_job_posted_at_range_max: parsedICP.organizationJobPostedAtMax
+                                  }),
 
                                 }))
 
+                                // Count applied filters more accurately 
+                                const appliedFiltersCount = [
+                                  parsedICP.jobTitles, parsedICP.personLocations, parsedICP.organizationLocations, 
+                                  parsedICP.seniorities, parsedICP.industries, parsedICP.companySize, 
+                                  parsedICP.technologies, parsedICP.organizationJobTitles, 
+                                  parsedICP.organizationJobLocations, parsedICP.keywords
+                                ].filter(arr => Array.isArray(arr) && arr.length > 0).length +
+                                [
+                                  parsedICP.revenueMin, parsedICP.revenueMax, parsedICP.organizationNumJobsMin,
+                                  parsedICP.organizationNumJobsMax, parsedICP.jobPostings, parsedICP.newsEvents,
+                                  parsedICP.webTraffic
+                                ].filter(val => val !== null && val !== undefined).length
+                                
                                 // Show success message
                                 customToast.success({
-                                  title: 'ICP Parsed Successfully',
-                                  description: `Applied ${Object.keys(parsedICP).filter(key => 
-                                    Array.isArray(parsedICP[key as keyof typeof parsedICP]) && 
-                                    (parsedICP[key as keyof typeof parsedICP] as any[]).length > 0
-                                  ).length} filter categories from your description.`,
+                                  title: 'ICP Parsed Successfully', 
+                                  description: `Applied ${appliedFiltersCount} filter categories from your description${parsedICP.organizationJobTitles && parsedICP.organizationJobTitles.length > 0 ? ', including hiring signals!' : '.'}`,
                                 })
                               }}
                               onReset={() => {
-                                resetFilters()
+                                // Don't reset all filters - just let the NaturalLanguageICP component handle its own state reset
+                                // The handleReset in NaturalLanguageICP already resets the ICP input state internally
+                                // Removing resetFilters() call to preserve existing filter selections
+                                
+                                // Optional: Show a message to user that ICP has been reset but filters are preserved
+                                customToast.info({
+                                  title: 'ICP Input Reset',
+                                  description: 'You can now enter a new ICP description. Your existing filter selections have been preserved.',
+                                })
                               }}
                               disabled={isSearching}
                             />

@@ -75,6 +75,44 @@ function transformFiltersToUnified(filters: any): UnifiedSearchFilters {
     unifiedFilters.keywords = filters.keywords
   }
 
+  // Organization job filters
+  if (filters.organizationJobTitles?.length > 0) {
+    unifiedFilters.organizationJobTitles = filters.organizationJobTitles
+  }
+
+  if (filters.organizationJobLocations?.length > 0) {
+    unifiedFilters.organizationJobLocations = filters.organizationJobLocations
+  }
+
+  if (typeof filters.organizationNumJobsMin === 'number' && !isNaN(filters.organizationNumJobsMin)) {
+    unifiedFilters.organizationNumJobsMin = filters.organizationNumJobsMin
+  }
+
+  if (typeof filters.organizationNumJobsMax === 'number' && !isNaN(filters.organizationNumJobsMax)) {
+    unifiedFilters.organizationNumJobsMax = filters.organizationNumJobsMax
+  }
+
+  if (filters.organizationJobPostedAtMin) {
+    unifiedFilters.organizationJobPostedAtMin = filters.organizationJobPostedAtMin
+  }
+
+  if (filters.organizationJobPostedAtMax) {
+    unifiedFilters.organizationJobPostedAtMax = filters.organizationJobPostedAtMax
+  }
+
+  // Organization activity filters
+  if (typeof filters.jobPostings === 'boolean') {
+    unifiedFilters.jobPostings = filters.jobPostings
+  }
+
+  if (typeof filters.newsEvents === 'boolean') {
+    unifiedFilters.newsEvents = filters.newsEvents
+  }
+
+  if (typeof filters.webTraffic === 'boolean') {
+    unifiedFilters.webTraffic = filters.webTraffic
+  }
+
   console.log('Original filters:', filters)
   console.log('Unified filters:', unifiedFilters)
 

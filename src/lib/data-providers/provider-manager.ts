@@ -49,6 +49,15 @@ export interface UnifiedSearchFilters {
   organizationLocations?: string[] // Company headquarters locations
   organizationJobTitles?: string[] // Job titles in active job postings
   organizationJobLocations?: string[] // Locations of active job postings
+  organizationNumJobsMin?: number // Minimum number of active job postings
+  organizationNumJobsMax?: number // Maximum number of active job postings
+  organizationJobPostedAtMin?: string | null // Minimum job posting date
+  organizationJobPostedAtMax?: string | null // Maximum job posting date
+  
+  // Organization activity filters
+  jobPostings?: boolean | null // Filter by active job postings
+  newsEvents?: boolean | null // Filter by recent news events
+  webTraffic?: boolean | null // Filter by web traffic data
   
   // Search metadata
   searchType?: 'people' | 'company'

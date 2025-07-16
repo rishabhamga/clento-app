@@ -9,14 +9,53 @@ const openai = new OpenAI({
 
 // Schema for validating the parsed ICP
 const ParsedICPSchema = z.object({
+  // Basic search info
   searchType: z.enum(['people', 'company']),
-  industries: z.array(z.string()),
-  locations: z.array(z.string()),
+  
+  // Person-level filters
   jobTitles: z.array(z.string()),
+  excludeJobTitles: z.array(z.string()).optional().default([]),
   seniorities: z.array(z.string()),
+  personLocations: z.array(z.string()).optional().default([]),
+  excludePersonLocations: z.array(z.string()).optional().default([]),
+  
+  // Company-level filters
+  industries: z.array(z.string()),
+  excludeIndustries: z.array(z.string()).optional().default([]),
+  organizationLocations: z.array(z.string()).optional().default([]),
+  excludeOrganizationLocations: z.array(z.string()).optional().default([]),
   companySize: z.array(z.string()),
+  revenueMin: z.number().nullable().optional(),
+  revenueMax: z.number().nullable().optional(),
   technologies: z.array(z.string()),
+  excludeTechnologies: z.array(z.string()).optional().default([]),
+  
+  // Organization job filters (hiring signals)
+  organizationJobTitles: z.array(z.string()).optional().default([]),
+  organizationJobLocations: z.array(z.string()).optional().default([]),
+  organizationNumJobsMin: z.number().nullable().optional(),
+  organizationNumJobsMax: z.number().nullable().optional(),
+  organizationJobPostedAtMin: z.string().nullable().optional(),
+  organizationJobPostedAtMax: z.string().nullable().optional(),
+  
+  // Funding & growth signals
+  fundingStages: z.array(z.string()).optional().default([]),
+  fundingAmountMin: z.number().nullable().optional(),
+  fundingAmountMax: z.number().nullable().optional(),
+  foundedYearMin: z.number().nullable().optional(),
+  foundedYearMax: z.number().nullable().optional(),
+  
+  // Activity signals
+  jobPostings: z.boolean().nullable().optional(),
+  newsEvents: z.boolean().nullable().optional(),
+  webTraffic: z.boolean().nullable().optional(),
+  
+  // Other filters
   keywords: z.array(z.string()),
+  intentTopics: z.array(z.string()).optional().default([]),
+  companyDomains: z.array(z.string()).optional().default([]),
+  
+  // Metadata
   confidence: z.number().min(0).max(100),
   reasoning: z.string(),
 })
@@ -73,54 +112,130 @@ Analyze this description and extract the following information in JSON format:
 
 {
   "searchType": "people" or "company" (determine if they want to find specific people or companies),
+  
+  // PERSON-LEVEL FILTERS
+  "jobTitles": [array of job titles and roles for the people you want to target, e.g., "CEO", "CTO", "Marketing Director"],
+  "excludeJobTitles": [array of job titles to exclude, e.g., "Intern", "Student", "Assistant"],
+  "seniorities": [array of seniority levels - use ${currentProvider === 'apollo' ? 'Apollo format: "owner", "founder", "c_suite", "vp", "director", "manager", "senior", "entry"' : 'Explorium format: "cxo", "vp", "director", "manager", "senior", "entry"'}],
+  "personLocations": [array of locations where the target people are located, e.g., "United States", "California", "Remote"],
+  "excludePersonLocations": [array of person locations to exclude],
+  
+  // COMPANY-LEVEL FILTERS  
   "industries": [array of industries mentioned or inferred, e.g., "Technology", "Healthcare", "Finance", "SaaS", "Manufacturing"],
-  "locations": [array of locations mentioned, e.g., "United States", "California", "New York", "San Francisco", "Europe"],
-  "jobTitles": [array of job titles and roles mentioned, e.g., "CEO", "CTO", "Marketing Director", "Head of Engineering"],
-  "seniorities": [array of seniority levels inferred from titles - use ${currentProvider === 'apollo' ? 'Apollo format: "owner", "founder", "c_suite", "vp", "director", "manager", "senior", "entry"' : 'Explorium format: "cxo", "vp", "director", "manager", "senior", "entry"'}],
+  "excludeIndustries": [array of industries to exclude],
+  "organizationLocations": [array of company headquarters locations, e.g., "San Francisco", "New York", "London"],
+  "excludeOrganizationLocations": [array of company HQ locations to exclude],
   "companySize": [array of employee count ranges, e.g., "1-10", "11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001-10000", "10001+"],
+  "revenueMin": number (minimum annual revenue in USD, e.g., 1000000 for $1M),
+  "revenueMax": number (maximum annual revenue in USD),
   "technologies": [array of technologies or tools mentioned, e.g., "Salesforce", "AWS", "React", "Workday"],
-  "keywords": [array of other relevant keywords for filtering],
+  "excludeTechnologies": [array of technologies to exclude],
+  
+  // ORGANIZATION JOB FILTERS (HIRING SIGNALS)
+  "organizationJobTitles": [array of job titles mentioned in active job postings, e.g., "software developer", "sales manager", "data analyst"],
+  "organizationJobLocations": [array of locations mentioned for job postings, e.g., "Bangalore", "Remote", "San Francisco"],
+  "organizationNumJobsMin": number (minimum number of active job postings),
+  "organizationNumJobsMax": number (maximum number of active job postings),
+  "organizationJobPostedAtMin": "YYYY-MM-DD" (earliest job posting date for temporal phrases like "past month", "recently"),
+  "organizationJobPostedAtMax": "YYYY-MM-DD" (latest job posting date),
+  
+  // FUNDING & GROWTH SIGNALS
+  "fundingStages": [array of funding stages if mentioned, e.g., "seed", "series_a", "series_b", "series_c", "ipo", "acquired"],
+  "fundingAmountMin": number (minimum funding amount in USD),
+  "fundingAmountMax": number (maximum funding amount in USD),
+  "foundedYearMin": number (minimum founding year),
+  "foundedYearMax": number (maximum founding year),
+  
+  // ACTIVITY SIGNALS (boolean flags)
+  "jobPostings": true/false/null (whether company should have active job postings),
+  "newsEvents": true/false/null (whether company should have recent news/events),
+  "webTraffic": true/false/null (whether company should have significant web traffic),
+  
+  // OTHER FILTERS
+  "keywords": [array of other relevant keywords for general filtering],
+  "intentTopics": [array of intent signals or topics the company might be interested in],
+  "companyDomains": [array of specific company domains if mentioned, e.g., "google.com", "salesforce.com"],
+  
+  // METADATA
   "confidence": number between 0-100 indicating confidence in the analysis,
-  "reasoning": "Brief explanation of how you interpreted the ICP description"
+  "reasoning": "Brief explanation of how you interpreted the ICP description and what hiring signals were detected"
 }
 
-Additional guidelines:
-10. If the description includes generic phrases such as "decision makers", "key stakeholders", or "responsible person", infer suitable job titles based on context:
-   • For small companies (<= 200 employees) → ["CEO", "Founder", "Owner"]
-   • If the product/business context mentions "marketing" → include ["CMO", "Head of Marketing", "Marketing Director"].
-   • If context mentions "sales" → include ["Head of Sales", "VP Sales", "Sales Director"].
-   • If no clear department context, default to ["CEO", "Founder", "COO", "CTO"].
-11. Do NOT include placeholders like "Decision Maker" in jobTitles output.
+CRITICAL PARSING GUIDELINES:
 
-Guidelines for parsing:
-1. If job titles are mentioned, set searchType to "people"
-2. If only company characteristics are mentioned, set searchType to "company"
-3. Map common company size descriptions:
-   - "startup" or "small" → ["1-10", "11-50"]
-   - "mid-size" or "medium" → ["51-200", "201-500"]
-   - "large" or "enterprise" → ["501-1000", "1001-5000", "5001-10000", "10001+"]
-4. Map seniority from job titles according to ${currentProvider} format:
+1. **Hiring Signal Detection**: When the description mentions hiring, recruiting, job postings, or looking for talent:
+   - Extract job titles from hiring context → "organizationJobTitles"
+   - Extract hiring locations → "organizationJobLocations" 
+   - Convert temporal expressions to dates for "organizationJobPostedAtMin/Max":
+     * "past month" → set Min to 30 days ago
+     * "past 3 months" → set Min to 90 days ago
+     * "recently" → set Min to 14 days ago
+     * "last week" → set Min to 7 days ago
+   - Set "jobPostings": true if hiring activity is mentioned
+
+2. **Location Distinction**:
+   - "personLocations": Where the target people live/work
+   - "organizationLocations": Company headquarters/office locations
+   - "organizationJobLocations": Locations mentioned in job postings
+
+3. **Seniority Mapping** (${currentProvider} format):
    ${currentProvider === 'apollo' ? `
-   - CEO, CTO, CFO, etc. → "founder" or "c_suite"
+   - CEO, CTO, CFO, President → "c_suite"
+   - Founder, Co-founder → "founder"  
    - VP, Vice President → "vp"
    - Director, Head of → "director"
-   - Manager → "manager"
+   - Manager, Lead → "manager"
    - Senior Engineer, Senior Manager → "senior"
-   - Entry level → "entry"
-   - Owner → "owner"` : `
-   - CEO, CTO, CFO, etc. → "cxo"
+   - Entry level, Junior, Associate → "entry"
+   - Owner, Proprietor → "owner"` : `
+   - CEO, CTO, CFO, President → "cxo"
    - VP, Vice President → "vp"
    - Director, Head of → "director"
-   - Manager → "manager"
+   - Manager, Lead → "manager"
    - Senior Engineer, Senior Manager → "senior"
-   - Entry level → "entry"`}
-5. Include both exact locations mentioned and reasonable geographic expansions
-6. Extract industry from context clues (e.g., "SaaS" → "Technology", "hospitals" → "Healthcare")
-7. Be generous with keyword extraction to catch edge cases
-8. Confidence should reflect how specific and clear the description is
-9. Use ${currentProvider} compatible values for all fields
+   - Entry level, Junior, Associate → "entry"`}
 
-Respond ONLY with valid JSON.`
+4. **Company Size Mapping**:
+   - "startup", "small company" → ["1-10", "11-50"]
+   - "mid-size", "medium company" → ["51-200", "201-500"]  
+   - "large company", "enterprise" → ["501-1000", "1001-5000", "5001-10000"]
+   - "Fortune 500", "very large" → ["5001-10000", "10001+"]
+
+5. **Revenue Inference**:
+   - "startup" → revenueMax: 10000000 ($10M)
+   - "mid-size" → revenueMin: 10000000, revenueMax: 100000000 ($10M-$100M)
+   - "enterprise" → revenueMin: 100000000 ($100M+)
+
+6. **Industry Context Clues**:
+   - "SaaS", "software" → "Technology"
+   - "hospital", "clinic" → "Healthcare"  
+   - "bank", "fintech" → "Finance"
+   - "ecommerce", "retail" → "Retail"
+
+7. **Temporal Expression Parsing** (calculate from current date: ${new Date().toISOString().split('T')[0]}):
+   - "past month" → organizationJobPostedAtMin: "${new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0]}"
+   - "past 3 months" → organizationJobPostedAtMin: "${new Date(Date.now() - 90*24*60*60*1000).toISOString().split('T')[0]}"
+   - "recently" → organizationJobPostedAtMin: "${new Date(Date.now() - 14*24*60*60*1000).toISOString().split('T')[0]}"
+   - "last week" → organizationJobPostedAtMin: "${new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0]}"
+
+8. **Activity Signal Detection**:
+   - Mentions of "hiring", "recruiting", "job openings" → jobPostings: true
+   - Mentions of "growing", "expanding", "scaling" → newsEvents: true, jobPostings: true
+   - Mentions of "popular", "high traffic", "well-known" → webTraffic: true
+
+9. **Generic Decision Maker Mapping**:
+   - "decision makers", "key stakeholders" in small companies → ["CEO", "Founder", "Owner"]
+   - Context mentions "marketing" → add ["CMO", "Head of Marketing", "Marketing Director"]
+   - Context mentions "sales" → add ["VP Sales", "Head of Sales", "Sales Director"]
+   - Context mentions "technology" → add ["CTO", "Head of Engineering", "VP Engineering"]
+
+10. **Filter Validation**:
+    - Ensure all arrays contain valid, non-empty strings
+    - Set null for unused numeric fields rather than 0
+    - Use proper date format (YYYY-MM-DD) for date fields
+    - Confidence should reflect specificity and clarity of the description
+
+Respond ONLY with valid JSON. Be thorough in extracting ALL relevant filters from the description.`
 
     console.log('Sending ICP parsing request to OpenAI...')
     
@@ -202,10 +317,11 @@ Respond ONLY with valid JSON.`
       const unifiedFilters = {
         searchType: validatedICPNormalized.searchType,
         industries: validatedICPNormalized.industries,
-        locations: validatedICPNormalized.locations,
+        // Combine person and organization locations for legacy validation
+        locations: [...(validatedICPNormalized.personLocations || []), ...(validatedICPNormalized.organizationLocations || [])],
         jobTitles: validatedICPNormalized.jobTitles,
         seniorities: validatedICPNormalized.seniorities,
-        companyHeadcount: validatedICPNormalized.companySize,
+        companySize: validatedICPNormalized.companySize,
         technologies: validatedICPNormalized.technologies,
         keywords: validatedICPNormalized.keywords
       }
@@ -222,7 +338,9 @@ Respond ONLY with valid JSON.`
             // Update with cleaned filters from validation
             ...(validationResults.cleanedFilters && {
               industries: validationResults.cleanedFilters.industries || validatedICP.industries,
-              locations: validationResults.cleanedFilters.locations || validatedICP.locations,
+              // Map cleaned locations back to both person and organization locations
+              personLocations: validationResults.cleanedFilters.locations || validatedICP.personLocations || [],
+              organizationLocations: validationResults.cleanedFilters.locations || validatedICP.organizationLocations || [],
               jobTitles: validationResults.cleanedFilters.jobTitles || validatedICP.jobTitles,
               seniorities: validationResults.cleanedFilters.seniorities || validatedICP.seniorities,
               companySize: validationResults.cleanedFilters.companyHeadcount || validatedICP.companySize,
