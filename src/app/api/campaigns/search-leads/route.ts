@@ -22,6 +22,8 @@ interface FilterState {
   technologies: string[]
   fundingStatus: string[]
   hiringActivity: boolean
+  organizationNumJobsMax: number
+  organizationNumJobsMin: number
   recentNews: boolean
 }
 
@@ -54,29 +56,29 @@ interface Lead {
 // Mock data for development - in production, this would call ZoomInfo/Apollo APIs
 const generateMockLeads = (filters: FilterState, count: number = 50): Lead[] => {
   const mockLeads: Lead[] = []
-  
+
   const firstNames = ['John', 'Sarah', 'Michael', 'Emily', 'David', 'Jessica', 'Chris', 'Amanda', 'Robert', 'Lisa']
   const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez']
   const companies = ['TechCorp', 'InnovateLabs', 'DataSys', 'CloudFirst', 'ScaleUp Inc', 'NextGen Solutions', 'AI Dynamics', 'Digital Edge']
   const domains = ['techcorp.com', 'innovatelabs.com', 'datasys.io', 'cloudfirst.com', 'scaleup.co', 'nextgen.solutions', 'aidynamics.ai', 'digitaledge.com']
-  
+
   for (let i = 0; i < count; i++) {
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)]
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)]
     const company = companies[Math.floor(Math.random() * companies.length)]
     const domain = domains[Math.floor(Math.random() * domains.length)]
-    
+
     // Apply basic filtering logic
-    const title = filters.jobTitles.length > 0 
+    const title = filters.jobTitles.length > 0
       ? filters.jobTitles[Math.floor(Math.random() * filters.jobTitles.length)]
       : 'Senior Manager'
-    
+
     const industry = filters.industries.length > 0
       ? filters.industries[Math.floor(Math.random() * filters.industries.length)]
       : 'Technology'
-    
+
     const employeeCount = Math.floor(Math.random() * (filters.employeeCountMax - filters.employeeCountMin)) + filters.employeeCountMin
-    
+
     mockLeads.push({
       id: `lead_${i + 1}`,
       firstName,
@@ -96,17 +98,17 @@ const generateMockLeads = (filters: FilterState, count: number = 50): Lead[] => 
       source: 'zoominfo'
     })
   }
-  
+
   return mockLeads
 }
 
 async function searchZoomInfo(filters: FilterState): Promise<{ results: Lead[], total: number }> {
   // In production, this would make actual API calls to ZoomInfo
   // For now, return mock data that respects the filters
-  
+
   const mockResults = generateMockLeads(filters, 50)
   const total = Math.floor(Math.random() * 5000) + 100 // Mock total count
-  
+
   return {
     results: mockResults,
     total
@@ -179,7 +181,7 @@ async function searchApollo(filters: FilterState, page: number = 1, limit: numbe
   try {
     // Transform legacy filters to Apollo format
     const apolloFilters = transformToApolloFilters(filters, page, limit)
-    
+
     // Convert to Apollo API format
     const apolloSearchFilters = {
       person_titles: apolloFilters.jobTitles,
@@ -191,14 +193,14 @@ async function searchApollo(filters: FilterState, page: number = 1, limit: numbe
       page: apolloFilters.page,
       per_page: apolloFilters.perPage
     }
-    
+
     // Validate filters
     const validation = ApolloValidator.validateSearchFilters(apolloSearchFilters)
     if (!validation.isValid) {
       console.warn('Apollo validation failed:', validation.errors)
       throw new Error(`Invalid search filters: ${validation.errors.map(e => e.message).join(', ')}`)
     }
-    
+
     // Execute search with throttling
     const throttleManager = getApolloThrottleManager()
     const searchResult = await throttleManager.executeRequest(
@@ -209,17 +211,17 @@ async function searchApollo(filters: FilterState, page: number = 1, limit: numbe
         priority: 'medium'
       }
     )
-    
+
     // Transform results to legacy format
     const results = searchResult.people.map(transformApolloToLead)
-    
+
     console.log(`Apollo search completed: ${results.length} results from ${searchResult.pagination.total_entries} total`)
-    
+
     return {
       results,
       total: searchResult.pagination.total_entries
     }
-    
+
   } catch (error) {
     console.error('Apollo search error:', error)
     throw new Error(`Apollo search failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -235,7 +237,7 @@ async function searchEcommerce(filters: FilterState): Promise<{ results: Lead[],
     industry: 'E-commerce',
     technologies: ['Shopify', 'WooCommerce', 'Stripe', 'Google Analytics']
   }))
-  
+
   return {
     results: mockResults,
     total: Math.floor(Math.random() * 2000) + 100
@@ -252,7 +254,7 @@ async function searchLocalBusiness(filters: FilterState): Promise<{ results: Lea
     employeeCount: Math.floor(Math.random() * 50) + 1, // Smaller local businesses
     technologies: ['Google My Business', 'Square', 'QuickBooks']
   }))
-  
+
   return {
     results: mockResults,
     total: Math.floor(Math.random() * 1000) + 50
@@ -262,15 +264,13 @@ async function searchLocalBusiness(filters: FilterState): Promise<{ results: Lea
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
-    
+
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body: SearchRequest = await request.json()
     const { filters, source, page = 1, limit = 50 } = body
-
-    console.log('Search request:', { filters, source, page, limit })
 
     let searchResults: { results: Lead[], total: number }
 
@@ -286,15 +286,15 @@ export async function POST(request: NextRequest) {
           throw error
         }
         break
-        
+
       case 'ecommerce':
         searchResults = await searchEcommerce(filters)
         break
-        
+
       case 'local-data':
         searchResults = await searchLocalBusiness(filters)
         break
-        
+
       default:
         return NextResponse.json({ error: 'Invalid source' }, { status: 400 })
     }
@@ -315,7 +315,7 @@ export async function POST(request: NextRequest) {
       totalPages: Math.ceil(searchResults.total / limit),
       source
     })
-    
+
   } catch (error) {
     console.error('Search leads error:', error)
     return NextResponse.json(
@@ -335,4 +335,4 @@ export async function OPTIONS() {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   })
-} 
+}
