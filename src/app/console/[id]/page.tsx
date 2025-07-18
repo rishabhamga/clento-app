@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
     Box,
@@ -22,11 +22,16 @@ import {
     Td,
     Tbody,
     Table,
+    Input,
+    Th,
+    Select,
 } from '@chakra-ui/react'
 import { createCustomToast } from '@/lib/utils/custom-toast'
 import { useUser } from '@clerk/nextjs'
 import { Organization } from '../page'
 import Papa from 'papaparse';
+import { DbCampaign } from '../../dashboard/page'
+import { title } from 'process'
 
 function OrgDetailPage() {
     const { user } = useUser()
@@ -38,9 +43,11 @@ function OrgDetailPage() {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null)
     const [headers, setHeaders] = useState<string[]>();
-    const [isViewingExistingLeads, setIsViewingExistingLeads] = useState<boolean>();
     const [csvData, setCsvData] = useState<string[][]>([]);
     const [listName, setListName] = useState<string>();
+    const [campaignsData, setCampaignsData] = useState<DbCampaign[]>();
+    const [selectedCampaign, setSelectedCampaign] = useState<string>();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -49,8 +56,8 @@ function OrgDetailPage() {
                 const response = await fetch(`/api/console/orgs/${params.id}`)
                 if (response.ok) {
                     const data = await response.json()
-                    setOrganization(data?.orgData)
-                    console.log(data?.orgData);
+                    setOrganization(data?.orgData);
+                    setCampaignsData(data?.campaignData);
                 }
             } catch (err) {
                 console.log(err)
@@ -72,12 +79,51 @@ function OrgDetailPage() {
                     if (data.length > 0) {
                         setHeaders(data[0]);
                         setCsvData(data.slice(1));
-                        setIsViewingExistingLeads(false);
                     }
                 },
             });
 
             setListName('');
+        }
+    }
+
+    const handleUpload = async () => {
+
+        if (!listName?.trim()) {
+            customToast.error({ title: "List name is required" })
+            return
+        }
+        if (!fileInputRef.current?.files) {
+            customToast.error({ title: "No File Found" })
+            return
+        }
+        if (!params.id) {
+            customToast.error({ title: "Org Id not found" })
+            return
+        }
+        if (!selectedCampaign) {
+            customToast.error({ title: "No Campaign Selected" })
+            return
+        }
+
+        const data = new FormData();
+        data.append("csv", fileInputRef.current.files?.[0]);
+        data.append("orgId", Array.isArray(params?.id) ? params.id[0] : params.id ?? '');
+        data.append("listName", listName);
+        data.append("campaignId", selectedCampaign);
+
+        const response = await fetch(`/api/console/orgs/${params.id}`, {
+            method: 'POST',
+            body: data
+        });
+        if (response.ok) {
+            fileInputRef.current.value = "";
+            setCsvData([]);
+            setHeaders([]);
+            setListName("");
+            customToast.success({ title: 'List Uploaded' })
+        } else {
+            customToast.error({ title: 'An error occured' })
         }
     }
 
@@ -140,6 +186,7 @@ function OrgDetailPage() {
                                 </CardHeader>
                             </HStack>
                             <input
+                                ref={fileInputRef}
                                 type="file"
                                 accept=".csv"
                                 style={{ display: 'none' }}
@@ -150,7 +197,7 @@ function OrgDetailPage() {
                                 onClick={() => {
                                     const input = document.getElementById('csv-upload') as HTMLInputElement | null;
                                     if (input) {
-                                        input.value = ''; // reset file input so same file can be uploaded again
+                                        input.value = '';
                                         input.click();
                                     }
                                 }}
@@ -170,12 +217,25 @@ function OrgDetailPage() {
                         </Card>
                     </Card>
                     {headers && (
-                        <TableContainer border={'1px'} borderColor={'blackAlpha.400'} borderRadius={'8px'}>
-                            <Table>
+                        <HStack justifyContent={'space-between'}>
+                            <Input placeholder='File Input' value={listName} w={'500px'} onChange={(e) => setListName(e.target.value)} />
+                            <Select placeholder="Select Campaign" onChange={(e) => setSelectedCampaign(e.target.value)} value={selectedCampaign}>
+                                {campaignsData && campaignsData.map((campaign) => (
+                                    <option key={campaign.id} value={campaign.id}>
+                                        {campaign.name}
+                                    </option>
+                                ))}
+                            </Select>
+                            <Button onClick={handleUpload}>Upload</Button>
+                        </HStack>
+                    )}
+                    {headers && (
+                        <TableContainer border={'1px'} borderColor={'blackAlpha.400'}>
+                            <Table variant="simple" size="md" sx={{ borderCollapse: 'separate', borderSpacing: 0, width: '100%' }}>
                                 <Thead>
-                                    <Tr color={'MenuText'} backgroundColor={'Menu'}>
+                                    <Tr color={'GrayText'} backgroundColor={'Menu'}>
                                         {headers && headers.map((header, idx) => (
-                                            <Td key={idx} border={'1px'} borderColor={'blackAlpha.400'} >{header}</Td>
+                                            <Th key={idx} border={'1px solid'} borderColor={'blackAlpha.400'}>{header}</Th>
                                         ))}
                                         {/* <Td border={'1px'} borderColor={'blackAlpha.400'} >id</Td>
                                     <Td border={'1px'} borderColor={'blackAlpha.400'} >name</Td>
@@ -185,6 +245,13 @@ function OrgDetailPage() {
                                     </Tr>
                                 </Thead>
                                 <Tbody>
+                                    {csvData && csvData.map((row, idx) => (
+                                        <Tr key={idx} color={'GrayText'} backgroundColor={'Menu'}>
+                                            {row.map((data, idxx) => (
+                                                <Td key={idxx} border={'1px'} borderColor={'blackAlpha.400'} >{data}</Td>
+                                            ))}
+                                        </Tr>
+                                    ))}
                                 </Tbody>
                             </Table>
                         </TableContainer>
