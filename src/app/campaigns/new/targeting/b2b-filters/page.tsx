@@ -17,21 +17,30 @@ import {
   Button,
   Flex,
   Spinner,
+  Divider,
+  filter,
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { CampaignStepper } from '@/components/ui/CampaignStepper'
 import { ApolloSearchProvider } from '@/hooks/useApolloSearch'
-import { PeopleFilters, CommonFilters } from '@/components/filters/ApolloFilters'
+import { ExplorimFilters } from '@/components/filters/ExplorimFilters'
+import { ConversationalICP } from '@/components/filters/ConversationalICP'
 import SearchResults from '@/components/results/SearchResults'
 import { useSearchFilters, useApolloSearch } from '@/hooks/useApolloSearch'
-import { 
+import {
   type ApolloFilterInput,
 } from '@/types/apollo'
+import {
+  type ExplorimFilters as ExplorimFiltersType,
+  type ICPFilterProfile,
+  ALL_COUNTRIES
+} from '@/types/explorium'
 import CSVUpload from '@/components/filters/CSVUpload'
 import type { CSVLeadData } from '@/types/csv'
 import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
+import ApolloFilters, { CommonFilters, CompanyFilters, PeopleFilters } from '../../../../../components/filters/ApolloFilters'
 
 // Enhanced animations
 const float = keyframes`
@@ -71,6 +80,10 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
     if (typeof value === 'boolean') {
       return value ? 'Yes' : 'No'
     }
+    if (typeof value === 'number') {
+      // Format large numbers with commas
+      return value.toLocaleString()
+    }
     if (typeof value === 'string' && value.trim()) {
       return value
     }
@@ -81,51 +94,65 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
   const activeFilters: Array<{ label: string; value: string }> = []
 
   if (searchType === 'people') {
-    // People-specific filters
+    // People-specific filters (whitelisted only)
     if (filters.jobTitles?.length > 0) {
       activeFilters.push({ label: 'Job Titles', value: formatFilterValue(filters.jobTitles) })
     }
     if (filters.seniorities?.length > 0) {
-      activeFilters.push({ label: 'Seniority', value: formatFilterValue(filters.seniorities) })
+      activeFilters.push({ label: 'Job Levels (Seniority)', value: formatFilterValue(filters.seniorities) })
     }
-    if (filters.locations?.length > 0) {
-      activeFilters.push({ label: 'Locations', value: formatFilterValue(filters.locations) })
+    if (filters.personLocations?.length > 0) {
+      activeFilters.push({ label: 'Person Locations', value: formatFilterValue(filters.personLocations) })
     }
-    if (filters.timeInCurrentRole?.length > 0) {
-      activeFilters.push({ label: 'Time in Role', value: formatFilterValue(filters.timeInCurrentRole) })
-    }
-    if (filters.totalYearsExperience?.length > 0) {
-      activeFilters.push({ label: 'Experience', value: formatFilterValue(filters.totalYearsExperience) })
-    }
-    if (filters.hasEmail !== null) {
-      activeFilters.push({ label: 'Has Email', value: formatFilterValue(filters.hasEmail) })
-    }
-    if (filters.excludeJobTitles?.length > 0) {
-      activeFilters.push({ label: 'Exclude Job Titles', value: formatFilterValue(filters.excludeJobTitles) })
-    }
-    if (filters.excludeLocations?.length > 0) {
-      activeFilters.push({ label: 'Exclude Locations', value: formatFilterValue(filters.excludeLocations) })
+    if (filters.organizationLocations?.length > 0) {
+      activeFilters.push({ label: 'Company Locations', value: formatFilterValue(filters.organizationLocations) })
     }
   }
 
-  // Common filters for both people and companies
-  if (filters.industries?.length > 0) {
-    activeFilters.push({ label: 'Industries', value: formatFilterValue(filters.industries) })
-  }
+  // Common filters (people & company) – whitelisted only
   if (filters.companyHeadcount?.length > 0) {
-    activeFilters.push({ label: 'Company Size', value: formatFilterValue(filters.companyHeadcount) })
+    activeFilters.push({ label: 'Company Size (Employees)', value: formatFilterValue(filters.companyHeadcount) })
   }
-  if (filters.technologies?.length > 0) {
-    activeFilters.push({ label: 'Technologies', value: formatFilterValue(filters.technologies) })
+  if (filters.technologyUids?.length > 0) {
+    activeFilters.push({ label: 'Technologies Used (UIDs)', value: formatFilterValue(filters.technologyUids) })
   }
-  if (filters.intentTopics?.length > 0) {
-    activeFilters.push({ label: 'Intent Topics', value: formatFilterValue(filters.intentTopics) })
+  if (filters.excludeTechnologyUids?.length > 0) {
+    activeFilters.push({ label: 'Exclude Technologies (UIDs)', value: formatFilterValue(filters.excludeTechnologyUids) })
   }
-  if (filters.keywords?.length > 0) {
-    activeFilters.push({ label: 'Keywords', value: formatFilterValue(filters.keywords) })
+
+  // Annual revenue (Apollo / Explorium may attach via different keys)
+  if (filters.annual_revenue?.length > 0 || filters.company_annual_revenue?.length > 0) {
+    const value = filters.annual_revenue || filters.company_annual_revenue
+    activeFilters.push({ label: 'Annual Revenue', value: formatFilterValue(value) })
   }
-  if (filters.companyDomains?.length > 0) {
-    activeFilters.push({ label: 'Company Domains', value: formatFilterValue(filters.companyDomains) })
+  else if ((typeof filters.revenueMin === 'number' && !isNaN(filters.revenueMin)) ||
+          (typeof filters.revenueMax === 'number' && !isNaN(filters.revenueMax))) {
+    // Format revenue values in a human-readable way
+    const formatRevenue = (value: number | null | undefined) => {
+      if (value === null || value === undefined || isNaN(value)) return 'Any';
+      if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
+      if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+      if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
+      return `$${value}`;
+    };
+
+    const minRev = formatRevenue(filters.revenueMin);
+    const maxRev = formatRevenue(filters.revenueMax);
+    activeFilters.push({ label: 'Annual Revenue Range', value: `${minRev} - ${maxRev}` });
+  }
+
+  // Organization job related filters
+  if (filters.organizationJobTitles?.length > 0) {
+    activeFilters.push({ label: 'Organization Job Titles', value: formatFilterValue(filters.organizationJobTitles) })
+  }
+  if (filters.organizationJobLocations?.length > 0) {
+    activeFilters.push({ label: 'Organization Job Locations', value: formatFilterValue(filters.organizationJobLocations) })
+  }
+  if ((filters.organizationNumJobsMin !== undefined && filters.organizationNumJobsMin !== null) ||
+      (filters.organizationNumJobsMax !== undefined && filters.organizationNumJobsMax !== null)) {
+    const min = filters.organizationNumJobsMin !== null ? filters.organizationNumJobsMin : 'Any'
+    const max = filters.organizationNumJobsMax !== null ? filters.organizationNumJobsMax : 'Any'
+    activeFilters.push({ label: 'Number of Active Job Postings', value: `${min} - ${max}` })
   }
 
   if (activeFilters.length === 0) {
@@ -133,7 +160,7 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
   }
 
   return (
-    <Card 
+    <Card
       bg={cardBg}
       backdropFilter="blur(12px)"
       border="1px solid"
@@ -152,7 +179,7 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
               {searchType === 'people' ? 'People Search' : searchType === 'company' ? 'Company Search' : 'CSV Upload'}
             </Text>
           </HStack>
-          
+
           <Box>
             <Flex wrap="wrap" gap={2}>
               {activeFilters.map((filter, index) => (
@@ -186,10 +213,10 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
 function B2BFiltersPageWithParams() {
   const searchParams = useSearchParams()
   const typeParam = searchParams.get('type')
-  
+
   // Set initial search type - only support people and csv_upload
   const initialSearchType = typeParam === 'csv_upload' ? 'csv_upload' : 'people'
-  
+
   return (
     <ApolloSearchProvider initialState={{ searchType: initialSearchType }}>
       <B2BFiltersContent />
@@ -212,11 +239,17 @@ function B2BFiltersContent() {
   const toast = useToast()
   const customToast = createCustomToast(toast)
   const searchParams = useSearchParams()
-  
+
   // Apollo search hooks
   const { search, isSearching, clearResults, setSearchResults, state } = useApolloSearch()
   const { searchType, filters, hasActiveFilters, updateFilter, resetFilters, setSearchType } = useSearchFilters()
-  
+  useEffect(() => {
+      console.log(filters, "all filets")
+  }, [filters])
+
+  const [savedProfiles, setSavedProfiles] = useState<ICPFilterProfile[]>([])
+  const [loadingProfiles, setLoadingProfiles] = useState(false)
+
   // Enhanced color mode values with glassmorphism
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')
   const glassBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
@@ -239,9 +272,116 @@ function B2BFiltersContent() {
     }
   }, [searchParams, searchType, setSearchType])
 
+  // Load saved ICP profiles on mount
+  useEffect(() => {
+    const loadProfiles = async () => {
+      setLoadingProfiles(true)
+      try {
+        console.log('🔄 Loading ICP profiles from API...')
+        const response = await fetch('/api/icp-profiles')
+
+        console.log('📡 ICP Profiles API response:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          url: response.url
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log('✅ ICP Profiles loaded successfully:', data)
+          setSavedProfiles(data.profiles || [])
+        } else {
+          const errorText = await response.text()
+          console.error('❌ ICP Profiles API error:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorText
+          })
+        }
+      } catch (error) {
+        console.error('❌ Error loading ICP profiles:', error)
+      } finally {
+        setLoadingProfiles(false)
+      }
+    }
+    loadProfiles()
+  }, [])
+
   // Handle filter changes
   const handleFilterChange = (field: string, value: unknown) => {
     updateFilter(field, value)
+  }
+  // Reset all filters - both Apollo and Explorium
+  const handleResetAllFilters = () => {
+    // Reset Apollo filters
+    resetFilters()
+    // Reset Explorium filters
+  }
+
+  // Save ICP profile
+  const handleSaveProfile = async (name: string, description?: string) => {
+    try {
+      console.log('💾 Saving ICP profile:', { name, description, filters: filters })
+
+      const response = await fetch('/api/icp-profiles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          profile_name: name,
+          description,
+          filters: filters,
+          search_type: 'people'
+        }),
+      })
+
+      console.log('📡 Save ICP Profile API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ ICP Profile saved successfully:', data)
+        setSavedProfiles(prev => [data.profile, ...prev])
+        customToast.success({
+          title: 'Profile Saved',
+          description: `ICP profile "${name}" has been saved successfully.`,
+        })
+      } else {
+        throw new Error('Failed to save profile')
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error)
+      customToast.error({
+        title: 'Save Failed',
+        description: 'Failed to save ICP profile. Please try again.',
+      })
+    }
+  }
+
+  // Load ICP profile
+  const handleLoadProfile = async (profile: ICPFilterProfile) => {
+    try {
+      if (profile.id) {
+        // Increment usage count by fetching the profile
+        await fetch(`/api/icp-profiles/${profile.id}`)
+      }
+
+      customToast.success({
+        title: 'Profile Loaded',
+        description: `ICP profile "${profile.profile_name}" has been loaded.`,
+      })
+    } catch (error) {
+      console.error('Error loading profile:', error)
+      customToast.error({
+        title: 'Load Failed',
+        description: 'Failed to load ICP profile. Please try again.',
+      })
+    }
   }
 
   // Handle search
@@ -266,9 +406,9 @@ function B2BFiltersContent() {
     const targetingConfig = {
       searchType,
       filters,
-      hasResults: (state.peopleResults && state.peopleResults.length > 0) || 
+      hasResults: (state.peopleResults && state.peopleResults.length > 0) ||
                    (state.companyResults && state.companyResults.length > 0),
-      resultsCount: searchType === 'people' 
+      resultsCount: searchType === 'people'
         ? (state.peopleResults?.length || 0)
         : (state.companyResults?.length || 0)
     }
@@ -290,23 +430,24 @@ function B2BFiltersContent() {
   // Handle leads selected from CSV upload
   const handleLeadsSelected = (leads: CSVLeadData[]) => {
     console.log('CSV leads loaded for preview:', leads)
-    
+
     // Convert CSV leads to the format expected by search results
     const convertedLeads = leads.map((lead, index) => {
       // Extract compatible fields and exclude/convert problematic ones
-      const { 
-        department, 
-        source, 
-        upload_date, 
-        validation_status, 
-        validation_message, 
+      const {
+        department,
+        source,
+        upload_date,
+        validation_status,
+        validation_message,
         company_size,
-        ...compatibleFields 
+        ...compatibleFields
       } = lead
-      
+
       return {
         id: `csv_${index}_${Date.now()}`,
         external_id: `csv_${index}_${Date.now()}`,
+        name: `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown',
         full_name: `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown',
         data_source: 'csv_upload' as const,
         confidence: 0.9,
@@ -316,9 +457,9 @@ function B2BFiltersContent() {
         ...compatibleFields
       }
     })
-    
+
     setSearchResults(convertedLeads)
-    
+
     customToast.success({
       title: 'CSV Data Loaded for Preview',
       description: `${leads.length} leads loaded for preview.`,
@@ -330,14 +471,14 @@ function B2BFiltersContent() {
   }
 
   // Check if we can proceed to pitch
-  const canProceedToPitch = hasActiveFilters && (
-    (searchType === 'csv_upload' && state.peopleResults && state.peopleResults.length > 0) ||
-    (searchType === 'people' && state.peopleResults && state.peopleResults.length > 0) ||
-    (searchType === 'company' && state.companyResults && state.companyResults.length > 0)
+  // Allow proceeding with just filters for people/company search (in case of API issues)
+  // but require actual results for CSV uploads
+  const canProceedToPitch = (hasActiveFilters) && (
+    searchType === 'csv_upload' ? (state.peopleResults && state.peopleResults.length > 0) : true
   )
 
   return (
-    <Box 
+    <Box
       minH="100vh"
       bg={gradientBg}
       position="relative"
@@ -376,16 +517,16 @@ function B2BFiltersContent() {
 
           {/* Page Title */}
           <Box textAlign="center">
-            <Heading 
-              size="2xl" 
+            <Heading
+              size="2xl"
               mb={4}
               color={useColorModeValue('white', 'gray.100')}
               textShadow="0 2px 4px rgba(0,0,0,0.3)"
             >
               Ideal Customer Profile Preview
             </Heading>
-            <Text 
-              fontSize="lg" 
+            <Text
+              fontSize="lg"
               color={useColorModeValue('whiteAlpha.900', 'gray.200')}
               maxW="2xl"
               mx="auto"
@@ -399,12 +540,12 @@ function B2BFiltersContent() {
           <SelectedFiltersDisplay filters={filters} searchType={searchType} />
 
           {/* Filters and Results Grid */}
-          <Grid templateColumns={{ base: "1fr", lg: "380px 1fr" }} gap={6} alignItems="start">
+          <Grid templateColumns={{ base: "1fr", lg: "450px 1fr" }} gap={6} alignItems="start">
             {/* Filters Column */}
             <GridItem>
               <VStack spacing={6} align="stretch">
                 {/* Filters Card */}
-                <Card 
+                <Card
                   bg={cardBg}
                   backdropFilter="blur(10px)"
                   border="1px solid"
@@ -422,20 +563,176 @@ function B2BFiltersContent() {
                     ) : (
                       <VStack spacing={6} align="stretch" flex={1} overflow="hidden">
                         <Heading size="md" color="purple.500" flexShrink={0}>
-                          Select Filters
+                          Target Your Ideal Customers
                         </Heading>
-                        
+
                         <Box flex={1} overflow="auto" pr={2}>
-                          <PeopleFilters
-                            filters={filters}
-                            onChange={handleFilterChange}
-                          />
-                          
-                          <CommonFilters
-                            searchType={searchType}
-                            filters={filters}
-                            onChange={handleFilterChange}
-                          />
+                          <VStack spacing={6} align="stretch">
+                            {/* Conversational ICP Input with Alex */}
+                            <ConversationalICP
+                              onICPParsed={(parsedICP) => {
+                                // Set search type based on parsed ICP
+                                if (parsedICP.searchType !== searchType) {
+                                  setSearchType(parsedICP.searchType)
+                                }
+
+                                // Update Apollo filters (for search functionality) - ENHANCED WITH ALL FIELDS
+
+                                // Person-level filters
+                                if (parsedICP.jobTitles && parsedICP.jobTitles.length > 0) {
+                                  handleFilterChange('jobTitles', parsedICP.jobTitles)
+                                }
+                                if (parsedICP.excludeJobTitles && parsedICP.excludeJobTitles.length > 0) {
+                                  handleFilterChange('excludeJobTitles', parsedICP.excludeJobTitles)
+                                }
+                                if (parsedICP.seniorities && parsedICP.seniorities.length > 0) {
+                                  handleFilterChange('seniorities', parsedICP.seniorities)
+                                }
+                                if (parsedICP.personLocations && parsedICP.personLocations.length > 0) {
+                                  handleFilterChange('personLocations', parsedICP.personLocations)
+                                }
+                                if (parsedICP.excludePersonLocations && parsedICP.excludePersonLocations.length > 0) {
+                                  handleFilterChange('excludePersonLocations', parsedICP.excludePersonLocations)
+                                }
+
+                                // Company-level filters
+                                if (parsedICP.industries && parsedICP.industries.length > 0) {
+                                  handleFilterChange('industries', parsedICP.industries)
+                                }
+                                if (parsedICP.excludeIndustries && parsedICP.excludeIndustries.length > 0) {
+                                  handleFilterChange('excludeIndustries', parsedICP.excludeIndustries)
+                                }
+                                if (parsedICP.organizationLocations && parsedICP.organizationLocations.length > 0) {
+                                  handleFilterChange('organizationLocations', parsedICP.organizationLocations)
+                                }
+                                if (parsedICP.excludeOrganizationLocations && parsedICP.excludeOrganizationLocations.length > 0) {
+                                  handleFilterChange('excludeOrganizationLocations', parsedICP.excludeOrganizationLocations)
+                                }
+                                if (parsedICP.companySize?.length > 0) {
+                                  handleFilterChange('companyHeadcount', parsedICP.companySize)
+                                }
+                                if (parsedICP.revenueMin !== null && parsedICP.revenueMin !== undefined) {
+                                  handleFilterChange('revenueMin', parsedICP.revenueMin)
+                                }
+                                if (parsedICP.revenueMax !== null && parsedICP.revenueMax !== undefined) {
+                                  handleFilterChange('revenueMax', parsedICP.revenueMax)
+                                }
+                                if (parsedICP.technologies && parsedICP.technologies.length > 0) {
+                                  handleFilterChange('technologyUids', parsedICP.technologies)
+                                }
+                                if (parsedICP.excludeTechnologies && parsedICP.excludeTechnologies.length > 0) {
+                                  handleFilterChange('excludeTechnologyUids', parsedICP.excludeTechnologies)
+                                }
+                                if (parsedICP.companyDomains && parsedICP.companyDomains.length > 0) {
+                                  handleFilterChange('companyDomains', parsedICP.companyDomains)
+                                }
+
+                                // Organization job filters (HIRING SIGNALS) - THE KEY MISSING PIECE
+                                if (parsedICP.organizationJobTitles && parsedICP.organizationJobTitles.length > 0) {
+                                  handleFilterChange('organizationJobTitles', parsedICP.organizationJobTitles)
+                                }
+                                if (parsedICP.organizationJobLocations && parsedICP.organizationJobLocations.length > 0) {
+                                  handleFilterChange('organizationJobLocations', parsedICP.organizationJobLocations)
+                                }
+                                if (parsedICP.organizationNumJobsMin !== null && parsedICP.organizationNumJobsMin !== undefined) {
+                                  handleFilterChange('organizationNumJobsMin', parsedICP.organizationNumJobsMin)
+                                }
+                                if (parsedICP.organizationNumJobsMax !== null && parsedICP.organizationNumJobsMax !== undefined) {
+                                  handleFilterChange('organizationNumJobsMax', parsedICP.organizationNumJobsMax)
+                                }
+                                if (parsedICP.organizationJobPostedAtMin) {
+                                  handleFilterChange('organizationJobPostedAtMin', parsedICP.organizationJobPostedAtMin)
+                                }
+                                if (parsedICP.organizationJobPostedAtMax) {
+                                  handleFilterChange('organizationJobPostedAtMax', parsedICP.organizationJobPostedAtMax)
+                                }
+
+                                // Funding & growth filters
+                                if (parsedICP.fundingStages && parsedICP.fundingStages.length > 0) {
+                                  handleFilterChange('fundingStages', parsedICP.fundingStages)
+                                }
+                                if (parsedICP.fundingAmountMin !== null && parsedICP.fundingAmountMin !== undefined) {
+                                  handleFilterChange('fundingAmountMin', parsedICP.fundingAmountMin)
+                                }
+                                if (parsedICP.fundingAmountMax !== null && parsedICP.fundingAmountMax !== undefined) {
+                                  handleFilterChange('fundingAmountMax', parsedICP.fundingAmountMax)
+                                }
+                                if (parsedICP.foundedYearMin !== null && parsedICP.foundedYearMin !== undefined) {
+                                  handleFilterChange('foundedYearMin', parsedICP.foundedYearMin)
+                                }
+                                if (parsedICP.foundedYearMax !== null && parsedICP.foundedYearMax !== undefined) {
+                                  handleFilterChange('foundedYearMax', parsedICP.foundedYearMax)
+                                }
+
+                                // Activity signals
+                                if (parsedICP.jobPostings !== null && parsedICP.jobPostings !== undefined) {
+                                  handleFilterChange('jobPostings', parsedICP.jobPostings)
+                                }
+                                if (parsedICP.newsEvents !== null && parsedICP.newsEvents !== undefined) {
+                                  handleFilterChange('newsEvents', parsedICP.newsEvents)
+                                }
+                                if (parsedICP.webTraffic !== null && parsedICP.webTraffic !== undefined) {
+                                  handleFilterChange('webTraffic', parsedICP.webTraffic)
+                                }
+
+                                // Other filters
+                                if (parsedICP.keywords && parsedICP.keywords.length > 0) {
+                                  handleFilterChange('keywords', parsedICP.keywords)
+                                }
+                                if (parsedICP.intentTopics && parsedICP.intentTopics.length > 0) {
+                                  handleFilterChange('intentTopics', parsedICP.intentTopics)
+                                }
+
+                                // Count applied filters more accurately
+                                const appliedFiltersCount = [
+                                  parsedICP.jobTitles, parsedICP.personLocations, parsedICP.organizationLocations,
+                                  parsedICP.seniorities, parsedICP.industries, parsedICP.companySize,
+                                  parsedICP.technologies, parsedICP.organizationJobTitles,
+                                  parsedICP.organizationJobLocations, parsedICP.keywords
+                                ].filter(arr => Array.isArray(arr) && arr.length > 0).length +
+                                [
+                                  parsedICP.revenueMin, parsedICP.revenueMax, parsedICP.organizationNumJobsMin,
+                                  parsedICP.organizationNumJobsMax, parsedICP.jobPostings, parsedICP.newsEvents,
+                                  parsedICP.webTraffic
+                                ].filter(val => val !== null && val !== undefined).length
+
+                                // Show success message
+                                customToast.success({
+                                  title: 'ICP Parsed Successfully',
+                                  description: `Applied ${appliedFiltersCount} filter categories from your description${parsedICP.organizationJobTitles && parsedICP.organizationJobTitles.length > 0 ? ', including hiring signals!' : '.'}`,
+                                })
+                              }}
+                              onReset={() => {
+                                // Don't reset all filters - just let the NaturalLanguageICP component handle its own state reset
+                                // The handleReset in NaturalLanguageICP already resets the ICP input state internally
+                                // Removing resetFilters() call to preserve existing filter selections
+
+                                // Optional: Show a message to user that ICP has been reset but filters are preserved
+                                customToast.info({
+                                  title: 'ICP Input Reset',
+                                  description: 'You can now enter a new ICP description. Your existing filter selections have been preserved.',
+                                })
+                              }}
+                              disabled={isSearching}
+                            />
+
+                            <Divider />
+
+                            <Box>
+                              <Text fontSize="sm" fontWeight="semibold" color="purple.600" mb={4}>
+                                Fine-tune Your Filters
+                              </Text>
+
+                              <ApolloFilters
+                                filters={filters}
+                                onChange={handleFilterChange}
+                                savedProfiles={savedProfiles}
+                                onSaveProfile={handleSaveProfile}
+                                onLoadProfile={setLoadingProfiles}
+                              />
+
+                            </Box>
+                          </VStack>
                         </Box>
                       </VStack>
                     )}
@@ -451,7 +748,7 @@ function B2BFiltersContent() {
                       loadingText="Searching..."
                       size="lg"
                       w="full"
-                      disabled={!hasActiveFilters}
+                      disabled={!(hasActiveFilters)}
                       _hover={{
                         transform: 'translateY(-2px)',
                         shadow: 'xl',
@@ -460,18 +757,33 @@ function B2BFiltersContent() {
                     >
                       🔍 Search Prospects
                     </GradientButton>
-                    
-                    {hasActiveFilters && (
+
+                    {(hasActiveFilters) && !isSearching && (
+                      <Box
+                        p={3}
+                        bg="blue.50"
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor="blue.200"
+                        w="full"
+                      >
+                        <Text fontSize="sm" color="blue.700" textAlign="center">
+                          💡 <strong>Tip:</strong> You can continue to pitch creation with just your filters selected, or search for prospects to preview results first.
+                        </Text>
+                      </Box>
+                    )}
+
+                    {(hasActiveFilters) && (
                       <Button
                         variant="outline"
                         size="md"
-                        onClick={resetFilters}
+                        onClick={handleResetAllFilters}
                         w="full"
                         bg="white"
                         color="purple.600"
                         borderColor="purple.300"
                         borderWidth="2px"
-                        _hover={{ 
+                        _hover={{
                           bg: 'purple.50',
                           borderColor: 'purple.400',
                           transform: 'translateY(-1px)',
@@ -493,7 +805,7 @@ function B2BFiltersContent() {
 
             {/* Results Column */}
             <GridItem>
-              <Card 
+              <Card
                 bg={cardBg}
                 backdropFilter="blur(10px)"
                 border="1px solid"
@@ -558,4 +870,4 @@ function B2BFiltersContent() {
       </Container>
     </Box>
   )
-} 
+}

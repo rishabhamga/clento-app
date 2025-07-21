@@ -3,18 +3,17 @@ import { Database } from '@/types/database'
 import { useAuth } from '@clerk/nextjs'
 
 const supabaseUrl = process.env.PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+export const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 if (!supabaseUrl) {
   throw new Error('Missing env.PUBLIC_SUPABASE_URL')
 }
 
-if (!supabaseAnonKey) {
-  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY')
+if (!supabaseServiceKey) {
+  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY')
 }
-
-// Create a single supabase client for interacting with your database
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
 // Server-side client with service role (for admin operations)
 export const supabaseAdmin = createClient<Database>(
@@ -25,7 +24,7 @@ export const supabaseAdmin = createClient<Database>(
 // Custom hook to create an authenticated Supabase client
 export function useSupabaseClient() {
   const { getToken } = useAuth()
-  
+
   const authenticatedClient = createClient<Database>(
     supabaseUrl,
     supabaseAnonKey,
@@ -33,7 +32,7 @@ export function useSupabaseClient() {
       global: {
         fetch: async (url, options: any = {}) => {
           const token = await getToken({ template: 'supabase' })
-          
+
           return fetch(url, {
             ...options,
             headers: {
@@ -45,7 +44,7 @@ export function useSupabaseClient() {
       },
     }
   )
-  
+
   return authenticatedClient
 }
 
@@ -283,4 +282,4 @@ export async function storeIntegrationCredentials(
     .single()
 
   return { data, error }
-} 
+}

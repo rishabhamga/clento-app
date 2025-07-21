@@ -1,11 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
+
+// Function to sync missing organization from Clerk to database
+async function syncMissingOrganization(clerkOrgId: string, userId: string) {
+  try {
+    console.log(`🔄 Attempting to sync missing organization: ${clerkOrgId}`)
+    
+    // Get organization data from Clerk
+    const clerk = await clerkClient()
+    const organization = await clerk.organizations.getOrganization({
+      organizationId: clerkOrgId
+    })
+    
+    if (!organization) {
+      console.error(`❌ Organization ${clerkOrgId} not found in Clerk`)
+      return null
+    }
+    
+    // Create organization using the database function
+    const { data: orgId, error } = await supabase
+      .rpc('create_organization_with_admin', {
+        p_clerk_org_id: organization.id,
+        p_name: organization.name,
+        p_slug: organization.slug,
+        p_user_clerk_id: userId,
+        p_logo_url: organization.imageUrl || null,
+        p_website_url: null
+      })
+
+    if (error) {
+      console.error('❌ Error creating organization in database:', error)
+      return null
+    }
+
+    console.log(`✅ Successfully synced organization ${clerkOrgId} with database ID: ${orgId}`)
+    return orgId
+  } catch (error) {
+    console.error(`❌ Error syncing organization ${clerkOrgId}:`, error)
+    return null
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,10 +84,19 @@ export async function GET(request: NextRequest) {
         .eq('clerk_org_id', organizationId)
         .single()
 
-      if (orgError) {
-        console.error('Error fetching organization:', orgError)
-        console.log(`Organization ${organizationId} not found in database. This might be a new organization that hasn't been synced yet via webhooks.`)
-        // Fall back to personal context - the webhook will sync the organization automatically
+      if (orgError || !orgData) {
+        // Only log as warning, not error, since this is expected for new organizations
+        console.warn(`⚠️ Organization ${organizationId} not found in database, attempting to sync from Clerk...`)
+        
+        // Try to sync the missing organization from Clerk
+        const syncedOrgId = await syncMissingOrganization(organizationId, userId)
+        
+        if (syncedOrgId) {
+          orgDbId = syncedOrgId
+          console.log(`✅ Organization ${organizationId} successfully synced with ID: ${syncedOrgId}`)
+        } else {
+          console.warn(`⚠️ Failed to sync organization ${organizationId}, using personal context`)
+        }
       } else {
         orgDbId = orgData.id
       }

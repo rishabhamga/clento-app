@@ -35,13 +35,15 @@ import {
 import { keyframes } from '@emotion/react'
 import { useRouter } from 'next/navigation'
 import { CheckCircleIcon, ChevronRightIcon, TimeIcon, DeleteIcon } from '@chakra-ui/icons'
-import { FiUsers, FiTarget, FiBookOpen, FiLinkedin, FiSkipForward, FiCheck, FiArrowRight } from 'react-icons/fi'
+import { FiUsers, FiTarget, FiBookOpen, FiLinkedin, FiSkipForward, FiCheck, FiArrowRight, FiRefreshCw } from 'react-icons/fi'
 import { HiOutlineOfficeBuilding } from 'react-icons/hi'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { AnalysisDisplay } from '@/components/AnalysisDisplay'
 import { Enhanced3DStepper } from '@/components/ui/Enhanced3DStepper'
+import { SampleMessagesCarousel } from '@/components/ui/SampleMessagesCarousel'
 import { CreateOrganization, useOrganization, useUser } from '@clerk/nextjs'
 import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
+import { generateSampleMessages, type WebsiteAnalysisData } from '@/lib/message-generation-service'
 
 // Enhanced animations matching campaign creation
 const float = keyframes`
@@ -137,6 +139,8 @@ export default function OnboardingWizard() {
   const [linkedinAccounts, setLinkedinAccounts] = useState<LinkedInAccount[]>([])
   const [isLoadingLinkedIn, setIsLoadingLinkedIn] = useState(false)
   const [organizationCreated, setOrganizationCreated] = useState(false)
+  const [isGeneratingMessages, setIsGeneratingMessages] = useState(false)
+  const [sampleMessages, setSampleMessages] = useState<{linkedinMessages: any[], emailMessages: any[]} | null>(null)
   const router = useRouter()
   const toast = useToast()
   const { organization } = useOrganization()
@@ -158,6 +162,7 @@ export default function OnboardingWizard() {
   const steps = [
     // { title: 'Welcome', description: 'Getting started' }, // TODO: Re-enable in future
     { title: 'Website Analysis', description: 'AI-powered insights' },
+    { title: 'Sample Messages', description: 'AI-generated outreach preview' },
     { title: 'Organization Setup', description: 'Create your workspace' },
     // { title: 'LinkedIn Accounts', description: 'Connect outreach accounts' }, // TODO: Re-enable in future
     { title: 'Complete Setup', description: 'Finalize your profile' }
@@ -359,6 +364,181 @@ export default function OnboardingWizard() {
       setCurrentStep(currentStep + 1)
     } else {
       handleFinishOnboarding()
+    }
+  }
+
+  // Transform API messages to UI format
+  const transformMessagesToUIFormat = (messages: any[], messageType: 'linkedin' | 'email') => {
+    console.log(`🔄 [ONBOARDING] Transforming ${messageType} messages:`, {
+      inputCount: messages.length,
+      sampleMessage: messages[0]
+    })
+
+    return messages.map((msg, index) => {
+      // Handle both API format (GeneratedMessage) and fallback format
+      const isAPIFormat = msg.content && msg.metadata
+      
+      if (isAPIFormat) {
+        // Transform from API GeneratedMessage format
+        const transformed = {
+          id: msg.id,
+          type: messageType,
+          senderName: msg.content.sender.name,
+          senderRole: msg.content.sender.role,
+          senderCompany: msg.content.sender.company,
+          senderEmail: messageType === 'email' ? msg.content.sender.email : undefined,
+          senderImage: `https://images.unsplash.com/photo-${1494790108755 + index}?w=150`, // Generate unique placeholder images
+          subject: msg.content.subject,
+          message: msg.content.message,
+          timestamp: formatTimestamp(msg.metadata.generated_at),
+          isRead: Math.random() > 0.5, // Random read status for demo
+          isStarred: Math.random() > 0.8, // Occasional starred messages
+          hasAttachment: messageType === 'email' && Math.random() > 0.7, // Some emails have attachments
+          isImportant: msg.metadata.personalization_strength === 'high'
+        }
+
+        console.log(`✅ [ONBOARDING] Transformed ${messageType} message ${index + 1}:`, {
+          id: transformed.id,
+          senderName: transformed.senderName,
+          messageLength: transformed.message.length
+        })
+
+        return transformed
+      } else {
+        // Already in UI format or fallback format
+        console.log(`🔄 [ONBOARDING] Message ${index + 1} already in UI format`)
+        return {
+          ...msg,
+          type: messageType,
+          timestamp: msg.timestamp || new Date().toISOString()
+        }
+      }
+    })
+  }
+
+  // Helper function to format timestamps
+  const formatTimestamp = (isoString: string): string => {
+    const date = new Date(isoString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    
+    if (diffHours < 1) {
+      return 'Just now'
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    } else {
+      const diffDays = Math.floor(diffHours / 24)
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+    }
+  }
+
+  const handleGenerateSampleMessages = async () => {
+    console.log('🎯 [ONBOARDING] Starting sample message generation process')
+    
+    if (!icpAnalysis) {
+      console.warn('⚠️ [ONBOARDING] No ICP analysis available for message generation')
+      customToast.warning({
+        title: 'Analysis Required',
+        description: 'Please complete website analysis first to generate sample messages.',
+      })
+      return
+    }
+
+    console.log('📊 [ONBOARDING] ICP Analysis data:', {
+      hasAnalysis: !!icpAnalysis,
+      coreOffer: icpAnalysis.core_offer,
+      industry: icpAnalysis.industry,
+      businessModel: icpAnalysis.business_model,
+      targetPersonasCount: icpAnalysis.target_personas?.length || 0,
+      competitiveAdvantagesCount: icpAnalysis.competitive_advantages?.length || 0,
+      websiteUrl: websiteUrl
+    })
+
+    setIsGeneratingMessages(true)
+    
+    try {
+      const websiteAnalysis: WebsiteAnalysisData = {
+        core_offer: icpAnalysis.core_offer,
+        industry: icpAnalysis.industry,
+        business_model: icpAnalysis.business_model,
+        icp_summary: icpAnalysis.icp_summary,
+        target_personas: icpAnalysis.target_personas || [],
+        competitive_advantages: icpAnalysis.competitive_advantages || [],
+        tech_stack: icpAnalysis.tech_stack || [],
+        social_proof: icpAnalysis.social_proof ? [JSON.stringify(icpAnalysis.social_proof)] : [],
+        website_url: websiteUrl
+      }
+
+      console.log('📋 [ONBOARDING] Prepared website analysis for API call:', {
+        coreOffer: websiteAnalysis.core_offer,
+        industry: websiteAnalysis.industry,
+        websiteUrl: websiteAnalysis.website_url,
+        targetPersonasCount: websiteAnalysis.target_personas.length,
+        competitiveAdvantagesCount: websiteAnalysis.competitive_advantages.length
+      })
+
+      console.log('🚀 [ONBOARDING] Calling generateSampleMessages API...')
+      const result = await generateSampleMessages(websiteAnalysis, 5)
+      
+      console.log('📡 [ONBOARDING] Received result from generateSampleMessages:', {
+        success: result.success,
+        linkedinCount: result.linkedinMessages?.length || 0,
+        emailCount: result.emailMessages?.length || 0,
+        totalGenerated: result.totalGenerated,
+        hasError: !!result.error,
+        error: result.error
+      })
+
+      if (result.success) {
+        console.log('✅ [ONBOARDING] Successfully generated messages, updating state:', {
+          linkedinMessages: result.linkedinMessages.length,
+          emailMessages: result.emailMessages.length,
+          linkedinSample: result.linkedinMessages[0]?.content?.message?.substring(0, 100),
+          emailSample: result.emailMessages[0]?.content?.message?.substring(0, 100)
+        })
+
+        // Transform messages to UI format
+        const transformedLinkedInMessages = transformMessagesToUIFormat(result.linkedinMessages, 'linkedin')
+        const transformedEmailMessages = transformMessagesToUIFormat(result.emailMessages, 'email')
+
+        console.log('🔄 [ONBOARDING] Transformed messages for UI:', {
+          linkedinTransformed: transformedLinkedInMessages.length,
+          emailTransformed: transformedEmailMessages.length,
+          linkedinUIFormat: transformedLinkedInMessages[0],
+          emailUIFormat: transformedEmailMessages[0]
+        })
+
+        setSampleMessages({
+          linkedinMessages: transformedLinkedInMessages,
+          emailMessages: transformedEmailMessages
+        })
+        setCurrentStep(1) // Move to Sample Messages step
+        customToast.success({
+          title: 'Sample Messages Generated!',
+          description: `Generated ${result.totalGenerated} personalized messages to showcase AI capabilities.`,
+        })
+
+        console.log('🎉 [ONBOARDING] State updated and moved to step 1 (Sample Messages)')
+      } else {
+        console.error('❌ [ONBOARDING] Message generation failed:', result.error)
+        throw new Error(result.error || 'Failed to generate messages')
+      }
+    } catch (error) {
+      console.error('💥 [ONBOARDING] Error in handleGenerateSampleMessages:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      customToast.error({
+        title: 'Message Generation Failed',
+        description: 'Unable to generate sample messages. You can proceed with setup and try this later.',
+      })
+      // Still allow progression even if message generation fails
+      setCurrentStep(1)
+      console.log('🔄 [ONBOARDING] Proceeded to step 1 despite generation failure')
+    } finally {
+      setIsGeneratingMessages(false)
+      console.log('🏁 [ONBOARDING] Message generation process completed')
     }
   }
 
@@ -658,10 +838,12 @@ export default function OnboardingWizard() {
                         <GradientButton
                           variant="primary"
                           size="lg"
-                          onClick={() => setCurrentStep(1)} // Organization Setup (was 2, now 1 since Welcome step is skipped)
+                          onClick={handleGenerateSampleMessages}
                           rightIcon={<ChevronRightIcon />}
+                          isLoading={isGeneratingMessages}
+                          loadingText="Generating Sample Messages..."
                         >
-                          Continue Setup
+                          See Sample Messages
                         </GradientButton>
                         
                         <Button
@@ -697,7 +879,139 @@ export default function OnboardingWizard() {
           </VStack>
                   )
 
-      case 1: // Organization Setup (was case 2, now case 1 since Welcome step is skipped)
+      case 1: // Sample Messages - Show AI-generated outreach examples
+        return (
+          <VStack spacing={8} w="full">
+            <Card 
+              bg={cardBg}
+              backdropFilter="blur(10px)"
+              border="1px solid"
+              borderColor={borderColor}
+              shadow="xl"
+              borderRadius="2xl"
+              overflow="hidden"
+              w="full"
+              maxW="6xl"
+            >
+              <CardBody px={8} py={6}>
+                <VStack spacing={6}>
+                  {isGeneratingMessages && (
+                    <VStack spacing={4} w="full">
+                      <Spinner size="xl" color="purple.500" thickness="4px" />
+                      <Text fontSize="lg" fontWeight="semibold">
+                        Generating personalized messages...
+                      </Text>
+                      <Text fontSize="sm" color="gray.600" textAlign="center">
+                        Our AI is creating hyper-personalized LinkedIn and email messages based on your website analysis
+                      </Text>
+                    </VStack>
+                  )}
+
+                  {sampleMessages && !isGeneratingMessages && (
+                    <VStack spacing={6} w="full">
+                      <Alert status="success" borderRadius="xl">
+                        <AlertIcon />
+                        <Box>
+                          <AlertTitle>Sample Messages Ready! ✨</AlertTitle>
+                          <AlertDescription>
+                            Here are examples of how our AI will personalize outreach for your prospects.
+                          </AlertDescription>
+                        </Box>
+                      </Alert>
+
+                                            <SampleMessagesCarousel
+                        linkedinMessages={sampleMessages.linkedinMessages}
+                        emailMessages={sampleMessages.emailMessages}
+                        onRegenerateMessages={handleGenerateSampleMessages}
+                      />
+
+                      <Box w="full" bg="purple.50" p={4} borderRadius="xl" border="1px" borderColor="purple.200">
+                        <Heading size="sm" color="purple.700" mb={3}>
+                          What makes these messages effective:
+                        </Heading>
+                        <SimpleGrid columns={{ base: 1, md: 2 }} gap={3}>
+                          {[
+                            'Hyper-personalized with recent company news',
+                            'References specific pain points from your ICP',
+                            'Uses your competitive advantages naturally',
+                            'Includes soft, non-pushy calls-to-action',
+                            'Follows proven cold outreach best practices',
+                            'Tailored to each prospect\'s role and industry'
+                          ].map((item, index) => (
+                            <HStack key={index}>
+                              <CheckCircleIcon color="green.500" boxSize={4} />
+                              <Text fontSize="sm">{item}</Text>
+                            </HStack>
+                          ))}
+                        </SimpleGrid>
+                      </Box>
+
+                      <HStack spacing={4} w="full" justify="center">
+                        <GradientButton
+                          variant="primary"
+                          size="lg"
+                          onClick={() => setCurrentStep(2)} // Organization Setup
+                          rightIcon={<ChevronRightIcon />}
+                        >
+                          Continue Setup
+                        </GradientButton>
+                        
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={handleGenerateSampleMessages}
+                          leftIcon={<FiRefreshCw />}
+                          colorScheme="purple"
+                          isLoading={isGeneratingMessages}
+                        >
+                          Generate New Messages
+                        </Button>
+                      </HStack>
+                    </VStack>
+                  )}
+
+                  {!sampleMessages && !isGeneratingMessages && (
+                    <VStack spacing={6} w="full">
+                      <Alert status="info" borderRadius="xl">
+                        <AlertIcon />
+                        <Box>
+                          <AlertTitle>Ready to Generate Sample Messages</AlertTitle>
+                          <AlertDescription>
+                            Click below to see personalized LinkedIn and email examples based on your website analysis.
+                          </AlertDescription>
+                        </Box>
+                      </Alert>
+
+                      <HStack spacing={4} w="full" justify="center">
+                        <GradientButton
+                          variant="primary"
+                          size="lg"
+                          onClick={handleGenerateSampleMessages}
+                          rightIcon={<ChevronRightIcon />}
+                        >
+                          Generate Sample Messages
+                        </GradientButton>
+                        
+                        <Button
+                          variant="ghost"
+                          size="lg"
+                          onClick={() => setCurrentStep(2)} // Skip to Organization Setup
+                          leftIcon={<FiSkipForward />}
+                          color="gray.500"
+                          _hover={{ color: 'gray.700' }}
+                        >
+                          Skip Preview
+                        </Button>
+                      </HStack>
+                    </VStack>
+                  )}
+                </VStack>
+              </CardBody>
+            </Card>
+          </VStack>
+        )
+
+      case 2: // Organization Setup (was case 1, now case 2 since Sample Messages step added)
         return (
           <VStack spacing={8} w="full">
             <Card 
@@ -856,7 +1170,7 @@ export default function OnboardingWizard() {
                         <Button
                           variant="ghost"
                           size="lg"
-                          onClick={() => setCurrentStep(2)} // Skip LinkedIn step, go directly to Complete Setup
+                          onClick={() => setCurrentStep(3)} // Skip LinkedIn step, go directly to Complete Setup
                           leftIcon={<FiSkipForward />}
                           color="gray.500"
                           _hover={{ 
@@ -905,7 +1219,7 @@ export default function OnboardingWizard() {
                       <GradientButton
                         variant="primary"
                         size="lg"
-                        onClick={() => setCurrentStep(2)} // Skip LinkedIn step, go directly to Complete Setup
+                        onClick={() => setCurrentStep(3)} // Skip LinkedIn step, go directly to Complete Setup
                         rightIcon={<ChevronRightIcon />}
                         w="full"
                       >
@@ -1088,7 +1402,7 @@ export default function OnboardingWizard() {
       //     </VStack>
       //   )
 
-      case 2: // Complete Setup (was case 3, now case 2 since Welcome and LinkedIn steps are skipped)
+      case 3: // Complete Setup (was case 2, now case 3 since Sample Messages step added)
         return (
           <VStack spacing={8} w="full">
             <Card 

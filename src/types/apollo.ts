@@ -3,15 +3,17 @@
 
 // Search Filter Types
 export type SeniorityLevel = 
+  | 'owner'
   | 'founder'
-  | 'c_level' 
+  | 'c_suite'
+  | 'partner'
   | 'vp'
+  | 'head'
   | 'director'
   | 'manager'
   | 'senior'
-  | 'junior'
+  | 'entry'
   | 'intern'
-  | 'individual_contributor'
 
 export type TimeInRole = 
   | '0-6_months'
@@ -84,10 +86,10 @@ export interface ApolloFilterInput {
   jobTitles: string[]
   excludeJobTitles: string[]
   seniorities: SeniorityLevel[]
-  locations: string[]
-  excludeLocations: string[]
-  timeInCurrentRole: TimeInRole[]
-  totalYearsExperience: ExperienceRange[]
+  personLocations: string[] // Person's location (where they live)
+  excludePersonLocations: string[]
+  organizationLocations: string[] // Company headquarters locations
+  excludeOrganizationLocations: string[]
   hasEmail: boolean | null
 
   // Company-level filters
@@ -96,7 +98,35 @@ export interface ApolloFilterInput {
   companyDomains: string[]
   intentTopics: string[]
   technologies: string[]
+  technologyUids: string[] // Apollo technology UIDs for currently_using_any_of_technology_uids[]
+  excludeTechnologyUids: string[] // Apollo technology UIDs for currently_not_using_any_of_technology_uids[]
   keywords: string[]
+
+  // Organization job-related filters
+  organizationJobTitles: string[] // For q_organization_job_titles[]
+  organizationJobLocations: string[] // For organization_job_locations[]
+
+  // Organization job postings / hiring signals
+  organizationNumJobsMin: number | null // organization_num_jobs_range[min]
+  organizationNumJobsMax: number | null // organization_num_jobs_range[max]
+  organizationJobPostedAtMin: string | null // organization_job_posted_at_range[min] (ISO date string)
+  organizationJobPostedAtMax: string | null // organization_job_posted_at_range[max]
+
+  // Revenue range filters
+  revenueMin: number | null
+  revenueMax: number | null
+
+  // Funding and growth
+  fundingStages: FundingStage[]
+  fundingAmountMin: number | null
+  fundingAmountMax: number | null
+  foundedYearMin: number | null
+  foundedYearMax: number | null
+
+  // Engagement signals
+  jobPostings: boolean | null
+  newsEvents: boolean | null
+  webTraffic: boolean | null
 
   // Search options
   page: number
@@ -145,17 +175,35 @@ export const DEFAULT_APOLLO_FILTERS: ApolloFilterInput = {
   jobTitles: [],
   excludeJobTitles: [],
   seniorities: [],
-  locations: [],
-  excludeLocations: [],
-  timeInCurrentRole: [],
-  totalYearsExperience: [],
+  personLocations: [],
+  excludePersonLocations: [],
+  organizationLocations: [],
+  excludeOrganizationLocations: [],
   hasEmail: null,
   industries: [],
   companyHeadcount: [],
   companyDomains: [],
   intentTopics: [],
   technologies: [],
+  technologyUids: [],
+  excludeTechnologyUids: [],
   keywords: [],
+  organizationJobTitles: [],
+  organizationJobLocations: [],
+  organizationNumJobsMin: null,
+  organizationNumJobsMax: null,
+  organizationJobPostedAtMin: null,
+  organizationJobPostedAtMax: null,
+  revenueMin: null,
+  revenueMax: null,
+  fundingStages: [],
+  fundingAmountMin: null,
+  fundingAmountMax: null,
+  foundedYearMin: null,
+  foundedYearMax: null,
+  jobPostings: null,
+  newsEvents: null,
+  webTraffic: null,
   page: 1,
   perPage: 20
 }
@@ -187,15 +235,17 @@ export const DEFAULT_COMPANY_FILTERS: CompanyFilterInput = {
 
 // Filter option definitions for UI components
 export const SENIORITY_OPTIONS: Array<{ value: SeniorityLevel; label: string }> = [
+  { value: 'owner', label: 'Owner' },
   { value: 'founder', label: 'Founder' },
-  { value: 'c_level', label: 'C-Level (CEO, CTO, etc.)' },
+  { value: 'c_suite', label: 'C-Suite (CEO, CTO, etc.)' },
+  { value: 'partner', label: 'Partner' },
   { value: 'vp', label: 'Vice President' },
+  { value: 'head', label: 'Head of Department' },
   { value: 'director', label: 'Director' },
   { value: 'manager', label: 'Manager' },
   { value: 'senior', label: 'Senior Level' },
-  { value: 'junior', label: 'Junior Level' },
-  { value: 'intern', label: 'Intern' },
-  { value: 'individual_contributor', label: 'Individual Contributor' }
+  { value: 'entry', label: 'Entry Level' },
+  { value: 'intern', label: 'Intern' }
 ]
 
 export const TIME_IN_ROLE_OPTIONS: Array<{ value: TimeInRole; label: string }> = [
@@ -357,82 +407,194 @@ export interface SearchBreadcrumb {
 }
 
 export interface EmploymentHistoryEntry {
+  _id?: string
   company?: string
   title?: string
   start_date?: string
   end_date?: string
   current?: boolean
+  organization_id?: string
+  organization_name?: string
+  created_at?: string | null
+  updated_at?: string | null
+  description?: string | null
+  degree?: string | null
+  emails?: string[] | null
+  grade_level?: string | null
+  kind?: string | null
+  major?: string | null
+  raw_address?: string | null
+  id?: string
+  key?: string
 }
 
-export interface LeadSearchResult {
+export interface ApolloPhone {
+  number: string
+  source: string
+  sanitized_number: string
+}
+
+export interface ApolloOrganization {
   id: string
-  external_id: string
-  
-  // Personal information
-  first_name?: string
-  last_name?: string
-  full_name: string
-  email?: string
-  email_status?: EmailStatus
+  name: string
+  website_url?: string
+  blog_url?: string
+  angellist_url?: string
+  linkedin_url?: string
+  twitter_url?: string
+  facebook_url?: string
+  primary_phone?: ApolloPhone
+  languages?: string[]
+  alexa_ranking?: number | null
   phone?: string
-  headline?: string
-  photo_url?: string
-  
-  // Professional information
-  title?: string
-  seniority_level?: SeniorityLevel
-  department?: Department
-  years_experience?: number
-  time_in_current_role?: string
-  
-  // Professional categorization from Apollo
-  departments?: string[]
-  subdepartments?: string[]
-  seniority?: string
-  functions?: string[]
-  
-  // Company information
-  company?: string
-  company_id?: string
-  industry?: string
-  company_size?: number
-  company_revenue?: number
-  company_website?: string
-  company_linkedin?: string
-  company_founded_year?: number
-  company_logo_url?: string
-  company_phone?: string
-  company_alexa_ranking?: number
-  company_primary_domain?: string
-  
-  // Company growth metrics
-  company_headcount_six_month_growth?: number
-  company_headcount_twelve_month_growth?: number
-  company_headcount_twenty_four_month_growth?: number
-  
-  // Location
+  linkedin_uid?: string
+  founded_year?: number
+  publicly_traded_symbol?: string | null
+  publicly_traded_exchange?: string | null
+  logo_url?: string
+  crunchbase_url?: string | null
+  primary_domain?: string
+  sanitized_phone?: string
   city?: string
   state?: string
   country?: string
-  location?: string
-  
-  // Social profiles
+  organization_headcount_six_month_growth?: number
+  organization_headcount_twelve_month_growth?: number
+  organization_headcount_twenty_four_month_growth?: number
+}
+
+export interface ApolloAccount {
+  id: string
+  name: string
+  website_url?: string
+  blog_url?: string
+  angellist_url?: string
+  linkedin_url?: string
+  twitter_url?: string
+  facebook_url?: string
+  primary_phone?: ApolloPhone
+  languages?: string[]
+  alexa_ranking?: number | null
+  phone?: string | null
+  linkedin_uid?: string
+  founded_year?: number
+  publicly_traded_symbol?: string | null
+  publicly_traded_exchange?: string | null
+  logo_url?: string
+  crunchbase_url?: string | null
+  primary_domain?: string
+  sanitized_phone?: string
+  raw_address?: string
+  street_address?: string
+  city?: string
+  state?: string
+  country?: string
+  postal_code?: string
+  domain?: string
+  team_id?: string
+  organization_id?: string
+  account_stage_id?: string
+  source?: string
+  original_source?: string
+  creator_id?: string
+  owner_id?: string
+  created_at?: string
+  phone_status?: string
+  hubspot_id?: string | null
+  salesforce_id?: string | null
+  crm_owner_id?: string | null
+  parent_account_id?: string | null
+  account_playbook_statuses?: any[]
+  existence_level?: string
+  label_ids?: string[]
+  typed_custom_fields?: any
+  custom_field_errors?: any
+  modality?: string
+  source_display_name?: string
+  crm_record_url?: string | null
+  organization_headcount_six_month_growth?: number
+  organization_headcount_twelve_month_growth?: number
+  organization_headcount_twenty_four_month_growth?: number
+}
+
+export interface LeadSearchResult {
+  // Apollo fields
+  id: string
+  external_id?: string
+  name: string
+  state?: string
+  first_name?: string
+  last_name?: string
+  full_name?: string
+  title?: string
+  headline?: string
+  company?: string
+  company_id?: string
+  company_domain?: string
+  company_website?: string
+  company_linkedin?: string
+  email?: string
+  phone?: string
   linkedin_url?: string
   twitter_url?: string
   facebook_url?: string
   github_url?: string
   
-  // Technologies and skills
-  technologies?: string[]
-  keywords?: string[]
+  // Enhanced location fields
+  location?: string
+  city?: string
+  region?: string
+  country?: string
   
-  // Employment history
+  // Enhanced job information
+  seniority?: string
+  seniority_level?: string
+  department?: string
+  departments?: string[]
+  subdepartments?: string[]
+  functions?: string[]
+  experience_years?: number
+  time_in_role?: number
+  time_in_role_months?: number
+  
+  // Enhanced company information  
+  company_size?: string | number
+  company_industry?: string
+  company_revenue?: number
+  
+  // Additional profile information from Explorium
+  skills?: string[]
+  experience?: string[]
+  interests?: string[]
+  business_id?: string
+  
+  // Image URLs
+  photo_url?: string
+  company_logo_url?: string
+  
+  // Confidence/matching score
+  confidence?: number
+  
+  // Data source and metadata
+  data_source?: 'apollo' | 'explorium' | 'csv_upload'
+  _raw?: any
+
+  // Apollo-specific fields (keeping for compatibility)
+  years_experience?: number
+  industry?: string // Keeping as alias for company_industry
+  
+  // Apollo API response fields
+  email_status?: EmailStatus
   employment_history?: EmploymentHistoryEntry[]
-  
-  // Metadata
-  data_source: 'apollo' | 'csv_upload'
-  confidence: number
-  last_updated: Date
+  organization?: ApolloOrganization
+  organization_id?: string
+  account?: ApolloAccount
+  account_id?: string
+  extrapolated_email_confidence?: number | null
+  email_domain_catchall?: boolean
+  revealed_for_current_team?: boolean
+  intent_strength?: number | null
+  show_intent?: boolean
 }
 
 export interface CompanySearchResult {
