@@ -86,10 +86,10 @@ export default function LeadsPage() {
         }) || [];
 
     const handleCampaignSelect = async (campaignId: string) => {
-        setLoading(true)
         if (!campaignId || campaignId === '') {
             return
         }
+        setLoading(true)
         try {
             const response = await fetch(`/api/leads/view?campaignId=${campaignId}&limit=20`)
             if (response.status === 200) {
