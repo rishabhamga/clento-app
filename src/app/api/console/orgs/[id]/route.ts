@@ -81,6 +81,13 @@ export async function POST(
 
         const id = randomUUID();
 
+        const { data: inActiveLeads, error: inActiveLeadsError } = await supabase
+            .from('leads_files')
+            .update(
+                [{ active: 0 }]
+            )
+            .eq('campaign_id', campaignId)
+
         //upload to the leads table
         const { data: lead, error: leadError } = await supabase
             .from('leads_files')
@@ -97,13 +104,11 @@ export async function POST(
             .select()
             .single()
 
-            console.log(lead);
-
         const arrayBuffer = await (csv as File).arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        try{
+        try {
             await uploadFileToS3Bucket(s3Bucket as any, id, listName as string, buffer)
-        }catch(err){
+        } catch (err) {
             console.log(err);
         }
         if (leadError) {

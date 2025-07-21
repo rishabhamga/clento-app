@@ -1,250 +1,393 @@
 'use client'
 
 import {
-  Box,
-  Container,
-  VStack,
-  Heading,
-  Text,
-  Card,
-  CardBody,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Badge,
-  HStack,
-  Avatar,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  Select,
-  useColorModeValue,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  useDisclosure,
-  Button,
-  Icon,
-  useToast
+    Box,
+    Container,
+    VStack,
+    Heading,
+    Text,
+    Card,
+    CardBody,
+    Table,
+    Thead,
+    Tbody,
+    Tr,
+    Th,
+    Td,
+    Badge,
+    HStack,
+    Avatar,
+    Input,
+    InputGroup,
+    InputLeftElement,
+    Select,
+    useColorModeValue,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalFooter,
+    ModalBody,
+    ModalCloseButton,
+    useDisclosure,
+    Button,
+    Icon,
+    useToast,
+    Spinner,
+    Spacer
 } from '@chakra-ui/react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { Search, Filter, Download, Plus, CheckCircle, Mail } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ILeads, IRecentActivity } from '../api/leads/view/route'
 
 const sampleLeads: any[] = []
 
 function getStatusColor(status: string) {
-  switch (status) {
-    case 'new': return 'blue'
-    case 'contacted': return 'yellow'
-    case 'replied': return 'green'
-    case 'interested': return 'purple'
-    case 'not-interested': return 'red'
-    default: return 'gray'
-  }
+    switch (status) {
+        case 'new': return 'blue'
+        case 'contacted': return 'yellow'
+        case 'replied': return 'green'
+        case 'interested': return 'purple'
+        case 'not-interested': return 'red'
+        default: return 'gray'
+    }
 }
 
 export default function LeadsPage() {
-  const cardBg = useColorModeValue('white', 'gray.700')
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const toast = useToast()
+    const cardBg = useColorModeValue('white', 'gray.700')
+    const { isOpen, onOpen, onClose } = useDisclosure()
+    const [leads, setLeads] = useState<ILeads[]>();
+    const toast = useToast()
+    const [loading, setLoading] = useState<boolean>(false)
+    const [selectedLead, setSelectedLead] = useState<string>();
+    const [recentActivity, setRecentActivity] = useState<IRecentActivity[]>();
+    const [selectedLeadData, setSelectedLeadData] = useState<ILeads>();
+    const [campaigns, setCampaigns] = useState<{ id: string, name: string }[]>();
 
-  const handleUpgradeClick = () => {
-    onOpen()
-  }
+    const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const handleModalClose = () => {
-    onClose()
-    toast({
-      title: "Thank you for your interest!",
-      description: "Our sales team will contact you within 24 hours.",
-      status: "success",
-      duration: 5000,
-      isClosable: true,
-    })
-  }
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+    };
 
-  return (
-    <DashboardLayout>
-      <Container maxW="7xl" py={8}>
-        <VStack spacing={8} align="stretch">
-          {/* Header */}
-          <Box>
-            <HStack justify="space-between" align="center" mb={4}>
-              <VStack spacing={1} align="start">
-                <Heading size="lg">Leads</Heading>
-                <Text color="gray.600">
-                  Manage and track all your leads in one place
-                </Text>
-              </VStack>
-              <HStack spacing={3}>
-                <GradientButton leftIcon={<Download size={16} />} variant="tertiary">
-                  Export
-                </GradientButton>
-              </HStack>
-            </HStack>
+    // Filter leads on the client side based on searchTerm
+    const filteredLeads = !searchTerm
+        ? leads || []
+        : leads?.filter((lead) => {
+            const term = searchTerm.toLowerCase();
+            return (
+                lead.contactName?.toLowerCase().includes(term) ||
+                lead.email?.toLowerCase().includes(term) ||
+                lead.companyName?.toLowerCase().includes(term) ||
+                lead.designation?.toLowerCase().includes(term)
+            );
+        }) || [];
 
-            {/* Filters */}
-            <HStack spacing={4} mb={6}>
-              <InputGroup flex={1} maxW="400px">
-                <InputLeftElement>
-                  <Search size={16} color="gray" />
-                </InputLeftElement>
-                <Input placeholder="Search leads..." />
-              </InputGroup>
-              <Select placeholder="All Statuses" maxW="150px">
-                <option value="new">New</option>
-                <option value="contacted">Contacted</option>
-                <option value="replied">Replied</option>
-                <option value="interested">Interested</option>
-              </Select>
-              <Select placeholder="All Sources" maxW="150px">
-                <option value="linkedin">LinkedIn</option>
-                <option value="apollo">Apollo</option>
-                <option value="website">Website</option>
-                <option value="csv">CSV Upload</option>
-              </Select>
-            </HStack>
-          </Box>
+    const handleCampaignSelect = async (campaignId: string) => {
+        setLoading(true)
+        if (!campaignId || campaignId === '') {
+            return
+        }
+        try {
+            const response = await fetch(`/api/leads/view?campaignId=${campaignId}&limit=20`)
+            if (response.status === 200) {
+                const data = await response.json();
+                setLeads(data.leads);
+            }
+        } catch (err) {
+            toast({
+                title: "Error",
+                description: "An error occured while fetching the leads",
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+            })
+            console.log(err)
+        } finally {
+            setLoading(false)
+        }
+    }
 
-          {/* Leads Table */}
-          {/* Leads table will be shown when leads are available */}
-          {sampleLeads.length > 0 && (
-            <Card bg={cardBg}>
-              <CardBody>
-                <Table variant="simple">
-                  <Thead>
-                    <Tr>
-                      <Th>Lead</Th>
-                      <Th>Company</Th>
-                      <Th>Status</Th>
-                      <Th>Source</Th>
-                      <Th>Score</Th>
-                      <Th>Actions</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {sampleLeads.map((lead) => (
-                      <Tr key={lead.id}>
-                        <Td>
-                          <HStack spacing={3}>
-                            <Avatar size="sm" name={lead.name} />
-                            <VStack spacing={0} align="start">
-                              <Text fontWeight="semibold">{lead.name}</Text>
-                              <Text fontSize="sm" color="gray.600">{lead.email}</Text>
-                              <Text fontSize="xs" color="gray.500">{lead.title}</Text>
+
+    const handleViewClick = (id: string) => {
+        onOpen();
+        console.log('opening')
+        setSelectedLead(id);
+        setSelectedLeadData(undefined)
+    }
+
+    const handleClose = () => {
+        onClose();
+        setSelectedLead(undefined);
+    }
+
+    useEffect(() => {
+        setSelectedLeadData(leads?.find((lead) => lead.id === selectedLead));
+    }, [selectedLead])
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const response = await fetch(`/api/leads/view`)
+                if (response.status === 200) {
+                    const data = await response.json();
+                    setRecentActivity(data.recentActivity);
+                    setCampaigns(data.campaigns);
+                }
+            } catch (err) {
+                toast({
+                    title: "Error",
+                    description: "An error occured while fetching the leads",
+                    status: "error",
+                    duration: 3000,
+                    isClosable: true,
+                })
+                console.log(err)
+            } finally {
+                setLoading(false)
+            }
+
+            // campaignId
+            // limit
+            // offset
+        }
+        fetchData();
+
+    }, [])
+
+    return (
+        <DashboardLayout>
+            <Container maxW="7xl" py={8}>
+                <VStack spacing={8} align="stretch">
+                    {/* Header */}
+                    <Box>
+                        <HStack justify="space-between" align="center" mb={4}>
+                            <VStack spacing={1} align="start">
+                                <Heading size="lg">Leads</Heading>
+                                <Text color="gray.600">
+                                    Manage and track all your leads in one place
+                                </Text>
                             </VStack>
-                          </HStack>
-                        </Td>
-                        <Td>
-                          <Text fontWeight="medium">{lead.company}</Text>
-                        </Td>
-                        <Td>
-                          <Badge colorScheme={getStatusColor(lead.status)}>
-                            {lead.status}
-                          </Badge>
-                        </Td>
-                        <Td>
-                          <Text fontSize="sm">{lead.source}</Text>
-                        </Td>
-                        <Td>
-                          <Badge colorScheme={lead.score >= 80 ? 'green' : lead.score >= 60 ? 'yellow' : 'red'}>
-                            {lead.score}
-                          </Badge>
-                        </Td>
-                        <Td>
-                          <GradientButton size="sm" variant="tertiary">
-                            View
-                          </GradientButton>
-                        </Td>
-                      </Tr>
-                    ))}
-                  </Tbody>
-                </Table>
-              </CardBody>
-            </Card>
-          )}
+                            {/* <HStack spacing={3}>
+                                <GradientButton leftIcon={<Download size={16} />} variant="tertiary">
+                                    Export
+                                </GradientButton>
+                            </HStack> */}
+                        </HStack>
 
-          {/* Enterprise Notice */}
-          <Card bg="purple.50" border="2px solid" borderColor="purple.200">
-            <CardBody textAlign="center" py={12}>
-              <VStack spacing={4}>
-                <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
-                  ENTERPRISE FEATURE
-                </Badge>
-                <Heading size="md" color="purple.700">
-                  Advanced Lead Management
-                </Heading>
-                <Text color="purple.600" maxW="md">
-                  Unlock advanced lead scoring, custom fields, automated workflows, 
-                  and team collaboration features with Enterprise plan.
-                </Text>
-                <GradientButton size="lg" onClick={handleUpgradeClick}>
-                  Upgrade to Enterprise
-                </GradientButton>
-              </VStack>
-            </CardBody>
-          </Card>
-        </VStack>
-      </Container>
+                        {/* Filters */}
+                        <HStack spacing={4} mb={6}>
+                            <InputGroup flex={1} maxW="400px">
+                                <InputLeftElement>
+                                    <Search size={16} color="gray" />
+                                </InputLeftElement>
+                                <Input placeholder="Search leads..." onChange={handleSearchChange} />
+                            </InputGroup>
+                            <Select
+                                placeholder="Campaigns"
+                                maxW="150px"
+                                onChange={(e) => handleCampaignSelect(e.target.value)}
+                            >
+                                {campaigns && campaigns?.map((campaign) => (
+                                    <option key={campaign.id} value={campaign.id}>{campaign.name}</option>
+                                ))}
+                            </Select>
+                        </HStack>
+                    </Box>
 
-      {/* Upgrade Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="md" isCentered>
-        <ModalOverlay bg="blackAlpha.600" />
-        <ModalContent mx={4} borderRadius="xl" overflow="hidden">
-          <ModalHeader 
-            bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-            color="white"
-            textAlign="center"
-            py={6}
-          >
-            <VStack spacing={3}>
-              <Icon as={CheckCircle} w={8} h={8} />
-              <Text fontSize="xl" fontWeight="bold">
-                Request Submitted Successfully!
-              </Text>
-            </VStack>
-          </ModalHeader>
-          <ModalCloseButton color="white" />
-          
-          <ModalBody py={8} textAlign="center">
-            <VStack spacing={4}>
-              <Icon as={Mail} w={12} h={12} color="purple.500" />
-              <Heading size="md" color="gray.700">
-                We're excited to help you!
-              </Heading>
-              <Text color="gray.600" fontSize="lg" lineHeight="1.6">
-                Clento AI sales executive will shortly reach out to you on your email
-              </Text>
-              <Box 
-                bg="purple.50" 
-                p={4} 
-                borderRadius="lg" 
-                border="1px solid" 
-                borderColor="purple.200"
-                w="full"
-              >
-                <Text fontSize="sm" color="purple.700" fontWeight="medium">
-                  📧 Expected response time: Within 24 hours
-                </Text>
-              </Box>
-            </VStack>
-          </ModalBody>
+                    <Modal isOpen={isOpen} onClose={handleClose} size="4xl">
+                        <ModalOverlay bg="blackAlpha.600" />
+                        <ModalContent mx={4} borderRadius="xl" overflow="hidden" maxW="900px" maxH={'85vh'}>
+                            <ModalHeader color={'CaptionText'} py={6} borderBottom={'1px solid'} borderColor={'blackAlpha.300'} alignItems={'start'}>
+                                <HStack>
+                                    <Text fontSize="xl" fontWeight="bold">
+                                        Viewing Contact:
+                                    </Text>
+                                    <Text fontSize="xl" fontWeight="bold" textColor={'blackAlpha.700'}>
+                                        {selectedLeadData?.contactName || 'unknown'}
+                                    </Text>
+                                </HStack>
+                                <Text fontSize="sm" color="gray.600">{selectedLeadData?.email}</Text>
+                                <Text fontSize="xs" color="gray.500">{selectedLeadData?.designation}</Text>
+                            </ModalHeader>
+                            <ModalCloseButton color="black" />
 
-          <ModalFooter justifyContent="center" pb={6}>
-            <GradientButton onClick={handleModalClose} size="lg" w="full">
-              Got it, thanks!
-            </GradientButton>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </DashboardLayout>
-  )
-} 
+                            <ModalBody py={8}>
+                                <Heading size="md" color="gray.700" mb={3}>
+                                    LinkedIn Chat
+                                </Heading>
+                                <Card p={4} maxH="300px" overflowY="auto" bg={useColorModeValue('gray.50', 'gray.800')}>
+                                    <VStack spacing={3} align="stretch">
+                                        {!selectedLeadData || selectedLeadData?.linkedInMessages.length === 0 ? (
+                                            <Text fontSize="md" color="gray.500" textAlign="center" py={8}>
+                                                No LinkedIn messages found.
+                                            </Text>
+                                        ) : (
+                                            selectedLeadData.linkedInMessages.map((message, idx) => (
+                                                <Box
+                                                    key={idx}
+                                                    alignSelf={message.from === 'you' ? 'flex-end' : 'flex-start'}
+                                                    bg={message.from === 'you' ? 'blue.100' : 'gray.200'}
+                                                    color="gray.800"
+                                                    px={4}
+                                                    py={2}
+                                                    borderRadius="lg"
+                                                    maxW="70%"
+                                                    boxShadow="sm"
+                                                    position="relative"
+                                                >
+                                                    <Text fontSize="md" mb={1}>{message.message}</Text>
+                                                    <HStack justify="space-between" spacing={2}>
+                                                        <Text fontSize="xs" color="gray.500">{message.date}</Text>
+                                                        <Text fontSize="xs" color="gray.400" fontStyle="italic">{message.from}</Text>
+                                                    </HStack>
+                                                </Box>
+                                            ))
+                                        )}
+                                    </VStack>
+                                </Card>
+                                <Spacer height="30px" />
+                                <Heading size="md" color="gray.700" mb={3}>
+                                    Emails
+                                </Heading>
+                                <Card p={4} maxH="300px" overflowY="auto" bg={useColorModeValue('gray.50', 'gray.800')}>
+                                    <VStack spacing={3} align="stretch">
+                                        {!selectedLeadData || selectedLeadData?.emailMessages.length === 0 ? (
+                                            <Text fontSize="md" color="gray.500" textAlign="center" py={8}>
+                                                No emails found.
+                                            </Text>
+                                        ) : (
+                                            selectedLeadData.emailMessages.map((message, idx) => (
+                                                <Box
+                                                    key={idx}
+                                                    alignSelf={message.from === 'you' ? 'flex-end' : 'flex-start'}
+                                                    bg={message.from === 'you' ? 'green.100' : 'gray.200'}
+                                                    color="gray.800"
+                                                    px={4}
+                                                    py={2}
+                                                    borderRadius="lg"
+                                                    maxW="70%"
+                                                    boxShadow="sm"
+                                                    position="relative"
+                                                >
+                                                    <Text fontSize="md" mb={1}>{message.message}</Text>
+                                                    <HStack justify="space-between" spacing={2}>
+                                                        <Text fontSize="xs" color="gray.500">{message.date}</Text>
+                                                        <Text fontSize="xs" color="gray.400" fontStyle="italic">{message.from}</Text>
+                                                    </HStack>
+                                                </Box>
+                                            ))
+                                        )}
+                                    </VStack>
+                                </Card>
+                            </ModalBody>
+                        </ModalContent>
+                    </Modal>
+
+                    {recentActivity && recentActivity.length !== 0 && (
+                        <Box>
+                            <Heading size="md" mb={4}>Recent Activity</Heading>
+                            <HStack spacing={4} overflowX="auto" pb={2}>
+                                {recentActivity.map((activity, idx) => (
+                                    <Card key={idx} minW="280px" bg={cardBg} boxShadow="md">
+                                        <CardBody>
+                                            <HStack spacing={3} mb={2}>
+                                                <Avatar size="sm" name={activity.contactName} />
+                                                <VStack align="start" spacing={0}>
+                                                    <Text fontWeight="semibold">{activity.contactName}</Text>
+                                                    <Text fontSize="xs" color="gray.500">{activity.companyName}</Text>
+                                                </VStack>
+                                            </HStack>
+                                            <Text fontSize="sm" color="gray.600" mb={2} fontWeight={'bold'}>
+                                                {activity.taskTitle}
+                                            </Text>
+                                            <Text fontSize="sm" color="gray.600" mb={2}>
+                                                {activity.taskDescription}
+                                            </Text>
+                                            <Text fontSize="xs" color="gray.400">
+                                                {activity.time}
+                                            </Text>
+                                        </CardBody>
+                                    </Card>
+                                ))}
+                            </HStack>
+                        </Box>
+                    )}
+
+                    {loading && (
+                        <Box p={8} display={'flex'} justifyContent={'flex-start'} flexDirection={'column'}>
+                            <Container maxW="7xl" py={8}>
+                                <VStack spacing={8}>
+                                    <Spinner size="xl" />
+                                    <Text>Loading Leads....</Text>
+                                </VStack>
+                            </Container>
+                        </Box>
+                    )}
+                    {/*Leads Placeholder*/}
+                    {!loading && !leads && (
+                        <Card bg={cardBg} p={12} alignItems={'center'}>
+                            <Text fontWeight={'semibold'} color={'blackAlpha.400'}>Select A Campaign To See The Leads</Text>
+                        </Card>)}
+                    {/* Leads Table */}
+                    {/* Leads table will be shown when leads are available */}
+                    {leads && leads?.length > 0 && (
+                        <Card bg={cardBg}>
+                            <CardBody>
+                                <Table variant="simple">
+                                    <Thead>
+                                        <Tr>
+                                            <Th>Lead</Th>
+                                            <Th>Company</Th>
+                                            <Th>Status</Th>
+                                            <Th>Score</Th>
+                                            <Th>Actions</Th>
+                                        </Tr>
+                                    </Thead>
+                                    <Tbody>
+                                        {filteredLeads.map((lead) => (
+                                            <Tr key={lead.id}>
+                                                <Td>
+                                                    <HStack spacing={3}>
+                                                        <Avatar size="sm" name={lead.contactName} />
+                                                        <VStack spacing={0} align="start">
+                                                            <Text fontWeight="semibold">{lead.contactName}</Text>
+                                                            <Text fontSize="sm" color="gray.600">{lead.email}</Text>
+                                                            <Text fontSize="xs" color="gray.500">{lead.designation}</Text>
+                                                        </VStack>
+                                                    </HStack>
+                                                </Td>
+                                                <Td>
+                                                    <Text fontWeight="medium">{lead.companyName}</Text>
+                                                </Td>
+                                                <Td>
+                                                    <Badge colorScheme={getStatusColor(lead.status)}>
+                                                        {lead.status}
+                                                    </Badge>
+                                                </Td>
+                                                <Td>
+                                                    {/* <Badge colorScheme={lead.score >= 80 ? 'green' : lead.score >= 60 ? 'yellow' : 'red'}> */}
+                                                    <Badge colorScheme={'green'}>
+                                                        {50}
+                                                    </Badge>
+                                                </Td>
+                                                <Td>
+                                                    <GradientButton size="sm" variant="tertiary" onClick={() => handleViewClick(lead.id)}>
+                                                        View
+                                                    </GradientButton>
+                                                </Td>
+                                            </Tr>
+                                        ))}
+                                    </Tbody>
+                                </Table>
+                            </CardBody>
+                        </Card>
+                    )}
+                </VStack>
+            </Container>
+        </DashboardLayout>
+    )
+}
