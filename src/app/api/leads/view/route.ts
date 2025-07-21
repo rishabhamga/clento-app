@@ -91,7 +91,7 @@ const getRecentActivity = async (orgId: string) => {
 
     const today = new Date();
     const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 300); //change this when you want specific date for recent activity
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3); //change this when you want specific date for recent activity
 
     const isSameDay = (d1: Date, d2: Date) =>
         d1.getFullYear() === d2.getFullYear() &&
