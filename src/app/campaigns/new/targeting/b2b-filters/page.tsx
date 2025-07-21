@@ -18,6 +18,7 @@ import {
   Flex,
   Spinner,
   Divider,
+  filter,
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -28,10 +29,10 @@ import { ExplorimFilters } from '@/components/filters/ExplorimFilters'
 import { ConversationalICP } from '@/components/filters/ConversationalICP'
 import SearchResults from '@/components/results/SearchResults'
 import { useSearchFilters, useApolloSearch } from '@/hooks/useApolloSearch'
-import { 
+import {
   type ApolloFilterInput,
 } from '@/types/apollo'
-import { 
+import {
   type ExplorimFilters as ExplorimFiltersType,
   type ICPFilterProfile,
   ALL_COUNTRIES
@@ -39,6 +40,7 @@ import {
 import CSVUpload from '@/components/filters/CSVUpload'
 import type { CSVLeadData } from '@/types/csv'
 import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
+import ApolloFilters, { CommonFilters, CompanyFilters, PeopleFilters } from '../../../../../components/filters/ApolloFilters'
 
 // Enhanced animations
 const float = keyframes`
@@ -122,8 +124,8 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
   if (filters.annual_revenue?.length > 0 || filters.company_annual_revenue?.length > 0) {
     const value = filters.annual_revenue || filters.company_annual_revenue
     activeFilters.push({ label: 'Annual Revenue', value: formatFilterValue(value) })
-  } 
-  else if ((typeof filters.revenueMin === 'number' && !isNaN(filters.revenueMin)) || 
+  }
+  else if ((typeof filters.revenueMin === 'number' && !isNaN(filters.revenueMin)) ||
           (typeof filters.revenueMax === 'number' && !isNaN(filters.revenueMax))) {
     // Format revenue values in a human-readable way
     const formatRevenue = (value: number | null | undefined) => {
@@ -133,7 +135,7 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
       if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
       return `$${value}`;
     };
-    
+
     const minRev = formatRevenue(filters.revenueMin);
     const maxRev = formatRevenue(filters.revenueMax);
     activeFilters.push({ label: 'Annual Revenue Range', value: `${minRev} - ${maxRev}` });
@@ -146,7 +148,7 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
   if (filters.organizationJobLocations?.length > 0) {
     activeFilters.push({ label: 'Organization Job Locations', value: formatFilterValue(filters.organizationJobLocations) })
   }
-  if ((filters.organizationNumJobsMin !== undefined && filters.organizationNumJobsMin !== null) || 
+  if ((filters.organizationNumJobsMin !== undefined && filters.organizationNumJobsMin !== null) ||
       (filters.organizationNumJobsMax !== undefined && filters.organizationNumJobsMax !== null)) {
     const min = filters.organizationNumJobsMin !== null ? filters.organizationNumJobsMin : 'Any'
     const max = filters.organizationNumJobsMax !== null ? filters.organizationNumJobsMax : 'Any'
@@ -158,7 +160,7 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
   }
 
   return (
-    <Card 
+    <Card
       bg={cardBg}
       backdropFilter="blur(12px)"
       border="1px solid"
@@ -177,7 +179,7 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
               {searchType === 'people' ? 'People Search' : searchType === 'company' ? 'Company Search' : 'CSV Upload'}
             </Text>
           </HStack>
-          
+
           <Box>
             <Flex wrap="wrap" gap={2}>
               {activeFilters.map((filter, index) => (
@@ -211,10 +213,10 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
 function B2BFiltersPageWithParams() {
   const searchParams = useSearchParams()
   const typeParam = searchParams.get('type')
-  
+
   // Set initial search type - only support people and csv_upload
   const initialSearchType = typeParam === 'csv_upload' ? 'csv_upload' : 'people'
-  
+
   return (
     <ApolloSearchProvider initialState={{ searchType: initialSearchType }}>
       <B2BFiltersContent />
@@ -237,16 +239,17 @@ function B2BFiltersContent() {
   const toast = useToast()
   const customToast = createCustomToast(toast)
   const searchParams = useSearchParams()
-  
+
   // Apollo search hooks
   const { search, isSearching, clearResults, setSearchResults, state } = useApolloSearch()
   const { searchType, filters, hasActiveFilters, updateFilter, resetFilters, setSearchType } = useSearchFilters()
-  
-  // Explorium filter state
-  const [explorimFilters, setExplorimFilters] = useState<ExplorimFiltersType>({})
+  useEffect(() => {
+      console.log(filters, "all filets")
+  }, [filters])
+
   const [savedProfiles, setSavedProfiles] = useState<ICPFilterProfile[]>([])
   const [loadingProfiles, setLoadingProfiles] = useState(false)
-  
+
   // Enhanced color mode values with glassmorphism
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')
   const glassBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
@@ -260,16 +263,6 @@ function B2BFiltersContent() {
     'linear-gradient(45deg, #667eea, #764ba2)',
     'linear-gradient(45deg, #5b21b6, #7c3aed)'
   )
-
-  // Check if there are active Explorim filters
-  const hasActiveExplorimFilters = React.useMemo(() => {
-    return Object.keys(explorimFilters).some(key => {
-      const value = explorimFilters[key as keyof ExplorimFiltersType]
-      if (Array.isArray(value)) return value.length > 0
-      if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0
-      return value !== undefined && value !== null && value !== ''
-    })
-  }, [explorimFilters])
 
   // Handle URL parameter for search type
   useEffect(() => {
@@ -286,14 +279,14 @@ function B2BFiltersContent() {
       try {
         console.log('🔄 Loading ICP profiles from API...')
         const response = await fetch('/api/icp-profiles')
-        
+
         console.log('📡 ICP Profiles API response:', {
           status: response.status,
           statusText: response.statusText,
           ok: response.ok,
           url: response.url
         })
-        
+
         if (response.ok) {
           const data = await response.json()
           console.log('✅ ICP Profiles loaded successfully:', data)
@@ -319,165 +312,18 @@ function B2BFiltersContent() {
   const handleFilterChange = (field: string, value: unknown) => {
     updateFilter(field, value)
   }
-
-  // Handle Explorium filter changes
-  const handleExplorimFilterChange = (field: keyof ExplorimFiltersType, value: any) => {
-    setExplorimFilters(prev => ({
-      ...prev,
-      [field]: value
-    }))
-
-    // Synchronize relevant explorim location filters with Apollo filters
-    const currentCountryCodes: string[] =
-      field === 'country_code' || field === 'company_country_code'
-        ? (Array.isArray(value) ? value : [])
-        : ([...(explorimFilters.country_code || []), ...(explorimFilters.company_country_code || [])])
-
-    const currentCityValues: string[] =
-      field === 'city_region_country' || field === 'company_city_region_country'
-        ? (Array.isArray(value) ? value : [])
-        : ([...(explorimFilters.city_region_country || []), ...(explorimFilters.company_city_region_country || [])])
-
-    // Recompute organization locations whenever relevant location fields change
-    if (
-      field === 'country_code' || field === 'city_region_country' ||
-      field === 'company_country_code' || field === 'company_city_region_country'
-    ) {
-      // Map country codes to labels
-      const countryLabels = currentCountryCodes.map(code => {
-        const found = ALL_COUNTRIES.find(c => c.value === code)
-        return found ? found.label : code
-      })
-
-      // Transform city values (e.g., "Toronto, ON, CA" -> "Toronto, ON")
-      const cityLabels = currentCityValues.map(city => {
-        const parts = city.split(', ')
-        return parts.length >= 2 ? `${parts[0]}, ${parts[1]}` : city
-      })
-
-      const combined = Array.from(new Set([...countryLabels, ...cityLabels]))
-      handleFilterChange('organizationLocations', combined)
-    }
-
-    // Map Explorium prospect filters to Apollo people filters
-    if (field === 'job_level') {
-      // Explorium job levels directly correspond to Apollo seniority levels
-      if (Array.isArray(value)) {
-        handleFilterChange('seniorities', value)
-      }
-    }
-
-    if (field === 'job_title') {
-      // Map selected job titles to Apollo jobTitles filter
-      if (Array.isArray(value)) {
-        handleFilterChange('jobTitles', value)
-      }
-    }
-
-    // Map company size (Explorium) to Apollo companyHeadcount filter
-    if (field === 'company_size') {
-      if (Array.isArray(value)) {
-        handleFilterChange('companyHeadcount', value)
-      }
-    }
-
-    // Map technology UID filters
-    if (field === 'currently_using_any_of_technology_uids' || field === 'company_currently_using_any_of_technology_uids') {
-      if (Array.isArray(value)) {
-        handleFilterChange('technologyUids', value)
-      }
-    }
-
-    if (field === 'currently_not_using_any_of_technology_uids' || field === 'company_currently_not_using_any_of_technology_uids') {
-      if (Array.isArray(value)) {
-        handleFilterChange('excludeTechnologyUids', value)
-      }
-    }
-
-    // Map organization job related filters
-    if (field === 'organization_job_titles' || field === 'company_organization_job_titles') {
-      if (Array.isArray(value)) {
-        handleFilterChange('organizationJobTitles', value)
-      }
-    }
-
-    if (field === 'organization_job_locations' || field === 'company_organization_job_locations') {
-      if (Array.isArray(value)) {
-        handleFilterChange('organizationJobLocations', value)
-      }
-    }
-
-    if (field === 'organization_num_jobs_range_min' || field === 'company_organization_num_jobs_range_min') {
-      if (typeof value === 'number') {
-        handleFilterChange('organizationNumJobsMin', value)
-      }
-    }
-
-    if (field === 'organization_num_jobs_range_max' || field === 'company_organization_num_jobs_range_max') {
-      if (typeof value === 'number') {
-        handleFilterChange('organizationNumJobsMax', value)
-      }
-    }
-
-    // Map annual revenue ranges (string array like "25M-50M")
-    if (field === 'annual_revenue' || field === 'company_annual_revenue') {
-      if (Array.isArray(value) && value.length > 0) {
-        const rangeStr = value[0] as string
-        const [minStr, maxStr] = rangeStr.split('-')
-        const parseMoney = (str: string | undefined) => {
-          if (!str) return undefined
-          if (str.toUpperCase().endsWith('M')) {
-            return parseFloat(str) * 1_000_000
-          }
-          if (str.toUpperCase().endsWith('K')) {
-            return parseFloat(str) * 1_000
-          }
-          if (str.toUpperCase().endsWith('B')) {
-            return parseFloat(str) * 1_000_000_000
-          }
-          return parseFloat(str)
-        }
-        const minVal = parseMoney(minStr)
-        const maxVal = parseMoney(maxStr)
-        
-        // Only set values if they are valid numbers
-        handleFilterChange('revenueMin', minVal !== undefined && !isNaN(minVal) ? minVal : null)
-        handleFilterChange('revenueMax', maxVal !== undefined && !isNaN(maxVal) ? maxVal : null)
-      } else {
-        // Clear revenue range when no values are selected
-        handleFilterChange('revenueMin', null)
-        handleFilterChange('revenueMax', null)
-      }
-    }
-
-    // Map email requirement
-    if (field === 'has_email') {
-      if (typeof value === 'boolean') {
-        handleFilterChange('hasEmail', value)
-      }
-    }
-
-    // Map prospect location to personLocations when provided directly
-    if (field === 'person_locations') {
-      if (Array.isArray(value)) {
-        handleFilterChange('personLocations', value)
-      }
-    }
-  }
-
   // Reset all filters - both Apollo and Explorium
   const handleResetAllFilters = () => {
     // Reset Apollo filters
     resetFilters()
     // Reset Explorium filters
-    setExplorimFilters({})
   }
 
   // Save ICP profile
   const handleSaveProfile = async (name: string, description?: string) => {
     try {
-      console.log('💾 Saving ICP profile:', { name, description, filters: explorimFilters })
-      
+      console.log('💾 Saving ICP profile:', { name, description, filters: filters })
+
       const response = await fetch('/api/icp-profiles', {
         method: 'POST',
         headers: {
@@ -486,7 +332,7 @@ function B2BFiltersContent() {
         body: JSON.stringify({
           profile_name: name,
           description,
-          filters: explorimFilters,
+          filters: filters,
           search_type: 'people'
         }),
       })
@@ -524,10 +370,7 @@ function B2BFiltersContent() {
         // Increment usage count by fetching the profile
         await fetch(`/api/icp-profiles/${profile.id}`)
       }
-      
-      // Load the filters
-      setExplorimFilters(profile.filters)
-      
+
       customToast.success({
         title: 'Profile Loaded',
         description: `ICP profile "${profile.profile_name}" has been loaded.`,
@@ -563,9 +406,9 @@ function B2BFiltersContent() {
     const targetingConfig = {
       searchType,
       filters,
-      hasResults: (state.peopleResults && state.peopleResults.length > 0) || 
+      hasResults: (state.peopleResults && state.peopleResults.length > 0) ||
                    (state.companyResults && state.companyResults.length > 0),
-      resultsCount: searchType === 'people' 
+      resultsCount: searchType === 'people'
         ? (state.peopleResults?.length || 0)
         : (state.companyResults?.length || 0)
     }
@@ -587,20 +430,20 @@ function B2BFiltersContent() {
   // Handle leads selected from CSV upload
   const handleLeadsSelected = (leads: CSVLeadData[]) => {
     console.log('CSV leads loaded for preview:', leads)
-    
+
     // Convert CSV leads to the format expected by search results
     const convertedLeads = leads.map((lead, index) => {
       // Extract compatible fields and exclude/convert problematic ones
-      const { 
-        department, 
-        source, 
-        upload_date, 
-        validation_status, 
-        validation_message, 
+      const {
+        department,
+        source,
+        upload_date,
+        validation_status,
+        validation_message,
         company_size,
-        ...compatibleFields 
+        ...compatibleFields
       } = lead
-      
+
       return {
         id: `csv_${index}_${Date.now()}`,
         external_id: `csv_${index}_${Date.now()}`,
@@ -614,9 +457,9 @@ function B2BFiltersContent() {
         ...compatibleFields
       }
     })
-    
+
     setSearchResults(convertedLeads)
-    
+
     customToast.success({
       title: 'CSV Data Loaded for Preview',
       description: `${leads.length} leads loaded for preview.`,
@@ -627,32 +470,15 @@ function B2BFiltersContent() {
     router.push('/campaigns/new')
   }
 
-  // Combine Apollo filters and Explorium filters for display
-  const combinedFilters = React.useMemo(() => {
-    return {
-      ...filters,
-      ...explorimFilters as any
-    }
-  }, [filters, explorimFilters])
-
-  // Remove duplicates from combined arrays
-  Object.keys(combinedFilters).forEach(key => {
-    if (Array.isArray(combinedFilters[key as keyof typeof combinedFilters])) {
-      combinedFilters[key as keyof typeof combinedFilters] = [
-        ...new Set(combinedFilters[key as keyof typeof combinedFilters] as string[])
-      ] as any
-    }
-  })
-
   // Check if we can proceed to pitch
   // Allow proceeding with just filters for people/company search (in case of API issues)
   // but require actual results for CSV uploads
-  const canProceedToPitch = (hasActiveFilters || hasActiveExplorimFilters) && (
+  const canProceedToPitch = (hasActiveFilters) && (
     searchType === 'csv_upload' ? (state.peopleResults && state.peopleResults.length > 0) : true
   )
 
   return (
-    <Box 
+    <Box
       minH="100vh"
       bg={gradientBg}
       position="relative"
@@ -691,16 +517,16 @@ function B2BFiltersContent() {
 
           {/* Page Title */}
           <Box textAlign="center">
-            <Heading 
-              size="2xl" 
+            <Heading
+              size="2xl"
               mb={4}
               color={useColorModeValue('white', 'gray.100')}
               textShadow="0 2px 4px rgba(0,0,0,0.3)"
             >
               Ideal Customer Profile Preview
             </Heading>
-            <Text 
-              fontSize="lg" 
+            <Text
+              fontSize="lg"
               color={useColorModeValue('whiteAlpha.900', 'gray.200')}
               maxW="2xl"
               mx="auto"
@@ -711,7 +537,7 @@ function B2BFiltersContent() {
           </Box>
 
           {/* Selected Filters Display */}
-          <SelectedFiltersDisplay filters={combinedFilters} searchType={searchType} />
+          <SelectedFiltersDisplay filters={filters} searchType={searchType} />
 
           {/* Filters and Results Grid */}
           <Grid templateColumns={{ base: "1fr", lg: "450px 1fr" }} gap={6} alignItems="start">
@@ -719,7 +545,7 @@ function B2BFiltersContent() {
             <GridItem>
               <VStack spacing={6} align="stretch">
                 {/* Filters Card */}
-                <Card 
+                <Card
                   bg={cardBg}
                   backdropFilter="blur(10px)"
                   border="1px solid"
@@ -739,7 +565,7 @@ function B2BFiltersContent() {
                         <Heading size="md" color="purple.500" flexShrink={0}>
                           Target Your Ideal Customers
                         </Heading>
-                        
+
                         <Box flex={1} overflow="auto" pr={2}>
                           <VStack spacing={6} align="stretch">
                             {/* Conversational ICP Input with Alex */}
@@ -749,9 +575,9 @@ function B2BFiltersContent() {
                                 if (parsedICP.searchType !== searchType) {
                                   setSearchType(parsedICP.searchType)
                                 }
-                                
+
                                 // Update Apollo filters (for search functionality) - ENHANCED WITH ALL FIELDS
-                                
+
                                 // Person-level filters
                                 if (parsedICP.jobTitles && parsedICP.jobTitles.length > 0) {
                                   handleFilterChange('jobTitles', parsedICP.jobTitles)
@@ -768,7 +594,7 @@ function B2BFiltersContent() {
                                 if (parsedICP.excludePersonLocations && parsedICP.excludePersonLocations.length > 0) {
                                   handleFilterChange('excludePersonLocations', parsedICP.excludePersonLocations)
                                 }
-                                
+
                                 // Company-level filters
                                 if (parsedICP.industries && parsedICP.industries.length > 0) {
                                   handleFilterChange('industries', parsedICP.industries)
@@ -800,7 +626,7 @@ function B2BFiltersContent() {
                                 if (parsedICP.companyDomains && parsedICP.companyDomains.length > 0) {
                                   handleFilterChange('companyDomains', parsedICP.companyDomains)
                                 }
-                                
+
                                 // Organization job filters (HIRING SIGNALS) - THE KEY MISSING PIECE
                                 if (parsedICP.organizationJobTitles && parsedICP.organizationJobTitles.length > 0) {
                                   handleFilterChange('organizationJobTitles', parsedICP.organizationJobTitles)
@@ -820,7 +646,7 @@ function B2BFiltersContent() {
                                 if (parsedICP.organizationJobPostedAtMax) {
                                   handleFilterChange('organizationJobPostedAtMax', parsedICP.organizationJobPostedAtMax)
                                 }
-                                
+
                                 // Funding & growth filters
                                 if (parsedICP.fundingStages && parsedICP.fundingStages.length > 0) {
                                   handleFilterChange('fundingStages', parsedICP.fundingStages)
@@ -837,7 +663,7 @@ function B2BFiltersContent() {
                                 if (parsedICP.foundedYearMax !== null && parsedICP.foundedYearMax !== undefined) {
                                   handleFilterChange('foundedYearMax', parsedICP.foundedYearMax)
                                 }
-                                
+
                                 // Activity signals
                                 if (parsedICP.jobPostings !== null && parsedICP.jobPostings !== undefined) {
                                   handleFilterChange('jobPostings', parsedICP.jobPostings)
@@ -848,7 +674,7 @@ function B2BFiltersContent() {
                                 if (parsedICP.webTraffic !== null && parsedICP.webTraffic !== undefined) {
                                   handleFilterChange('webTraffic', parsedICP.webTraffic)
                                 }
-                                
+
                                 // Other filters
                                 if (parsedICP.keywords && parsedICP.keywords.length > 0) {
                                   handleFilterChange('keywords', parsedICP.keywords)
@@ -857,53 +683,11 @@ function B2BFiltersContent() {
                                   handleFilterChange('intentTopics', parsedICP.intentTopics)
                                 }
 
-                                // Update Explorium filters (for UI display) with proper field mapping
-                                setExplorimFilters(prev => ({
-                                  ...prev,
-
-                                  // Map person locations to country codes (simplified - US mapping)
-                                  ...(parsedICP.personLocations && parsedICP.personLocations.length > 0 && {
-                                    country_code: parsedICP.personLocations.includes('United States') ? ['us'] : parsedICP.personLocations
-                                  }),
-                                  // Map job titles
-                                  ...(parsedICP.jobTitles && parsedICP.jobTitles.length > 0 && {
-                                    job_title: parsedICP.jobTitles
-                                  }),
-                                  // Map seniorities to job levels  
-                                  ...(parsedICP.seniorities && parsedICP.seniorities.length > 0 && {
-                                    job_level: parsedICP.seniorities.map(s => s.toLowerCase().replace('-', '_'))
-                                  }),
-                                  // Map company size
-                                  ...(parsedICP.companySize && parsedICP.companySize.length > 0 && {
-                                    company_size: parsedICP.companySize
-                                  }),
-                                  // Map organization job filters to Explorium format with correct field names
-                                  ...(parsedICP.organizationJobTitles && parsedICP.organizationJobTitles.length > 0 && {
-                                    company_organization_job_titles: parsedICP.organizationJobTitles
-                                  }),
-                                  ...(parsedICP.organizationJobLocations && parsedICP.organizationJobLocations.length > 0 && {
-                                    company_organization_job_locations: parsedICP.organizationJobLocations
-                                  }),
-                                  ...(parsedICP.organizationNumJobsMin !== null && parsedICP.organizationNumJobsMin !== undefined && {
-                                    company_organization_num_jobs_range_min: parsedICP.organizationNumJobsMin
-                                  }),
-                                  ...(parsedICP.organizationNumJobsMax !== null && parsedICP.organizationNumJobsMax !== undefined && {
-                                    company_organization_num_jobs_range_max: parsedICP.organizationNumJobsMax
-                                  }),
-                                  ...(parsedICP.organizationJobPostedAtMin && {
-                                    company_organization_job_posted_at_range_min: parsedICP.organizationJobPostedAtMin
-                                  }),
-                                  ...(parsedICP.organizationJobPostedAtMax && {
-                                    company_organization_job_posted_at_range_max: parsedICP.organizationJobPostedAtMax
-                                  }),
-
-                                }))
-
-                                // Count applied filters more accurately 
+                                // Count applied filters more accurately
                                 const appliedFiltersCount = [
-                                  parsedICP.jobTitles, parsedICP.personLocations, parsedICP.organizationLocations, 
-                                  parsedICP.seniorities, parsedICP.industries, parsedICP.companySize, 
-                                  parsedICP.technologies, parsedICP.organizationJobTitles, 
+                                  parsedICP.jobTitles, parsedICP.personLocations, parsedICP.organizationLocations,
+                                  parsedICP.seniorities, parsedICP.industries, parsedICP.companySize,
+                                  parsedICP.technologies, parsedICP.organizationJobTitles,
                                   parsedICP.organizationJobLocations, parsedICP.keywords
                                 ].filter(arr => Array.isArray(arr) && arr.length > 0).length +
                                 [
@@ -911,10 +695,10 @@ function B2BFiltersContent() {
                                   parsedICP.organizationNumJobsMax, parsedICP.jobPostings, parsedICP.newsEvents,
                                   parsedICP.webTraffic
                                 ].filter(val => val !== null && val !== undefined).length
-                                
+
                                 // Show success message
                                 customToast.success({
-                                  title: 'ICP Parsed Successfully', 
+                                  title: 'ICP Parsed Successfully',
                                   description: `Applied ${appliedFiltersCount} filter categories from your description${parsedICP.organizationJobTitles && parsedICP.organizationJobTitles.length > 0 ? ', including hiring signals!' : '.'}`,
                                 })
                               }}
@@ -922,7 +706,7 @@ function B2BFiltersContent() {
                                 // Don't reset all filters - just let the NaturalLanguageICP component handle its own state reset
                                 // The handleReset in NaturalLanguageICP already resets the ICP input state internally
                                 // Removing resetFilters() call to preserve existing filter selections
-                                
+
                                 // Optional: Show a message to user that ICP has been reset but filters are preserved
                                 customToast.info({
                                   title: 'ICP Input Reset',
@@ -931,21 +715,22 @@ function B2BFiltersContent() {
                               }}
                               disabled={isSearching}
                             />
-                            
+
                             <Divider />
-                            
+
                             <Box>
                               <Text fontSize="sm" fontWeight="semibold" color="purple.600" mb={4}>
                                 Fine-tune Your Filters
                               </Text>
-                              
-                              <ExplorimFilters
-                                filters={explorimFilters}
-                                onChange={handleExplorimFilterChange}
+
+                              <ApolloFilters
+                                filters={filters}
+                                onChange={handleFilterChange}
                                 savedProfiles={savedProfiles}
                                 onSaveProfile={handleSaveProfile}
-                                onLoadProfile={handleLoadProfile}
+                                onLoadProfile={setLoadingProfiles}
                               />
+
                             </Box>
                           </VStack>
                         </Box>
@@ -963,7 +748,7 @@ function B2BFiltersContent() {
                       loadingText="Searching..."
                       size="lg"
                       w="full"
-                      disabled={!(hasActiveFilters || hasActiveExplorimFilters)}
+                      disabled={!(hasActiveFilters)}
                       _hover={{
                         transform: 'translateY(-2px)',
                         shadow: 'xl',
@@ -972,9 +757,9 @@ function B2BFiltersContent() {
                     >
                       🔍 Search Prospects
                     </GradientButton>
-                    
-                    {(hasActiveFilters || hasActiveExplorimFilters) && !isSearching && (
-                      <Box 
+
+                    {(hasActiveFilters) && !isSearching && (
+                      <Box
                         p={3}
                         bg="blue.50"
                         borderRadius="md"
@@ -987,8 +772,8 @@ function B2BFiltersContent() {
                         </Text>
                       </Box>
                     )}
-                    
-                    {(hasActiveFilters || hasActiveExplorimFilters) && (
+
+                    {(hasActiveFilters) && (
                       <Button
                         variant="outline"
                         size="md"
@@ -998,7 +783,7 @@ function B2BFiltersContent() {
                         color="purple.600"
                         borderColor="purple.300"
                         borderWidth="2px"
-                        _hover={{ 
+                        _hover={{
                           bg: 'purple.50',
                           borderColor: 'purple.400',
                           transform: 'translateY(-1px)',
@@ -1020,7 +805,7 @@ function B2BFiltersContent() {
 
             {/* Results Column */}
             <GridItem>
-              <Card 
+              <Card
                 bg={cardBg}
                 backdropFilter="blur(10px)"
                 border="1px solid"
@@ -1085,4 +870,4 @@ function B2BFiltersContent() {
       </Container>
     </Box>
   )
-} 
+}

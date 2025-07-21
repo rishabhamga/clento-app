@@ -33,7 +33,7 @@ import {
   Textarea,
 } from '@chakra-ui/react'
 import { FiPlus, FiInfo } from 'react-icons/fi'
-import { 
+import {
   type ApolloFilterInput,
   type CompanyFilterInput,
   type SearchType,
@@ -61,22 +61,22 @@ interface TagInputProps {
   colorScheme?: string
 }
 
-export function TagInput({ 
-  label, 
-  placeholder, 
-  values, 
-  onAdd, 
-  onRemove, 
-  suggestions = [], 
+export function TagInput({
+  label,
+  placeholder,
+  values,
+  onAdd,
+  onRemove,
+  suggestions = [],
   maxTags,
   description,
   colorScheme = 'blue'
 }: TagInputProps) {
   const [inputValue, setInputValue] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
-  
+
   const filteredSuggestions = suggestions.filter(
-    suggestion => 
+    suggestion =>
       suggestion.toLowerCase().includes(inputValue.toLowerCase()) &&
       !values.includes(suggestion)
   ).slice(0, 10)
@@ -115,7 +115,7 @@ export function TagInput({
           </Tooltip>
         )}
       </HStack>
-      
+
       <Box position="relative">
         <HStack>
           <Input
@@ -213,16 +213,16 @@ export function MultiSelect({ label, options, values, onChange, description, col
           </Tooltip>
         )}
       </HStack>
-      
+
       <CheckboxGroup value={values} onChange={onChange}>
-        <Stack 
-          direction={columns > 1 ? "row" : "column"} 
+        <Stack
+          direction={columns > 1 ? "row" : "column"}
           spacing={2}
           flexWrap={columns > 1 ? "wrap" : "nowrap"}
         >
           {options.map((option) => (
-            <Checkbox 
-              key={option.value} 
+            <Checkbox
+              key={option.value}
               value={option.value}
               size="sm"
               flex={columns > 1 ? `0 0 ${100/columns}%` : undefined}
@@ -249,16 +249,16 @@ interface NumberRangeProps {
   description?: string
 }
 
-export function NumberRange({ 
-  label, 
-  minValue, 
-  maxValue, 
-  onMinChange, 
-  onMaxChange, 
-  min = 0, 
-  max = 100, 
+export function NumberRange({
+  label,
+  minValue,
+  maxValue,
+  onMinChange,
+  onMaxChange,
+  min = 0,
+  max = 100,
   step = 1,
-  description 
+  description
 }: NumberRangeProps) {
   return (
     <FormControl>
@@ -272,7 +272,7 @@ export function NumberRange({
           </Tooltip>
         )}
       </HStack>
-      
+
       <HStack spacing={4}>
         <Box>
           <Text fontSize="xs" color="gray.600" mb={1}>Min</Text>
@@ -291,7 +291,7 @@ export function NumberRange({
             </NumberInputStepper>
           </NumberInput>
         </Box>
-        
+
         <Box>
           <Text fontSize="xs" color="gray.600" mb={1}>Max</Text>
           <NumberInput
@@ -316,7 +316,7 @@ export function NumberRange({
 
 // People-specific filter components
 interface PeopleFiltersProps {
-  filters: ApolloFilterInput
+  filters: any
   onChange: (field: keyof ApolloFilterInput, value: any) => void
 }
 
@@ -385,17 +385,6 @@ export function PeopleFilters({ filters, onChange }: PeopleFiltersProps) {
               description="Where people live (cities, states, countries)"
               colorScheme="blue"
             />
-
-            <TagInput
-              label="Exclude Person Locations"
-              placeholder="e.g., Remote, International"
-              values={filters.excludePersonLocations}
-              onAdd={(value) => onChange('excludePersonLocations', [...filters.excludePersonLocations, value])}
-              onRemove={(value) => onChange('excludePersonLocations', filters.excludePersonLocations.filter(item => item !== value))}
-              maxTags={50}
-              description="Exclude people from these locations"
-              colorScheme="red"
-            />
           </VStack>
         </CardBody>
       </Card>
@@ -427,7 +416,7 @@ export function PeopleFilters({ filters, onChange }: PeopleFiltersProps) {
 
 // Company-specific filter components
 interface CompanyFiltersProps {
-  filters: ApolloFilterInput
+  filters: any
   onChange: (field: keyof ApolloFilterInput, value: any) => void
 }
 
@@ -487,17 +476,6 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
               description="Company headquarters locations"
               colorScheme="green"
             />
-
-            <TagInput
-              label="Exclude Organization Locations"
-              placeholder="e.g., Remote, International"
-              values={filters.excludeOrganizationLocations}
-              onAdd={(value) => onChange('excludeOrganizationLocations', [...filters.excludeOrganizationLocations, value])}
-              onRemove={(value) => onChange('excludeOrganizationLocations', filters.excludeOrganizationLocations.filter(item => item !== value))}
-              maxTags={50}
-              description="Exclude companies from these locations"
-              colorScheme="red"
-            />
           </VStack>
         </CardBody>
       </Card>
@@ -536,8 +514,14 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
               label="Number of Active Job Postings"
               minValue={filters.organizationNumJobsMin ?? 0}
               maxValue={filters.organizationNumJobsMax ?? 0}
-              onMinChange={(val) => onChange('organizationNumJobsMin', val)}
-              onMaxChange={(val) => onChange('organizationNumJobsMax', val)}
+              onMinChange={(val) => {
+                const parsed = parseInt(String(val), 10)
+                onChange('organizationNumJobsMin', isNaN(parsed) || parsed < 0 ? 0 : parsed)
+              }}
+              onMaxChange={(val) => {
+                const parsed = parseInt(String(val), 10)
+                onChange('organizationNumJobsMax', isNaN(parsed) || parsed < 0 ? 0 : parsed)
+              }}
               min={0}
               max={10000}
               step={10}
@@ -587,7 +571,7 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
               label="Revenue Range"
               minValue={filters.revenueMin || 0}
               maxValue={filters.revenueMax || 1000000000}
-              onMinChange={(value) => onChange('revenueMin', Math.floor(value))} 
+              onMinChange={(value) => onChange('revenueMin', Math.floor(value))}
               onMaxChange={(value) => onChange('revenueMax', Math.floor(value))}
               min={0}
               max={1000000000}
@@ -597,53 +581,6 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
           </VStack>
         </CardBody>
       </Card>
-
-      {/* Funding & Growth */}
-      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-        <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">Funding & Growth</Text>
-        </CardHeader>
-        <CardBody pt={2}>
-          <VStack spacing={4} align="stretch">
-            {/* Funding Stage not available in ApolloFilterInput for people search
-            <MultiSelect
-              label="Funding Stage"
-              options={FUNDING_STAGE_OPTIONS}
-              values={filters.fundingStages}
-              onChange={(values) => onChange('fundingStages', values)}
-              description="Filter by funding stage"
-              columns={2}
-            />
-            */}
-
-            {/* Founded Year Range not available in ApolloFilterInput for people search
-            <NumberRange
-              label="Founded Year Range"
-              minValue={filters.foundedYearMin || 1900}
-              maxValue={filters.foundedYearMax || new Date().getFullYear()}
-              onMinChange={(value) => onChange('foundedYearMin', value)}
-              onMaxChange={(value) => onChange('foundedYearMax', value)}
-              min={1900}
-              max={new Date().getFullYear()}
-              description="Filter by when the company was founded"
-            />
-            */}
-
-            <NumberRange
-              label="Funding Amount (Million USD)"
-              minValue={filters.fundingAmountMin || 0}
-              maxValue={filters.fundingAmountMax || 1000}
-              onMinChange={(value) => onChange('fundingAmountMin', value)}
-              onMaxChange={(value) => onChange('fundingAmountMax', value)}
-              min={0}
-              max={10000}
-              step={1}
-              description="Filter by total funding raised"
-            />
-          </VStack>
-        </CardBody>
-      </Card>
-
 
 
       {/* Engagement Signals */}
@@ -720,18 +657,6 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
               description="Exclude companies that use these technologies"
               colorScheme="red"
             />
-
-            <TagInput
-              label="Additional Technologies (Free Text)"
-              placeholder="e.g., Salesforce, AWS, React"
-              values={filters.technologies}
-              onAdd={(value) => onChange('technologies', [...filters.technologies, value])}
-              onRemove={(value) => onChange('technologies', filters.technologies.filter(item => item !== value))}
-              suggestions={COMMON_TECHNOLOGIES}
-              maxTags={50}
-              description="Additional technologies or keywords"
-              colorScheme="purple"
-            />
           </VStack>
         </CardBody>
       </Card>
@@ -742,7 +667,7 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
 // Common filters (industries, technologies, keywords) that apply to both
 interface CommonFiltersProps {
   searchType: SearchType
-  filters: ApolloFilterInput
+  filters: any
   onChange: (field: keyof ApolloFilterInput, value: any) => void
 }
 
@@ -772,46 +697,6 @@ export function CommonFilters({ searchType, filters, onChange }: CommonFiltersPr
         </CardBody>
       </Card>
 
-      {/* Technologies */}
-      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-        <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">⚙️ Technologies</Text>
-        </CardHeader>
-        <CardBody pt={2}>
-          <VStack spacing={4} align="stretch">
-            <TechnologySelect
-              label="Technologies Used (Apollo UIDs)"
-              values={filters.technologyUids || []}
-              onChange={(values) => onChange('technologyUids', values)}
-              description={searchType === 'people' ? 'Technologies their company uses (Apollo verified list)' : 'Technologies the company uses (Apollo verified list)'}
-              maxTags={20}
-              colorScheme="orange"
-            />
-
-            <TechnologySelect
-              label="Exclude Technologies (Apollo UIDs)"
-              values={filters.excludeTechnologyUids || []}
-              onChange={(values) => onChange('excludeTechnologyUids', values)}
-              description={searchType === 'people' ? 'Exclude people whose companies use these technologies' : 'Exclude companies that use these technologies'}
-              maxTags={20}
-              colorScheme="red"
-            />
-
-            <TagInput
-              label="Additional Technologies (Free Text)"
-              placeholder="e.g., Salesforce, AWS, React"
-              values={filters.technologies}
-              onAdd={(value) => onChange('technologies', [...filters.technologies, value])}
-              onRemove={(value) => onChange('technologies', filters.technologies.filter(item => item !== value))}
-              suggestions={COMMON_TECHNOLOGIES}
-              maxTags={10}
-              description="Additional technology keywords for broader search"
-              colorScheme="gray"
-            />
-          </VStack>
-        </CardBody>
-      </Card>
-
       {/* Intent Topics */}
       <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
@@ -832,8 +717,7 @@ export function CommonFilters({ searchType, filters, onChange }: CommonFiltersPr
         </CardBody>
       </Card>
 
-      {/* Keywords - COMMENTED OUT AS REQUESTED */}
-      {/* <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
           <Text fontSize="lg" fontWeight="semibold">🔍 Keywords</Text>
         </CardHeader>
@@ -857,25 +741,25 @@ export function CommonFilters({ searchType, filters, onChange }: CommonFiltersPr
             </FormControl>
           </VStack>
         </CardBody>
-      </Card> */}
+      </Card>
     </VStack>
   )
 }
 
 interface ApolloFiltersProps {
-  filters: ApolloFilterInput
-  onChange: (field: keyof ApolloFilterInput, value: any) => void
+  filters: any
+  onChange: (field: any, value: any) => void
   savedProfiles?: any[]
   onSaveProfile?: (name: string, description?: string) => void
   onLoadProfile?: (profile: any) => void
 }
 
-export default function ApolloFilters({ 
-  filters, 
-  onChange, 
-  savedProfiles = [], 
-  onSaveProfile, 
-  onLoadProfile 
+export default function ApolloFilters({
+  filters,
+  onChange,
+  savedProfiles = [],
+  onSaveProfile,
+  onLoadProfile
 }: ApolloFiltersProps) {
   return (
     <VStack spacing={6} align="stretch">
@@ -884,4 +768,4 @@ export default function ApolloFilters({
       <CommonFilters searchType="people" filters={filters} onChange={onChange} />
     </VStack>
   )
-} 
+}

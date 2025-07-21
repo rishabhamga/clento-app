@@ -60,7 +60,7 @@ interface Campaign {
   status: string
 }
 
-interface DbCampaign {
+export interface DbCampaign {
   id: string
   name: string
   description: string
