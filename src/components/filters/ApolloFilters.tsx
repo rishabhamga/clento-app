@@ -722,24 +722,16 @@ export function CommonFilters({ searchType, filters, onChange }: CommonFiltersPr
           <Text fontSize="lg" fontWeight="semibold">🔍 Keywords</Text>
         </CardHeader>
         <CardBody pt={2}>
-          <VStack spacing={4} align="stretch">
-            <FormControl>
-              <FormLabel fontSize="sm">Additional Keywords</FormLabel>
-              <Textarea
-                placeholder="Enter keywords or phrases separated by commas..."
-                value={filters.keywords.join(', ')}
-                onChange={(e) => {
-                  const keywords = e.target.value.split(',').map(k => k.trim()).filter(k => k)
-                  onChange('keywords', keywords)
-                }}
-                rows={3}
-                resize="vertical"
-              />
-              <Text fontSize="xs" color="gray.600" mt={1}>
-                Separate multiple keywords with commas
-              </Text>
-            </FormControl>
-          </VStack>
+          <TagInput
+            label="Keywords"
+            placeholder="Enter keywords"
+            values={filters.keywords}
+            onAdd={(value) => onChange('keywords', [...filters.keywords, value])}
+            onRemove={(value) => onChange('keywords', filters.keywords.filter(item => item !== value))}
+            maxTags={20}
+            description="Extra Keywords"
+            colorScheme="pink"
+          />
         </CardBody>
       </Card>
     </VStack>
