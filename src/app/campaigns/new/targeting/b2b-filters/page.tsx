@@ -609,9 +609,6 @@ function B2BFiltersContent() {
                                 if (parsedICP.jobTitles && parsedICP.jobTitles.length > 0) {
                                   handleFilterChange('jobTitles', parsedICP.jobTitles)
                                 }
-                                if (parsedICP.excludeJobTitles && parsedICP.excludeJobTitles.length > 0) {
-                                  handleFilterChange('excludeJobTitles', parsedICP.excludeJobTitles)
-                                }
                                 if (parsedICP.seniorities && parsedICP.seniorities.length > 0) {
                                   handleFilterChange('seniorities', parsedICP.seniorities)
                                 }

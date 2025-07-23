@@ -345,17 +345,6 @@ export function PeopleFilters({ filters, onChange }: PeopleFiltersProps) {
               colorScheme="purple"
             />
 
-            <TagInput
-              label="Exclude Job Titles"
-              placeholder="e.g., Intern, Student"
-              values={filters.excludeJobTitles}
-              onAdd={(value) => onChange('excludeJobTitles', [...filters.excludeJobTitles, value])}
-              onRemove={(value) => onChange('excludeJobTitles', filters.excludeJobTitles.filter(item => item !== value))}
-              maxTags={50}
-              description="Exclude people with these job titles"
-              colorScheme="red"
-            />
-
             <MultiSelect
               label="Seniority Levels"
               options={SENIORITY_OPTIONS}

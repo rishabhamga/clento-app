@@ -25,6 +25,7 @@ interface FilterState {
   organizationNumJobsMax: number
   organizationNumJobsMin: number
   recentNews: boolean
+  hasEmail: boolean
 }
 
 interface SearchRequest {
@@ -119,13 +120,12 @@ async function searchZoomInfo(filters: FilterState): Promise<{ results: Lead[], 
 function transformToApolloFilters(filters: FilterState, page: number = 1, limit: number = 50): ApolloFilterInput {
   return {
     jobTitles: filters.jobTitles || [],
-    excludeJobTitles: filters.excludeJobTitles || [],
     seniorities: filters.seniorityLevels as any || [],
     personLocations: filters.locations || [], // Person's location (where they live)
     excludePersonLocations: filters.excludeLocations || [],
     organizationLocations: [], // Company headquarters locations (separate from person location)
     excludeOrganizationLocations: [],
-    hasEmail: null,
+    hasEmail: filters.hasEmail,
     industries: filters.industries || [],
     companyHeadcount: [],
     companyDomains: [],
