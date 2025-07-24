@@ -8,14 +8,16 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p ${PORT:-8080}",
     "lint": "next lint --max-warnings=0",
     "lint:fix": "next lint --fix",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "type-check": "tsc --noEmit",
-    "ci": "npm run lint && npm run type-check && npm run test"
+    "ci": "npm run lint && npm run type-check && npm run test",
+    "postinstall": "npm run puppeteer:install",
+    "puppeteer:install": "npx puppeteer browsers install chrome || echo 'Puppeteer browser install failed, continuing...'"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.2.4",
