@@ -34,7 +34,9 @@ import {
     Icon,
     useToast,
     Spinner,
-    Spacer
+    Spacer,
+    Grid,
+    GridItem
 } from '@chakra-ui/react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
@@ -46,6 +48,8 @@ const sampleLeads: any[] = []
 
 function getStatusColor(status: string) {
     switch (status) {
+        case 'warm': return 'orange'
+        case 'hot': return 'red'
         case 'new': return 'blue'
         case 'contacted': return 'yellow'
         case 'replied': return 'green'
@@ -61,6 +65,7 @@ export default function LeadsPage() {
     const [leads, setLeads] = useState<ILeads[]>();
     const toast = useToast()
     const [loading, setLoading] = useState<boolean>(false)
+    const [approveAll, setApproveAll] = useState<boolean>(false)
     const [selectedLead, setSelectedLead] = useState<string>();
     const [recentActivity, setRecentActivity] = useState<IRecentActivity[]>();
     const [selectedLeadData, setSelectedLeadData] = useState<ILeads>();
@@ -198,9 +203,32 @@ export default function LeadsPage() {
                         </HStack>
                     </Box>
 
+                    {/* Approval Modal */}
+                    <Modal isOpen={approveAll} onClose={() => setApproveAll(false)} size="md">
+                        <ModalOverlay bg="blackAlpha.600" />
+                        <ModalContent mx={4} borderRadius="xl" overflow="auto" maxW="600px" maxH={'85vh'}>
+                            <ModalHeader color={'CaptionText'} py={6} borderBottom={'1px solid'} borderColor={'blackAlpha.300'} display={'flex'} alignItems={'center'} justifyContent={"center"}>
+                                <Text fontSize="xl" fontWeight="bold">
+                                    Are You Sure You Want To Approve All The Messages?
+                                </Text>
+                            </ModalHeader>
+                            <Spacer height={'30px'} />
+                            <ModalBody p={"12px"}>
+                                <HStack justifyContent={"space-between"} p={"0px 40px"}>
+                                    <GradientButton size="sm" variant="primary" onClick={() => { setApproveAll(false) ; alert("Approving Message") }} position="relative">
+                                        Approve
+                                    </GradientButton>
+                                    <GradientButton size="sm" variant="secondary" onClick={() => { setApproveAll(false) ; alert("Rejecting Message") }} position="relative">
+                                        Reject
+                                    </GradientButton>
+                                </HStack>
+                            </ModalBody>
+                        </ModalContent>
+                    </Modal>
+
                     <Modal isOpen={isOpen} onClose={handleClose} size="4xl">
                         <ModalOverlay bg="blackAlpha.600" />
-                        <ModalContent mx={4} borderRadius="xl" overflow="hidden" maxW="900px" maxH={'85vh'}>
+                        <ModalContent mx={4} borderRadius="xl" overflow="auto" maxW="900px" maxH={'85vh'}>
                             <ModalHeader color={'CaptionText'} py={6} borderBottom={'1px solid'} borderColor={'blackAlpha.300'} alignItems={'start'}>
                                 <HStack>
                                     <Text fontSize="xl" fontWeight="bold">
@@ -214,8 +242,90 @@ export default function LeadsPage() {
                                 <Text fontSize="xs" color="gray.500">{selectedLeadData?.designation}</Text>
                             </ModalHeader>
                             <ModalCloseButton color="black" />
-
                             <ModalBody py={8}>
+                                <Heading size="md" color="gray.700" mb={3}>
+                                    Prospecting
+                                </Heading>
+                                <Card p={4} maxH="300px" overflowY="auto" bg={useColorModeValue('gray.50', 'gray.800')}>
+                                    <Grid templateColumns={{ base: "1fr", md: "1fr 2fr" }} gap={6} p={4}>
+                                        <GridItem display="flex" alignItems="center">
+                                            <Text fontSize="md" color="black" fontWeight="semibold">
+                                                Company Description
+                                            </Text>
+                                        </GridItem>
+                                        <GridItem>
+                                            <Text fontSize="md" color="gray.700">
+                                                {selectedLeadData?.companyDescription}
+                                            </Text>
+                                        </GridItem>
+
+                                        <GridItem display="flex" alignItems="center">
+                                            <Text fontSize="md" color="black" fontWeight="semibold">
+                                                Client Need Analysis
+                                            </Text>
+                                        </GridItem>
+                                        <GridItem>
+                                            <Text fontSize="md" color="gray.700">
+                                                {selectedLeadData?.clientNeedAnalysis}
+                                            </Text>
+                                        </GridItem>
+
+                                        <GridItem display="flex" alignItems="center">
+                                            <Text fontSize="md" color="black" fontWeight="semibold">
+                                                Recommended Approach
+                                            </Text>
+                                        </GridItem>
+                                        <GridItem>
+                                            <Text fontSize="md" color="gray.700">
+                                                {selectedLeadData?.recommendedApproach}
+                                            </Text>
+                                        </GridItem>
+
+                                        <GridItem display="flex" alignItems="center">
+                                            <Text fontSize="md" color="black" fontWeight="semibold">
+                                                Talking Points
+                                            </Text>
+                                        </GridItem>
+                                        <GridItem>
+                                            <Text fontSize="md" color="gray.700">
+                                                {selectedLeadData?.talkingPoints}
+                                            </Text>
+                                        </GridItem>
+                                    </Grid>
+                                </Card>
+                                <Spacer height="30px" />
+                                {selectedLeadData?.pendingApproval.trim() && (
+                                    <>
+                                        <Heading size="md" color="gray.700" mb={3}>
+                                            Approvals
+                                        </Heading>
+                                        <Card p={4} maxH="300px" overflowY="auto" bg={useColorModeValue('gray.50', 'gray.800')}>
+                                            <Grid templateColumns={{ base: "1fr", md: "1fr 2fr" }} gap={6} p={4}>
+                                                <GridItem display="flex" alignItems="center">
+                                                    <Text fontSize="md" color="black" fontWeight="semibold">
+                                                        Message For Approval:
+                                                    </Text>
+                                                </GridItem>
+                                                <GridItem>
+                                                    <Text fontSize="md" color="gray.700">
+                                                        {selectedLeadData?.pendingApproval}
+                                                    </Text>
+                                                </GridItem>
+                                                <GridItem display="flex" alignItems="center" justifyContent="center">
+                                                    <GradientButton size="sm" variant="primary" onClick={() => { onClose(); alert("Approving Message") }} position="relative">
+                                                        Approve
+                                                    </GradientButton>
+                                                </GridItem>
+                                                <GridItem display="flex" alignItems="center" justifyContent="center">
+                                                    <GradientButton size="sm" variant="secondary" onClick={() => { onClose(); alert("Rejecting Message") }} position="relative">
+                                                        Reject
+                                                    </GradientButton>
+                                                </GridItem>
+                                            </Grid>
+                                        </Card>
+                                    </>
+                                )}
+                                <Spacer height="30px" />
                                 <Heading size="md" color="gray.700" mb={3}>
                                     LinkedIn Chat
                                 </Heading>
@@ -335,56 +445,78 @@ export default function LeadsPage() {
                     {/* Leads Table */}
                     {/* Leads table will be shown when leads are available */}
                     {leads && leads?.length > 0 && (
-                        <Card bg={cardBg}>
-                            <CardBody>
-                                <Table variant="simple">
-                                    <Thead>
-                                        <Tr>
-                                            <Th>Lead</Th>
-                                            <Th>Company</Th>
-                                            <Th>Status</Th>
-                                            <Th>Score</Th>
-                                            <Th>Actions</Th>
-                                        </Tr>
-                                    </Thead>
-                                    <Tbody>
-                                        {filteredLeads.map((lead) => (
-                                            <Tr key={lead.id}>
-                                                <Td>
-                                                    <HStack spacing={3}>
-                                                        <Avatar size="sm" name={lead.contactName} />
-                                                        <VStack spacing={0} align="start">
-                                                            <Text fontWeight="semibold">{lead.contactName}</Text>
-                                                            <Text fontSize="sm" color="gray.600">{lead.email}</Text>
-                                                            <Text fontSize="xs" color="gray.500">{lead.designation}</Text>
-                                                        </VStack>
-                                                    </HStack>
-                                                </Td>
-                                                <Td>
-                                                    <Text fontWeight="medium">{lead.companyName}</Text>
-                                                </Td>
-                                                <Td>
-                                                    <Badge colorScheme={getStatusColor(lead.status)}>
-                                                        {lead.status}
-                                                    </Badge>
-                                                </Td>
-                                                <Td>
-                                                    {/* <Badge colorScheme={lead.score >= 80 ? 'green' : lead.score >= 60 ? 'yellow' : 'red'}> */}
+                        <>
+                            <Card bg={cardBg}>
+                                <CardBody>
+                                    <Box w={"100%"} display={"flex"} justifyContent={"end"}>
+                                        <GradientButton size="md" variant="primary" onClick={() => setApproveAll(true)}>
+                                            Approve All
+                                        </GradientButton>
+                                    </Box>
+                                    <Table variant="simple">
+                                        <Thead>
+                                            <Tr>
+                                                <Th>Lead</Th>
+                                                <Th>Company</Th>
+                                                <Th>Status</Th>
+                                                {/* <Th>Score</Th> */}
+                                                <Th>Actions</Th>
+                                            </Tr>
+                                        </Thead>
+                                        <Tbody>
+                                            {filteredLeads.map((lead) => (
+                                                <Tr key={lead.id}>
+                                                    <Td>
+                                                        <HStack spacing={3}>
+                                                            <Avatar size="sm" name={lead.contactName} />
+                                                            <VStack spacing={0} align="start">
+                                                                <Text fontWeight="semibold">{lead.contactName}</Text>
+                                                                <Text fontSize="sm" color="gray.600">{lead.email}</Text>
+                                                                <Text fontSize="xs" color="gray.500">{lead.designation}</Text>
+                                                            </VStack>
+                                                        </HStack>
+                                                    </Td>
+                                                    <Td>
+                                                        <Text fontWeight="medium">{lead.companyName}</Text>
+                                                    </Td>
+                                                    <Td>
+                                                        <Badge colorScheme={getStatusColor(lead.status)}>
+                                                            {lead.status}
+                                                        </Badge>
+                                                    </Td>
+                                                    {/* <Td>
+                                                    <Badge colorScheme={lead.score >= 80 ? 'green' : lead.score >= 60 ? 'yellow' : 'red'}>
                                                     <Badge colorScheme={'green'}>
                                                         {50}
                                                     </Badge>
-                                                </Td>
-                                                <Td>
-                                                    <GradientButton size="sm" variant="tertiary" onClick={() => handleViewClick(lead.id)}>
-                                                        View
-                                                    </GradientButton>
-                                                </Td>
-                                            </Tr>
-                                        ))}
-                                    </Tbody>
-                                </Table>
-                            </CardBody>
-                        </Card>
+                                                </Td> */}
+                                                    <Td>
+                                                        <GradientButton size="sm" variant="tertiary" onClick={() => handleViewClick(lead.id)} position="relative">
+                                                            {lead.pendingApproval.trim() ? "Action Needed" : "View"}
+                                                            {lead.pendingApproval.trim() && (
+                                                                <Badge
+                                                                    backgroundColor={'red'}
+                                                                    position="absolute"
+                                                                    top="-1"
+                                                                    right="-1"
+                                                                    fontSize="0.7em"
+                                                                    borderRadius="full"
+                                                                    px={2}
+                                                                    py={0.5}
+                                                                    zIndex={1}
+                                                                >
+                                                                    &nbsp;
+                                                                </Badge>
+                                                            )}
+                                                        </GradientButton>
+                                                    </Td>
+                                                </Tr>
+                                            ))}
+                                        </Tbody>
+                                    </Table>
+                                </CardBody>
+                            </Card>
+                        </>
                     )}
                 </VStack>
             </Container>
