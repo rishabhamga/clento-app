@@ -17,31 +17,15 @@ export interface LinkedInAccount {
 }
 
 export interface LinkedInProfile {
-  id: string
-  localizedFirstName?: string
-  localizedLastName?: string
-  profilePicture?: {
-    'displayImage~': {
-      elements: Array<{
-        identifiers: Array<{
-          identifier: string
-        }>
-      }>
-    }
-  }
-  headline?: {
-    localized: {
-      [key: string]: string
-    }
-  }
-  industry?: {
-    localized: {
-      [key: string]: string
-    }
-  }
-  location?: {
-    name: string
-  }
+  name?: string;
+  headline?: string;
+  company?: string;
+  title?: string;
+  location?: string;
+  about?: string;
+  skills?: string[];
+  experiences?: { title: string; company: string; dateRange?: string }[];
+  recentPosts?: string[];
 }
 
 export interface LinkedInTokenResponse {
