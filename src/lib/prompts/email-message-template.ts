@@ -23,10 +23,11 @@ export interface EmailMessageContext {
     email: string
   }
   messageVariant: number
+  toneOfVoice: string
 }
 
 export const createEmailMessagePrompt = (context: EmailMessageContext): string => {
-  const { websiteAnalysis, recipient, personalization, sender, messageVariant } = context
+  const { websiteAnalysis, recipient, personalization, sender, messageVariant, toneOfVoice } = context
 
   const basePrompt = `
 You are an expert at writing cold emails that get opened and responded to. Generate a compelling cold email based on the following context:
@@ -55,7 +56,12 @@ You are an expert at writing cold emails that get opened and responded to. Gener
 - Key Advantages: ${websiteAnalysis.competitive_advantages.join(', ')}
 - Target Personas: ${websiteAnalysis.target_personas.map(p => p.role || p.title).join(', ')}
 - Tech Stack: ${websiteAnalysis.tech_stack.join(', ')}
-- Social Proof: ${websiteAnalysis.social_proof.join(', ')}
+- Social Proof: ${Array.isArray(websiteAnalysis.social_proof) 
+    ? websiteAnalysis.social_proof.join(', ') 
+    : (typeof websiteAnalysis.social_proof === 'object' && websiteAnalysis.social_proof && 
+       'testimonials' in websiteAnalysis.social_proof ? 
+       (websiteAnalysis.social_proof as any).testimonials?.map((t: any) => t.quote || t.author || '').filter(Boolean).join(', ') || 'Customer success stories' :
+       'Customer success stories')}
 - Website: ${websiteAnalysis.website_url}
 
 **EMAIL REQUIREMENTS:**
@@ -69,6 +75,8 @@ You are an expert at writing cold emails that get opened and responded to. Gener
 8. Professional signature
 9. Avoid spam trigger words
 10. Keep total email under 150 words
+11. CRITICAL: Use a ${toneOfVoice.toLowerCase()} tone throughout the entire email
+12. Ensure the tone reflects ${toneOfVoice} characteristics (${getToneDescription(toneOfVoice)})
 
 **STRUCTURE VARIANTS** (Use variant ${messageVariant}):
 ${getEmailStructureVariants()}
@@ -88,6 +96,20 @@ Generate the complete email following the specified variant structure.
 `
 
   return basePrompt
+}
+
+const getToneDescription = (tone: string): string => {
+  const toneDescriptions: Record<string, string> = {
+    'Urgent': 'pressing and immediate, emphasizing the importance of quick action',
+    'Professional': 'formal and respectful, maintaining a business-like demeanor',
+    'Supportive': 'encouraging and helpful, offering assistance and understanding',
+    'Sincere': 'genuine and honest, building trust through authenticity',
+    'Storytelling': 'engaging and narrative, using compelling stories to connect',
+    'Challenging': 'provocative and thought-provoking, questioning the status quo',
+    'Confident': 'assured and self-assured, demonstrating expertise and authority',
+    'Friendly': 'warm and approachable, creating a personal connection with enthusiasm'
+  }
+  return toneDescriptions[tone] || 'professional and appropriate for business communication'
 }
 
 const getEmailStructureVariants = (): string => {
