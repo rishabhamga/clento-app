@@ -378,27 +378,6 @@ export function PeopleFilters({ filters, onChange }: PeopleFiltersProps) {
         </CardBody>
       </Card>
 
-      {/* Contact Information */}
-      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-        <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">Contact Information</Text>
-        </CardHeader>
-        <CardBody pt={2}>
-          <FormControl>
-            <HStack justify="space-between" align="center">
-              <VStack align="start" spacing={0}>
-                <Text fontSize="sm" fontWeight="medium">Require Email Address</Text>
-                <Text fontSize="xs" color="gray.600">Only include people with verified email addresses</Text>
-              </VStack>
-              <Switch
-                isChecked={filters.hasEmail === true}
-                onChange={(e) => onChange('hasEmail', e.target.checked ? true : null)}
-                colorScheme="purple"
-              />
-            </HStack>
-          </FormControl>
-        </CardBody>
-      </Card>
     </VStack>
   )
 }
@@ -431,17 +410,6 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
               maxTags={100}
               description="Target specific company domains"
               colorScheme="green"
-            />
-
-            <TagInput
-              label="Industries"
-              placeholder="e.g., Technology, Healthcare, Finance"
-              values={filters.industries || []}
-              onAdd={(value) => onChange('industries', [...(filters.industries || []), value])}
-              onRemove={(value) => onChange('industries', (filters.industries || []).filter(item => item !== value))}
-              maxTags={100}
-              description="Exclude these companies"
-              colorScheme="red"
             />
 
           </VStack>
@@ -571,53 +539,6 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
         </CardBody>
       </Card>
 
-
-      {/* Engagement Signals */}
-      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-        <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">Engagement Signals</Text>
-        </CardHeader>
-        <CardBody pt={2}>
-          <VStack spacing={4} align="stretch">
-            <HStack justify="space-between">
-              <VStack align="start" spacing={0}>
-                <Text fontSize="sm" fontWeight="medium">Has Job Postings</Text>
-                <Text fontSize="xs" color="gray.600">Companies actively hiring</Text>
-              </VStack>
-              <Switch
-                isChecked={filters.jobPostings === true}
-                onChange={(e) => onChange('jobPostings', e.target.checked ? true : null)}
-                colorScheme="purple"
-              />
-            </HStack>
-
-            <HStack justify="space-between">
-              <VStack align="start" spacing={0}>
-                <Text fontSize="sm" fontWeight="medium">Recent News</Text>
-                <Text fontSize="xs" color="gray.600">Companies in the news</Text>
-              </VStack>
-              <Switch
-                isChecked={filters.newsEvents === true}
-                onChange={(e) => onChange('newsEvents', e.target.checked ? true : null)}
-                colorScheme="purple"
-              />
-            </HStack>
-
-            <HStack justify="space-between">
-              <VStack align="start" spacing={0}>
-                <Text fontSize="sm" fontWeight="medium">High Web Traffic</Text>
-                <Text fontSize="xs" color="gray.600">Companies with significant online presence</Text>
-              </VStack>
-              <Switch
-                isChecked={filters.webTraffic === true}
-                onChange={(e) => onChange('webTraffic', e.target.checked ? true : null)}
-                colorScheme="purple"
-              />
-            </HStack>
-          </VStack>
-        </CardBody>
-      </Card>
-
       {/* Technologies */}
       <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
@@ -632,6 +553,7 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
               onAdd={(value) => onChange('technologyUids', [...(filters.technologyUids || []), value])}
               onRemove={(value) => onChange('technologyUids', (filters.technologyUids || []).filter(item => item !== value))}
               maxTags={20}
+              suggestions={COMMON_TECHNOLOGIES}
               description="Technologies the company uses (Apollo verified list)"
               colorScheme="orange"
             />
@@ -666,45 +588,6 @@ export function CommonFilters({ searchType, filters, onChange }: CommonFiltersPr
 
   return (
     <VStack spacing={6} align="stretch">
-      {/* Industries */}
-      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-        <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">🏭 Industries</Text>
-        </CardHeader>
-        <CardBody pt={2}>
-          <TagInput
-            label="Target Industries"
-            placeholder="e.g., Technology, Healthcare, Finance"
-            values={filters.industries}
-            onAdd={(value) => onChange('industries', [...filters.industries, value])}
-            onRemove={(value) => onChange('industries', filters.industries.filter(item => item !== value))}
-            suggestions={COMMON_INDUSTRIES}
-            maxTags={25}
-            description="Focus on specific industries"
-            colorScheme="teal"
-          />
-        </CardBody>
-      </Card>
-
-      {/* Intent Topics */}
-      <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-        <CardHeader pb={2}>
-          <Text fontSize="lg" fontWeight="semibold">Intent Signals</Text>
-        </CardHeader>
-        <CardBody pt={2}>
-          <TagInput
-            label="Intent Topics"
-            placeholder="e.g., software buying intent, digital transformation"
-            values={filters.intentTopics}
-            onAdd={(value) => onChange('intentTopics', [...filters.intentTopics, value])}
-            onRemove={(value) => onChange('intentTopics', filters.intentTopics.filter(item => item !== value))}
-            suggestions={COMMON_INTENT_TOPICS}
-            maxTags={10}
-            description="Target based on buying intent and interests"
-            colorScheme="pink"
-          />
-        </CardBody>
-      </Card>
 
       <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
         <CardHeader pb={2}>
@@ -717,7 +600,7 @@ export function CommonFilters({ searchType, filters, onChange }: CommonFiltersPr
             values={filters.keywords}
             onAdd={(value) => onChange('keywords', [...filters.keywords, value])}
             onRemove={(value) => onChange('keywords', filters.keywords.filter(item => item !== value))}
-            maxTags={20}
+            maxTags={5}
             description="Extra Keywords"
             colorScheme="pink"
           />

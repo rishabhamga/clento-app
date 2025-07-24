@@ -3,9 +3,10 @@ import { auth } from '@clerk/nextjs/server'
 import { apolloProvider } from '@/lib/data-integrations/apollo-provider'
 import { getApolloThrottleManager } from '@/lib/utils/apollo-throttle'
 import ApolloValidator from '@/lib/utils/apollo-validator'
-import { type ApolloFilterInput, type LeadSearchResult } from '@/types/apollo'
+import { CompanyHeadcount, FundingStage, type ApolloFilterInput, type LeadSearchResult } from '@/types/apollo'
 
 interface FilterState {
+  organizationLocations: string[]
   locations: string[]
   excludeLocations: string[]
   jobTitles: string[]
@@ -22,10 +23,28 @@ interface FilterState {
   technologies: string[]
   fundingStatus: string[]
   hiringActivity: boolean
-  organizationNumJobsMax: number
-  organizationNumJobsMin: number
   recentNews: boolean
   hasEmail: boolean
+  fundingStages: FundingStage[]
+  fundingAmountMin: number | null
+  fundingAmountMax: number | null
+  foundedYearMin: number | null
+  foundedYearMax: number | null
+  excludeOrganizationLocations: string[]
+  companyHeadcount: CompanyHeadcount[]
+  companyDomains: string[]
+  intentTopics: string[]
+  technologyUids: string[]
+  excludeTechnologyUids: string[]
+  organizationJobTitles: string[]
+  organizationJobLocations: string[]
+  organizationNumJobsMin: number | null
+  organizationNumJobsMax: number | null
+  organizationJobPostedAtMin: string | null
+  organizationJobPostedAtMax: string | null
+  jobPostings: boolean | null
+  newsEvents: boolean | null
+  webTraffic: boolean | null
 }
 
 interface SearchRequest {
@@ -123,33 +142,33 @@ function transformToApolloFilters(filters: FilterState, page: number = 1, limit:
     seniorities: filters.seniorityLevels as any || [],
     personLocations: filters.locations || [], // Person's location (where they live)
     excludePersonLocations: filters.excludeLocations || [],
-    organizationLocations: [], // Company headquarters locations (separate from person location)
-    excludeOrganizationLocations: [],
+    organizationLocations: filters.organizationLocations, // Company headquarters locations (separate from person location)
+    excludeOrganizationLocations: filters.excludeOrganizationLocations,
     hasEmail: filters.hasEmail,
     industries: filters.industries || [],
-    companyHeadcount: [],
-    companyDomains: [],
-    intentTopics: [],
+    companyHeadcount: filters.companyHeadcount || [],
+    companyDomains: filters.companyDomains || [],
+    intentTopics: filters.intentTopics || [],
     technologies: filters.technologies || [],
-    technologyUids: [], // Apollo technology UIDs
-    excludeTechnologyUids: [], // Apollo technology UIDs for exclusion
+    technologyUids: filters.technologyUids || [], // Apollo technology UIDs
+    excludeTechnologyUids: filters.excludeTechnologyUids || [], // Apollo technology UIDs for exclusion
     keywords: [filters.keywords, filters.companyKeywords].filter(Boolean),
-    organizationJobTitles: [], // Organization job titles
-    organizationJobLocations: [], // Organization job locations
-    organizationNumJobsMin: null,
-    organizationNumJobsMax: null,
-    organizationJobPostedAtMin: null,
-    organizationJobPostedAtMax: null,
+    organizationJobTitles: filters.organizationJobTitles || [], // Organization job titles
+    organizationJobLocations: filters.organizationJobLocations || [], // Organization job locations
+    organizationNumJobsMin: filters.organizationNumJobsMin || null,
+    organizationNumJobsMax: filters.organizationNumJobsMax || null,
+    organizationJobPostedAtMin: filters.organizationJobPostedAtMin || null,
+    organizationJobPostedAtMax: filters.organizationJobPostedAtMax || null,
     revenueMin: filters.revenueMin || null,
     revenueMax: filters.revenueMax || null,
-    fundingStages: [],
-    fundingAmountMin: null,
-    fundingAmountMax: null,
-    foundedYearMin: null,
-    foundedYearMax: null,
-    jobPostings: null,
-    newsEvents: null,
-    webTraffic: null,
+    fundingStages: filters.fundingStages ||  [],
+    fundingAmountMin: filters.fundingAmountMin || null,
+    fundingAmountMax: filters.fundingAmountMax || null,
+    foundedYearMin: filters.foundedYearMin || null,
+    foundedYearMax: filters.foundedYearMax || null,
+    jobPostings: filters.jobPostings || null,
+    newsEvents: filters.newsEvents || null,
+    webTraffic: filters.webTraffic || null,
     page,
     perPage: limit
   }

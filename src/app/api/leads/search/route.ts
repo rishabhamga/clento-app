@@ -113,6 +113,17 @@ function transformFiltersToUnified(filters: any): UnifiedSearchFilters {
     unifiedFilters.webTraffic = filters.webTraffic
   }
 
+  if(filters.companyDomains) {
+    unifiedFilters.companyDomains = filters.companyDomains
+  }
+
+  if(filters.revenueMin) {
+    unifiedFilters.revenueMin = filters.revenueMin
+  }
+  if(filters.revenueMax) {
+    unifiedFilters.revenueMax = filters.revenueMax
+  }
+
   console.log('Original filters:', filters)
   console.log('Unified filters:', unifiedFilters)
 
