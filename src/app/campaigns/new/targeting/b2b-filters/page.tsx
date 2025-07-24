@@ -98,6 +98,21 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
     if (filters.jobTitles?.length > 0) {
       activeFilters.push({ label: 'Job Titles', value: formatFilterValue(filters.jobTitles) })
     }
+    if(filters.excludeJobTitles?.length > 0) {
+        activeFilters.push({ label: 'Exclude Titles', value: formatFilterValue(filters.excludeJobTitles) })
+    }
+    if(filters.hasEmail){
+        activeFilters.push({ label: 'Require Email', value: formatFilterValue(filters.hasEmail) })
+    }
+    if(filters.companyDomains?.length > 0){
+        activeFilters.push({ label: 'Company Domains', value: formatFilterValue(filters.companyDomains) })
+    }
+    if(filters.industries?.length > 0){
+        activeFilters.push({ label: 'Industries', value: formatFilterValue(filters.industries) })
+    }
+    if(filters.intentTopics?.length > 0){
+        activeFilters.push({ label: 'Intent Topics', value: formatFilterValue(filters.intentTopics) })
+    }
     if (filters.seniorities?.length > 0) {
       activeFilters.push({ label: 'Job Levels (Seniority)', value: formatFilterValue(filters.seniorities) })
     }
@@ -147,6 +162,18 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
   }
   if (filters.organizationJobLocations?.length > 0) {
     activeFilters.push({ label: 'Organization Job Locations', value: formatFilterValue(filters.organizationJobLocations) })
+  }
+  if(filters.organizationJobPostedAtMax && filters.organizationJobPostedAtMin){
+    activeFilters.push({ label: 'Organization Job Dates', value: formatFilterValue(filters.organizationJobPostedAtMin + ' To ' + filters.organizationJobPostedAtMax) })
+  }
+  if(filters.jobPostings){
+    activeFilters.push({ label: 'Has Job Posting', value: formatFilterValue(filters.jobPostings) })
+  }
+  if(filters.newsEvents){
+    activeFilters.push({ label: 'Recent News', value: formatFilterValue(filters.newsEvents) })
+  }
+  if(filters.webTraffic){
+    activeFilters.push({ label: 'High Web Traffic', value: formatFilterValue(filters.webTraffic) })
   }
   if ((filters.organizationNumJobsMin !== undefined && filters.organizationNumJobsMin !== null) ||
       (filters.organizationNumJobsMax !== undefined && filters.organizationNumJobsMax !== null)) {
@@ -581,9 +608,6 @@ function B2BFiltersContent() {
                                 // Person-level filters
                                 if (parsedICP.jobTitles && parsedICP.jobTitles.length > 0) {
                                   handleFilterChange('jobTitles', parsedICP.jobTitles)
-                                }
-                                if (parsedICP.excludeJobTitles && parsedICP.excludeJobTitles.length > 0) {
-                                  handleFilterChange('excludeJobTitles', parsedICP.excludeJobTitles)
                                 }
                                 if (parsedICP.seniorities && parsedICP.seniorities.length > 0) {
                                   handleFilterChange('seniorities', parsedICP.seniorities)

@@ -24,16 +24,23 @@ export interface ApolloSearchParams {
     min?: number
     max?: number
   }
-  organization_latest_job_posted_at_min?: string
-  organization_latest_job_posted_at_max?: string
+  organization_job_posted_at_range?: {
+    min?: Date
+    max?: Date
+  }
   has_job_postings?: boolean
   organization_recent_news_events?: boolean
   organization_has_web_traffic?: boolean
+  q_organization_domains_list?: string[]
+  q_organization_job_titles?: string[]
+  contact_email_status?: string[]
+  q_keywords?: string
   page?: number
   per_page?: number
 }
 
 export interface ApolloResponse {
+  breadcrumbs: any
   people: ApolloPerson[]
   pagination: {
     page: number
@@ -173,7 +180,7 @@ export class ApolloProviderService implements DataProvider {
     this.config = config
     this.baseUrl = config.baseUrl || 'https://api.apollo.io/v1'
     this.apiKey = config.apiKey
-    
+
     if (!this.apiKey) {
       throw new Error('Apollo API key is required')
     }
@@ -181,6 +188,7 @@ export class ApolloProviderService implements DataProvider {
 
   async searchProspects(filters: UnifiedSearchFilters): Promise<UnifiedSearchResponse> {
     try {
+      console.log("Filters right before sending to apollo", filters)
       const apolloParams = this.transformFilters(filters)
       console.log('🔍 Apollo search with params:', apolloParams)
 
@@ -194,6 +202,7 @@ export class ApolloProviderService implements DataProvider {
         },
         body: JSON.stringify(apolloParams)
       })
+      console.log("BREADCRUMBS" ,response.breadcrumbs)
 
       console.log('✅ Apollo response received:', {
         total: response.pagination.total_entries,
@@ -255,7 +264,7 @@ export class ApolloProviderService implements DataProvider {
       if (filters.organizationNumJobsMax < 0) {
         errors.push('Maximum job postings count cannot be negative')
       }
-      if (filters.organizationNumJobsMin && filters.organizationNumJobsMax && 
+      if (filters.organizationNumJobsMin && filters.organizationNumJobsMax &&
           filters.organizationNumJobsMin > filters.organizationNumJobsMax) {
         errors.push('Minimum job postings count cannot exceed maximum')
       }
@@ -342,6 +351,18 @@ export class ApolloProviderService implements DataProvider {
       params.person_seniorities = this.transformSeniorities(filters.seniorities)
     }
 
+    if(filters.companyDomains) {
+        params.q_organization_domains_list = filters.companyDomains
+    }
+
+    if(filters.organizationJobTitles) {
+        params.q_organization_job_titles = filters.organizationJobTitles
+    }
+
+    if(filters.keywords) {
+        params.q_keywords = filters.keywords.join(', ')
+    }
+
     // Company-level filters
     if (filters.companyHeadcount?.length) {
       params.organization_num_employees_ranges = this.transformCompanyHeadcount(filters.companyHeadcount)
@@ -399,14 +420,17 @@ export class ApolloProviderService implements DataProvider {
     }
 
     // Organization job posting date filters (with validation)
-    if (filters.organizationJobPostedAtMin && this.isValidDate(filters.organizationJobPostedAtMin)) {
-      params.organization_latest_job_posted_at_min = filters.organizationJobPostedAtMin
-      console.log('📅 Set job posted min date:', filters.organizationJobPostedAtMin)
-    }
-
-    if (filters.organizationJobPostedAtMax && this.isValidDate(filters.organizationJobPostedAtMax)) {
-      params.organization_latest_job_posted_at_max = filters.organizationJobPostedAtMax
-      console.log('📅 Set job posted max date:', filters.organizationJobPostedAtMax)
+    if ((filters.organizationJobPostedAtMin && this.isValidDate(filters.organizationJobPostedAtMin)) ||
+        (filters.organizationJobPostedAtMax && this.isValidDate(filters.organizationJobPostedAtMax))) {
+      params.organization_job_posted_at_range = params.organization_job_posted_at_range || {};
+      if (filters.organizationJobPostedAtMin && this.isValidDate(filters.organizationJobPostedAtMin)) {
+        params.organization_job_posted_at_range.min = new Date(filters.organizationJobPostedAtMin);
+        console.log('📅 Set job posted min date:', filters.organizationJobPostedAtMin);
+      }
+      if (filters.organizationJobPostedAtMax && this.isValidDate(filters.organizationJobPostedAtMax)) {
+        params.organization_job_posted_at_range.max = new Date(filters.organizationJobPostedAtMax);
+        console.log('📅 Set job posted max date:', filters.organizationJobPostedAtMax);
+      }
     }
 
     // Organization activity filters
@@ -424,7 +448,7 @@ export class ApolloProviderService implements DataProvider {
     }
 
     console.log('🔄 Transformed filters for Apollo:', params)
-    
+
     // Validate organization job filters are being set correctly
     const orgJobFiltersSet = Object.keys(params).filter(key => key.includes('organization_job') || key.includes('has_job_postings')).length > 0
     if (orgJobFiltersSet) {
@@ -435,7 +459,7 @@ export class ApolloProviderService implements DataProvider {
         hasJobPostings: params.has_job_postings
       })
     }
-    
+
     return params
   }
 
@@ -569,18 +593,18 @@ export class ApolloProviderService implements DataProvider {
       twitter_url: person.twitter_url,
       facebook_url: person.facebook_url,
       github_url: person.github_url,
-      
+
       // Location fields
       city: person.city,
       state: person.state,
       country: person.country,
-      
+
       // Job information
       seniority: person.seniority,
       departments: person.departments || [],
       subdepartments: person.subdepartments || [],
       functions: person.functions || [],
-      
+
       // Company information (flattened for compatibility)
       company: person.organization?.name,
       company_id: person.organization?.id,
@@ -590,20 +614,20 @@ export class ApolloProviderService implements DataProvider {
       company_size: person.organization?.estimated_num_employees,
       company_revenue: person.organization?.estimated_annual_revenue,
       industry: person.organization?.industry,
-      
+
       // Image URLs
       photo_url: person.photo_url,
-      
+
       // Apollo-specific fields
       email_status: person.email_status,
       extrapolated_email_confidence: person.extrapolated_email_confidence,
-      
+
       // Preserve nested objects for enhanced UI
       organization: person.organization,
       organization_id: person.organization?.id,
       employment_history: person.employment_history || [],
       technologies: person.technologies || [],
-      
+
       // Additional fields
       confidence: person.extrapolated_email_confidence || 0,
       data_source: 'apollo',
@@ -626,10 +650,10 @@ export class ApolloProviderService implements DataProvider {
 
   private async makeRequest<T>(endpoint: string, options: RequestInit): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
-    
+
     try {
       const response = await fetch(url, options)
-      
+
       if (!response.ok) {
         const errorText = await response.text()
         throw new Error(`Apollo API error ${response.status}: ${errorText}`)
@@ -649,4 +673,4 @@ export class ApolloProviderService implements DataProvider {
     const matchesFormat = /^\d{4}-\d{2}-\d{2}$/.test(dateString)
     return isValidTimestamp && matchesFormat
   }
-} 
+}

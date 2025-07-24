@@ -33,7 +33,7 @@ export interface UnifiedSearchFilters {
   totalYearsExperience?: string[]
   hasEmail?: boolean
   hasPhone?: boolean
-  
+
   // Company-level filters
   industries?: string[]
   companyHeadcount?: string[]
@@ -44,8 +44,9 @@ export interface UnifiedSearchFilters {
   technologyUids?: string[] // Apollo technology UIDs
   excludeTechnologyUids?: string[] // Apollo technology UIDs to exclude
   keywords?: string[]
-  
+
   // Organization-specific filters
+  companyDomains?:string[]
   organizationLocations?: string[] // Company headquarters locations
   organizationJobTitles?: string[] // Job titles in active job postings
   organizationJobLocations?: string[] // Locations of active job postings
@@ -53,12 +54,12 @@ export interface UnifiedSearchFilters {
   organizationNumJobsMax?: number // Maximum number of active job postings
   organizationJobPostedAtMin?: string | null // Minimum job posting date
   organizationJobPostedAtMax?: string | null // Maximum job posting date
-  
+
   // Organization activity filters
   jobPostings?: boolean | null // Filter by active job postings
   newsEvents?: boolean | null // Filter by recent news events
   webTraffic?: boolean | null // Filter by web traffic data
-  
+
   // Search metadata
   searchType?: 'people' | 'company'
   page?: number
@@ -101,27 +102,27 @@ export class DataProviderManager {
 
   private getProviderFromEnv(): DataProviderType {
     const envProvider = process.env.DATA_PROVIDER?.toLowerCase()
-    
+
     // Log the detected provider for debugging
     console.log('🔧 DATA_PROVIDER environment variable:', process.env.DATA_PROVIDER)
-    
+
     if (envProvider === 'apollo') {
       console.log('✅ Using Apollo.io as data provider')
       return 'apollo'
-    } 
+    }
     // TODO: Explorium-specific feature - commented out for now
     // else if (envProvider === 'explorium') {
     //   console.log('✅ Using Explorium as data provider')
     //   return 'explorium'
     // }
-    
+
     // More detailed warning for invalid values
     if (envProvider) {
       console.warn(`⚠️  Invalid DATA_PROVIDER value: "${envProvider}". Valid options: 'apollo'. Defaulting to apollo.`)
     } else {
       console.warn('⚠️  DATA_PROVIDER not set, defaulting to apollo')
     }
-    
+
     return 'apollo'
   }
 
@@ -144,16 +145,16 @@ export class DataProviderManager {
             intentData: false
           }
         }
-        
+
         // Validate Apollo API key
         if (!apolloConfig.apiKey) {
           console.warn('⚠️  APOLLO_API_KEY not configured. Apollo provider will not function.')
         } else {
           console.log('✅ Apollo API key configured')
         }
-        
+
         return apolloConfig
-      
+
       // TODO: Explorium-specific feature - commented out for now
       // case 'explorium':
       //   const explorimConfig = {
@@ -172,16 +173,16 @@ export class DataProviderManager {
       //       intentData: true
       //     }
       //   }
-      //   
+      //
       //   // Validate Explorium API key
       //   if (!explorimConfig.apiKey) {
       //     console.warn('⚠️  EXPLORIUM_API_KEY not configured. Explorium provider will not function.')
       //   } else {
       //     console.log('✅ Explorium API key configured')
       //   }
-      //   
+      //
       //   return explorimConfig
-      
+
       default:
         throw new Error(`Unsupported provider type: ${type}`)
     }
@@ -193,12 +194,12 @@ export class DataProviderManager {
         case 'apollo':
           console.log('🔧 Using Apollo provider instance')
           return new ApolloProviderService(this.config)
-        
+
         // TODO: Explorium-specific feature - commented out for now
         // case 'explorium':
         //   console.log('🔧 Creating Explorium provider instance')
         //   return new ExplorimProviderService(this.config)
-        
+
         default:
           throw new Error(`Cannot create provider for type: ${type}`)
       }
@@ -215,7 +216,7 @@ export class DataProviderManager {
       console.error('❌', errorMessage)
       throw new Error(errorMessage)
     }
-    
+
     try {
       console.log(`🔍 Searching prospects using ${this.config.type} provider`)
       return await this.provider.searchProspects(filters)
@@ -258,7 +259,7 @@ export class DataProviderManager {
           companyHeadcount: ['1-10', '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5001-10000', '10001+'],
           companyRevenue: ['0-1M', '1M-10M', '10M-50M', '50M-100M', '100M-500M', '500M-1B', '1B+']
         }
-      
+
       // TODO: Explorium-specific feature - commented out for now
       // case 'explorium':
       //   return {
@@ -268,7 +269,7 @@ export class DataProviderManager {
       //     companyHeadcount: ['1-10', '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5001-10000', '10001+'],
       //     companyRevenue: ['0-1M', '1M-10M', '10M-50M', '50M-100M', '100M-500M', '500M-1B', '1B+']
       //   }
-      
+
       default:
         return {}
     }
@@ -291,4 +292,4 @@ export function getCurrentProvider(): DataProviderType {
 
 export function getProviderConfig(): ProviderConfig {
   return getDataProviderManager().getProviderInfo()
-} 
+}
