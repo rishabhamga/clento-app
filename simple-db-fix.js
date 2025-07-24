@@ -11,6 +11,7 @@ async function testDatabaseIssues() {
   
   // Test 1: Check if confidence column exists
   console.log('\n1. Testing confidence column...')
+  console.log("adding this log to test deployment")
   try {
     const { data, error } = await supabase
       .from('leads')
