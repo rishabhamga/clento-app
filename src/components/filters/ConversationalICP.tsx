@@ -165,6 +165,9 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
   const userMessageBg = useColorModeValue('purple.500', 'purple.400')
   const assistantMessageBg = useColorModeValue('gray.100', 'gray.700')
   const mutedColor = useColorModeValue('gray.600', 'gray.400')
+  const inputBoxBg = useColorModeValue('white', 'gray.800')
+  const suggestionsBg = useColorModeValue('gray.50', 'gray.700')
+  const purpleBorderColor = useColorModeValue('purple.100', 'purple.800')
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
@@ -348,7 +351,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                 }}
                 transition="all 0.2s"
                 onClick={() => handleSampleMessageClick(sample.message)}
-                bg={useColorModeValue('gray.50', 'gray.700')}
+                bg={suggestionsBg}
                 borderColor={borderColor}
               >
                 <CardBody p={3}>
@@ -447,7 +450,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
             borderBottomRightRadius={isUser ? 'sm' : 'lg'}
             position="relative"
             border={isUser ? "none" : "1px solid"}
-            borderColor={useColorModeValue('purple.100', 'purple.800')}
+            borderColor={purpleBorderColor}
             boxShadow={isUser ? '0 4px 12px rgba(128, 90, 213, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)'}
             _before={!isUser ? {
               content: '""',
@@ -605,7 +608,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                     borderRadius="lg"
                     borderBottomLeftRadius="sm"
                     border="1px solid"
-                    borderColor={useColorModeValue('purple.100', 'purple.800')}
+                    borderColor={purpleBorderColor}
                     position="relative"
                     _before={{
                       content: '""',
@@ -676,7 +679,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
 
           <Box
             position="relative"
-            bg={useColorModeValue('white', 'gray.800')}
+            bg={inputBoxBg}
             border="2px solid"
             borderColor={input.trim() ? 'purple.300' : borderColor}
             borderRadius="xl"
