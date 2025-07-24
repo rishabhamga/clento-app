@@ -210,21 +210,26 @@ function transformResultsToUI(results: any, provider: string) {
     transformedProspects = (results.prospects || []).map(transformApolloProspect)
   }
 
+  const totalEntries = results.totalProspects || results.total_entries || 0
+  const perPage = results.pagination?.pageSize || results.pagination?.per_page || 25
+  const currentPage = results.pagination?.page || 1
+  const totalPages = Math.ceil(totalEntries / perPage)
+
   return {
     people: transformedProspects,
     pagination: {
-      page: results.pagination?.page || 1,
-      per_page: results.pagination?.pageSize || results.pagination?.per_page || 25,
-      total_entries: results.totalProspects || results.total_entries || 0,
-      total_pages: results.pagination?.totalPages || results.pagination?.total_pages || 1,
-      has_more: results.pagination?.hasMore || false
+      page: currentPage,
+      per_page: perPage,
+      total_entries: totalEntries,
+      total_pages: totalPages,
+      has_more: currentPage < totalPages
     },
     search_id: results.searchId || results.search_id || '',
     breadcrumbs: results.breadcrumbs || [{
-      label: `${results.totalProspects || results.total_entries || 0} prospects found`,
+      label: `${totalEntries} prospects found`,
       signal_field_name: 'total_results',
-      value: results.totalProspects || results.total_entries || 0,
-      display_name: `${results.totalProspects || results.total_entries || 0} results`
+      value: totalEntries,
+      display_name: `${totalEntries} results`
     }]
   }
 }

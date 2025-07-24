@@ -17,21 +17,7 @@ CREATE TABLE public.campaign_drafts (
   current_step text DEFAULT 'targeting'::text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
-  organization_id uuid,
-  CONSTRAINT campaign_drafts_pkey PRIMARY KEY (id),
-  CONSTRAINT campaign_drafts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
-);
-CREATE TABLE public.campaign_leads (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  campaign_id uuid,
-  lead_id uuid,
-  status text DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'paused'::text, 'completed'::text, 'opted_out'::text])),
-  added_at timestamp with time zone DEFAULT now(),
-  organization_id uuid,
-  CONSTRAINT campaign_leads_pkey PRIMARY KEY (id),
-  CONSTRAINT campaign_leads_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-  CONSTRAINT campaign_leads_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id),
-  CONSTRAINT campaign_leads_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+  CONSTRAINT campaign_drafts_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.campaigns (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -45,90 +31,37 @@ CREATE TABLE public.campaigns (
   updated_at timestamp with time zone DEFAULT now(),
   organization_id uuid,
   CONSTRAINT campaigns_pkey PRIMARY KEY (id),
-  CONSTRAINT campaigns_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT campaigns_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+  CONSTRAINT campaigns_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT campaigns_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
-CREATE TABLE public.integration_credentials (
+CREATE TABLE public.icp_filter_profiles (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid,
-  provider text NOT NULL CHECK (provider = ANY (ARRAY['gmail'::text, 'outlook'::text, 'linkedin'::text, 'phantombuster'::text, 'zoominfo'::text, 'apollo'::text])),
-  credentials jsonb NOT NULL,
-  is_active boolean DEFAULT true,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
   organization_id uuid,
-  CONSTRAINT integration_credentials_pkey PRIMARY KEY (id),
-  CONSTRAINT integration_credentials_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT integration_credentials_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
-);
-CREATE TABLE public.leads (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid,
-  full_name text NOT NULL,
-  email text,
-  linkedin_url text,
-  company text,
-  title text,
-  industry text,
-  location text,
-  phone text,
-  status text DEFAULT 'new'::text CHECK (status = ANY (ARRAY['new'::text, 'contacted'::text, 'replied'::text, 'positive'::text, 'neutral'::text, 'negative'::text, 'unsubscribed'::text])),
-  source text DEFAULT 'manual'::text CHECK (source = ANY (ARRAY['manual'::text, 'zoominfo'::text, 'apollo'::text, 'clearbit'::text, 'website_visitor'::text])),
-  enrichment_data jsonb DEFAULT '{}'::jsonb,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  organization_id uuid,
-  CONSTRAINT leads_pkey PRIMARY KEY (id),
-  CONSTRAINT leads_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT leads_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
-);
-CREATE TABLE public.linkedin_accounts (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid,
-  linkedin_id character varying NOT NULL,
-  access_token text NOT NULL,
-  refresh_token text,
-  token_expires_at timestamp with time zone,
-  profile_data jsonb DEFAULT '{}'::jsonb,
-  display_name character varying,
-  profile_picture_url text,
-  headline text,
-  industry character varying,
-  location character varying,
-  is_active boolean DEFAULT true,
-  last_used_at timestamp with time zone,
+  profile_name character varying NOT NULL,
+  description text,
+  filters jsonb NOT NULL DEFAULT '{}'::jsonb,
+  search_type character varying DEFAULT 'people'::character varying,
   usage_count integer DEFAULT 0,
-  daily_message_count integer DEFAULT 0,
-  daily_reset_date date DEFAULT CURRENT_DATE,
-  is_rate_limited boolean DEFAULT false,
-  rate_limit_reset_at timestamp with time zone,
-  last_message_sent_at timestamp with time zone,
-  connection_status character varying DEFAULT 'connected'::character varying,
-  last_error text,
-  health_check_at timestamp with time zone DEFAULT now(),
-  connected_at timestamp with time zone DEFAULT now(),
+  last_used_at timestamp with time zone,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
-  organization_id uuid,
-  CONSTRAINT linkedin_accounts_pkey PRIMARY KEY (id),
-  CONSTRAINT linkedin_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-  CONSTRAINT linkedin_accounts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+  CONSTRAINT icp_filter_profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT icp_filter_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT icp_filter_profiles_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
-CREATE TABLE public.messages (
+CREATE TABLE public.leads_files (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  lead_id uuid,
+  list_name text NOT NULL,
   campaign_id uuid,
-  direction text NOT NULL CHECK (direction = ANY (ARRAY['outbound'::text, 'inbound'::text])),
-  channel text NOT NULL CHECK (channel = ANY (ARRAY['email'::text, 'linkedin'::text, 'phone'::text, 'other'::text])),
-  subject text,
-  body text,
-  status text DEFAULT 'sent'::text CHECK (status = ANY (ARRAY['sent'::text, 'delivered'::text, 'opened'::text, 'replied'::text, 'bounced'::text])),
-  external_id text,
-  meta jsonb DEFAULT '{}'::jsonb,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT messages_pkey PRIMARY KEY (id),
-  CONSTRAINT messages_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id),
-  CONSTRAINT messages_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+  organization_id uuid NOT NULL,
+  s3_key text NOT NULL,
+  s3_bucket text NOT NULL,
+  created_at timestamp without time zone NOT NULL DEFAULT now(),
+  active integer NOT NULL DEFAULT 1,
+  CONSTRAINT leads_files_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_campaign FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id),
+  CONSTRAINT fk_organization FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.organization_members (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -143,8 +76,8 @@ CREATE TABLE public.organization_members (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT organization_members_pkey PRIMARY KEY (id),
-  CONSTRAINT organization_members_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
   CONSTRAINT organization_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT organization_members_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
   CONSTRAINT organization_members_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES public.users(id)
 );
 CREATE TABLE public.organizations (
@@ -167,19 +100,6 @@ CREATE TABLE public.organizations (
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT organizations_pkey PRIMARY KEY (id)
 );
-CREATE TABLE public.page_analysis (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  website_analysis_id uuid NOT NULL,
-  url text NOT NULL,
-  title text,
-  content_summary text,
-  key_insights jsonb DEFAULT '[]'::jsonb,
-  page_type text,
-  created_at timestamp with time zone DEFAULT now(),
-  analyzed_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT page_analysis_pkey PRIMARY KEY (id),
-  CONSTRAINT page_analysis_website_analysis_id_fkey FOREIGN KEY (website_analysis_id) REFERENCES public.website_analysis(id)
-);
 CREATE TABLE public.sequence_steps (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   campaign_id uuid,
@@ -193,7 +113,6 @@ CREATE TABLE public.sequence_steps (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT sequence_steps_pkey PRIMARY KEY (id),
-  CONSTRAINT sequence_steps_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id),
   CONSTRAINT sequence_steps_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
 );
 CREATE TABLE public.user_profile (
@@ -220,8 +139,8 @@ CREATE TABLE public.user_profile (
   linkedin_accounts_connected integer DEFAULT 0,
   organization_id uuid,
   CONSTRAINT user_profile_pkey PRIMARY KEY (user_id),
-  CONSTRAINT user_profile_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT user_profile_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+  CONSTRAINT user_profile_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT user_profile_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.users (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -232,6 +151,7 @@ CREATE TABLE public.users (
   website_url text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  isAdmin smallint DEFAULT '0'::smallint,
   CONSTRAINT users_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.website_analysis (

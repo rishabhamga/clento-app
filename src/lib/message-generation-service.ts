@@ -72,7 +72,8 @@ export interface GenerateMessagesResponse {
  */
 export async function generateSampleMessages(
   websiteAnalysis: WebsiteAnalysisData,
-  messageCount: number = 5
+  messageCount: number = 5,
+  outreachData?: any
 ): Promise<GenerateMessagesResponse> {
   console.log('🚀 [MESSAGE SERVICE] Starting sample message generation request:', {
     messageCount,
@@ -86,6 +87,7 @@ export async function generateSampleMessages(
   try {
     const requestBody = {
       websiteAnalysis,
+      outreach: outreachData,
       messageCount
     }
 

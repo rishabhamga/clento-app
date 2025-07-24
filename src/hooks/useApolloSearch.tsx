@@ -532,7 +532,7 @@ export function useSearchPagination() {
   }, [setPage, search])
 
   const nextPage = useCallback(async () => {
-    if (state.pagination && state.pagination.has_more) {
+    if (state.pagination && state.pagination.page < state.pagination.total_pages) {
       await goToPage(state.pagination.page + 1)
     }
   }, [state.pagination, goToPage])
@@ -548,7 +548,7 @@ export function useSearchPagination() {
     goToPage,
     nextPage,
     prevPage,
-    canGoNext: state.pagination?.has_more || false,
+    canGoNext: (state.pagination?.page || 1) < (state.pagination?.total_pages || 1),
     canGoPrev: (state.pagination?.page || 1) > 1,
   }
 }
