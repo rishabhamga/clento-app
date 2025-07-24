@@ -43,6 +43,7 @@ export interface ILeads {
         message: string
     }[]
     meetingsBooked: string
+    pendingApproval: string
 }
 export interface IRecentActivity {
     id: number,
@@ -196,7 +197,7 @@ const getRecentActivity = async (orgId: string) => {
         .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
         .slice(0, 30);
 
-    return {sortedRecentActivity, campaigns}
+    return { sortedRecentActivity, campaigns }
 }
 
 export async function GET(request: NextRequest) {
@@ -222,7 +223,7 @@ export async function GET(request: NextRequest) {
         const offset = parseInt(searchParams.get('offset') || '0')
 
         if (!campaignId) {
-            const {sortedRecentActivity, campaigns } = await getRecentActivity(orgData.id)
+            const { sortedRecentActivity, campaigns } = await getRecentActivity(orgData.id)
             if (!sortedRecentActivity) {
                 return NextResponse.json({ error: 'No recent activity' }, { status: 500 })
             }
@@ -260,7 +261,6 @@ export async function GET(request: NextRequest) {
 
         csvLinesWithoutHeader.map((line) => {
             const row = parseCsvLine(line);
-
             const getValue = (field: string) => {
                 return row[headerLineArray.indexOf(field)]?.trim() || ""
             };
@@ -303,6 +303,9 @@ export async function GET(request: NextRequest) {
                     emailMessages.push(messageObj);
                 }
             });
+            const leadLinkedInMessages = linkedInMessages.filter((msg) => msg.from === 'lead').length;
+            const leadEmailMessages = emailMessages.filter((msg) => msg.from === 'lead').length;
+            const totalLeadMessages = leadLinkedInMessages + leadEmailMessages;
             const meetingsBooked = getValue("meetings_booked") || "0";
             finalLeads.push({
                 id: getValue("id"),
@@ -316,11 +319,12 @@ export async function GET(request: NextRequest) {
                 companyDescription: getValue("company_description"),
                 companyWebsite: getValue("company_website"),
                 companySize: getValue("company_size"),
+                pendingApproval: getValue("pending_approval\r") || getValue("pending_approval"),
                 companyLocation: getValue("company_location\r") || getValue("company_location"), // edge case fix
                 clientNeedAnalysis: getValue("client_need_analysis").split("#").filter(Boolean),
                 recommendedApproach: getValue("recommended_approach").split("#").filter(Boolean),
                 talkingPoints: getValue("talking_points").split("#").filter(Boolean),
-                status: linkedInMessages.filter((linkdin) => linkdin.from === 'lead').length >= 3 ? "hot" : linkedInMessages.filter((linkdin) => linkdin.from === 'lead').length >= 1 ? "warm" : "cold",
+                status: totalLeadMessages >= 3 ? "hot" : totalLeadMessages >= 1 ? "warm" : "cold",
                 linkedInMessages,
                 emailMessages,
                 meetingsBooked: meetingsBooked

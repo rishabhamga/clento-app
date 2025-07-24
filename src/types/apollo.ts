@@ -2,7 +2,7 @@
 // Comprehensive TypeScript definitions for Apollo integration
 
 // Search Filter Types
-export type SeniorityLevel = 
+export type SeniorityLevel =
   | 'owner'
   | 'founder'
   | 'c_suite'
@@ -15,7 +15,7 @@ export type SeniorityLevel =
   | 'entry'
   | 'intern'
 
-export type TimeInRole = 
+export type TimeInRole =
   | '0-6_months'
   | '6-12_months'
   | '1-3_years'
@@ -23,7 +23,7 @@ export type TimeInRole =
   | '5-10_years'
   | '10+_years'
 
-export type ExperienceRange = 
+export type ExperienceRange =
   | '0-1_years'
   | '1-3_years'
   | '3-5_years'
@@ -32,7 +32,7 @@ export type ExperienceRange =
   | '15-20_years'
   | '20+_years'
 
-export type CompanyHeadcount = 
+export type CompanyHeadcount =
   | '1-10'
   | '11-50'
   | '51-200'
@@ -44,7 +44,7 @@ export type CompanyHeadcount =
 
 export type EmailStatus = 'verified' | 'likely' | 'guessed' | 'unavailable'
 
-export type Department = 
+export type Department =
   | 'sales'
   | 'marketing'
   | 'engineering'
@@ -58,7 +58,7 @@ export type Department =
 export type SearchType = 'people' | 'company' | 'csv_upload'
 
 // Company-specific types
-export type FundingStage = 
+export type FundingStage =
   | 'pre_seed'
   | 'seed'
   | 'series_a'
@@ -71,7 +71,7 @@ export type FundingStage =
   | 'acquired'
   | 'private_equity'
 
-export type RevenueRange = 
+export type RevenueRange =
   | '0-1M'
   | '1M-10M'
   | '10M-50M'
@@ -84,7 +84,6 @@ export type RevenueRange =
 export interface ApolloFilterInput {
   // Person-level filters
   jobTitles: string[]
-  excludeJobTitles: string[]
   seniorities: SeniorityLevel[]
   personLocations: string[] // Person's location (where they live)
   excludePersonLocations: string[]
@@ -142,29 +141,29 @@ export interface CompanyFilterInput {
   excludeIndustries: string[]
   locations: string[]
   excludeLocations: string[]
-  
+
   // Size and metrics
   headcountRanges: CompanyHeadcount[]
   revenueRanges: RevenueRange[]
-  
+
   // Technology and signals
   technologies: string[]
   excludeTechnologies: string[]
   intentTopics: string[]
   keywords: string[]
-  
+
   // Funding and growth
   fundingStages: FundingStage[]
   fundingAmountMin: number
   fundingAmountMax: number
   foundedYearMin: number
   foundedYearMax: number
-  
+
   // Engagement signals
   jobPostings: boolean | null
   newsEvents: boolean | null
   webTraffic: boolean | null
-  
+
   // Search options
   page: number
   perPage: number
@@ -173,7 +172,6 @@ export interface CompanyFilterInput {
 // Default filter state
 export const DEFAULT_APOLLO_FILTERS: ApolloFilterInput = {
   jobTitles: [],
-  excludeJobTitles: [],
   seniorities: [],
   personLocations: [],
   excludePersonLocations: [],
@@ -334,24 +332,24 @@ export const COMMON_JOB_TITLES = [
   // Sales
   'Sales Director', 'VP Sales', 'Sales Manager', 'Account Executive', 'Business Development Manager',
   'Sales Representative', 'Regional Sales Manager', 'Inside Sales Manager', 'Channel Partner Manager',
-  
+
   // Marketing
-  'Marketing Director', 'VP Marketing', 'Marketing Manager', 'Digital Marketing Manager', 
+  'Marketing Director', 'VP Marketing', 'Marketing Manager', 'Digital Marketing Manager',
   'Content Marketing Manager', 'Growth Marketing Manager', 'Product Marketing Manager',
-  
+
   // Engineering
   'Engineering Director', 'VP Engineering', 'Engineering Manager', 'Software Engineer',
   'Senior Software Engineer', 'Lead Engineer', 'Principal Engineer', 'CTO',
-  
+
   // Operations
   'Operations Director', 'VP Operations', 'Operations Manager', 'COO', 'General Manager',
-  
+
   // Finance
   'Finance Director', 'VP Finance', 'CFO', 'Controller', 'Finance Manager',
-  
+
   // HR
   'HR Director', 'VP People', 'HR Manager', 'People Operations Manager', 'CHRO',
-  
+
   // Product
   'Product Director', 'VP Product', 'Product Manager', 'Senior Product Manager',
   'Chief Product Officer'
@@ -539,13 +537,13 @@ export interface LeadSearchResult {
   twitter_url?: string
   facebook_url?: string
   github_url?: string
-  
+
   // Enhanced location fields
   location?: string
   city?: string
   region?: string
   country?: string
-  
+
   // Enhanced job information
   seniority?: string
   seniority_level?: string
@@ -556,25 +554,25 @@ export interface LeadSearchResult {
   experience_years?: number
   time_in_role?: number
   time_in_role_months?: number
-  
-  // Enhanced company information  
+
+  // Enhanced company information
   company_size?: string | number
   company_industry?: string
   company_revenue?: number
-  
+
   // Additional profile information from Explorium
   skills?: string[]
   experience?: string[]
   interests?: string[]
   business_id?: string
-  
+
   // Image URLs
   photo_url?: string
   company_logo_url?: string
-  
+
   // Confidence/matching score
   confidence?: number
-  
+
   // Data source and metadata
   data_source?: 'apollo' | 'explorium' | 'csv_upload'
   _raw?: any
@@ -582,7 +580,7 @@ export interface LeadSearchResult {
   // Apollo-specific fields (keeping for compatibility)
   years_experience?: number
   industry?: string // Keeping as alias for company_industry
-  
+
   // Apollo API response fields
   email_status?: EmailStatus
   employment_history?: EmploymentHistoryEntry[]
@@ -600,7 +598,7 @@ export interface LeadSearchResult {
 export interface CompanySearchResult {
   id: string
   external_id: string
-  
+
   // Basic company information
   name: string
   domain?: string
@@ -608,17 +606,17 @@ export interface CompanySearchResult {
   linkedin_url?: string
   twitter_url?: string
   facebook_url?: string
-  
+
   // Business details
   industry?: string
   description?: string
   keywords?: string[]
-  
+
   // Size and metrics
   employee_count?: number
   estimated_annual_revenue?: number
   revenue_range?: RevenueRange
-  
+
   // Location
   headquarters_city?: string
   headquarters_state?: string
@@ -629,35 +627,35 @@ export interface CompanySearchResult {
     country?: string
     address?: string
   }>
-  
+
   // Funding and growth
   founded_year?: number
   funding_stage?: FundingStage
   funding_total?: number
   last_funding_date?: string
   investor_count?: number
-  
+
   // Technology and signals
   technologies?: string[]
   intent_topics?: string[]
   job_postings_count?: number
   recent_news_count?: number
-  
+
   // Contact information
   phone?: string
   email_domain?: string
-  
+
   // Social presence
   alexa_ranking?: number
   monthly_visits?: number
-  
+
   // Key personnel
   key_people?: Array<{
     name?: string
     title?: string
     linkedin_url?: string
   }>
-  
+
   // Metadata
   data_source: 'apollo'
   confidence: number
@@ -726,4 +724,4 @@ export const DEFAULT_SEARCH_STATE: SearchState = {
   error: null,
   rateLimitInfo: null,
   searchId: null
-} 
+}

@@ -113,6 +113,17 @@ function transformFiltersToUnified(filters: any): UnifiedSearchFilters {
     unifiedFilters.webTraffic = filters.webTraffic
   }
 
+  if(filters.companyDomains) {
+    unifiedFilters.companyDomains = filters.companyDomains
+  }
+
+  if(filters.revenueMin) {
+    unifiedFilters.revenueMin = filters.revenueMin
+  }
+  if(filters.revenueMax) {
+    unifiedFilters.revenueMax = filters.revenueMax
+  }
+
   console.log('Original filters:', filters)
   console.log('Unified filters:', unifiedFilters)
 
@@ -138,29 +149,29 @@ function transformResultsToUI(results: any, provider: string) {
       twitter_url: prospect.twitter_url,
       facebook_url: prospect.facebook_url,
       github_url: prospect.github_url,
-      
+
       // Location fields
       city: prospect.city,
       state: prospect.state,
       country: prospect.country,
-      
+
       // Job information
       seniority: prospect.seniority,
       seniority_level: prospect.seniority_level,
       departments: prospect.departments || [],
       subdepartments: prospect.subdepartments || [],
       functions: prospect.functions || [],
-      
+
       // Company information from nested objects
       company: prospect.organization?.name || prospect.account?.name,
       company_id: prospect.organization_id || prospect.account_id,
       company_website: prospect.organization?.website_url || prospect.account?.website_url,
       company_linkedin: prospect.organization?.linkedin_url || prospect.account?.linkedin_url,
-      
+
       // Image URLs
       photo_url: prospect.photo_url,
       company_logo_url: prospect.organization?.logo_url || prospect.account?.logo_url,
-      
+
       // Apollo-specific fields
       email_status: prospect.email_status,
       employment_history: prospect.employment_history || [],
@@ -173,12 +184,12 @@ function transformResultsToUI(results: any, provider: string) {
       revealed_for_current_team: prospect.revealed_for_current_team,
       intent_strength: prospect.intent_strength,
       show_intent: prospect.show_intent,
-      
+
       // Additional fields that might be present
       skills: prospect.skills || [],
       technologies: prospect.technologies || [],
       confidence: prospect.confidence || 0,
-      
+
       // Data source
       data_source: provider,
       _raw: prospect
@@ -187,7 +198,7 @@ function transformResultsToUI(results: any, provider: string) {
 
   // Handle different result formats based on provider
   let transformedProspects = []
-  
+
   if (provider === 'apollo' && results.prospects) {
     // Apollo returns people in prospects array
     transformedProspects = results.prospects.map(transformApolloProspect)
@@ -254,7 +265,7 @@ export async function POST(request: NextRequest) {
       pageSize,
       totalSize
     })
-    
+
     console.log('🔄 Unified filters:', unifiedFilters)
 
     // Get provider manager and perform search
@@ -285,11 +296,11 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Search error:', error)
-    
+
     // Return more specific error information
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
-    const isProviderError = errorMessage.includes('API key not configured') || 
-                           errorMessage.includes('Apollo API error') || 
+    const isProviderError = errorMessage.includes('API key not configured') ||
+                           errorMessage.includes('Apollo API error') ||
                            errorMessage.includes('Explorium')
 
     return NextResponse.json({
@@ -297,8 +308,8 @@ export async function POST(request: NextRequest) {
       error: isProviderError ? 'PROVIDER_ERROR' : 'INTERNAL_ERROR',
       message: isProviderError ? errorMessage : 'Internal server error occurred',
       details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-    }, { 
-      status: isProviderError ? 503 : 500 
+    }, {
+      status: isProviderError ? 503 : 500
     })
   }
 }
@@ -332,4 +343,4 @@ export async function GET() {
       message: 'Failed to get provider information'
     }, { status: 500 })
   }
-} 
+}

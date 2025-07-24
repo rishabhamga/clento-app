@@ -1,17 +1,17 @@
 'use client'
 
 import React, { createContext, useContext, useReducer, useCallback } from 'react'
-import { 
-  type SearchState, 
+import {
+  type SearchState,
   type SearchType,
-  type ApolloFilterInput, 
+  type ApolloFilterInput,
   type CompanyFilterInput,
   type LeadSearchResult,
   type CompanySearchResult,
   type SearchPagination,
   type SearchBreadcrumb,
   type RateLimitInfo,
-  DEFAULT_SEARCH_STATE 
+  DEFAULT_SEARCH_STATE
 } from '@/types/apollo'
 
 // Action types for the reducer
@@ -139,10 +139,10 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
     case 'SET_PAGE':
       const currentFilters = state.searchType === 'people' ? state.peopleFilters : state.companyFilters
       const updatedFilters = { ...currentFilters, page: action.payload }
-      
+
       return {
         ...state,
-        ...(state.searchType === 'people' 
+        ...(state.searchType === 'people'
           ? { peopleFilters: updatedFilters as ApolloFilterInput }
           : { companyFilters: updatedFilters as CompanyFilterInput }
         ),
@@ -174,7 +174,7 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
 interface ApolloSearchContextType {
   state: SearchState
   dispatch: React.Dispatch<SearchAction>
-  
+
   // Action creators
   setSearchType: (type: SearchType) => void
   setPeopleFilters: (filters: ApolloFilterInput) => void
@@ -190,12 +190,12 @@ interface ApolloSearchContextType {
   resetFilters: () => void
   setPage: (page: number) => void
   setSearchResults: (results: LeadSearchResult[]) => void
-  
+
   // Search functions
   searchPeople: () => Promise<void>
   searchCompanies: () => Promise<void>
   search: () => Promise<void>
-  
+
   // Computed values
   currentFilters: ApolloFilterInput | CompanyFilterInput
   currentResults: LeadSearchResult[] | CompanySearchResult[]
@@ -257,26 +257,26 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
   }, [])
 
   const setPeopleResults = useCallback((
-    results: LeadSearchResult[], 
-    pagination: SearchPagination, 
-    breadcrumbs: SearchBreadcrumb[], 
+    results: LeadSearchResult[],
+    pagination: SearchPagination,
+    breadcrumbs: SearchBreadcrumb[],
     searchId: string
   ) => {
-    dispatch({ 
-      type: 'SET_PEOPLE_RESULTS', 
-      payload: { results, pagination, breadcrumbs, searchId } 
+    dispatch({
+      type: 'SET_PEOPLE_RESULTS',
+      payload: { results, pagination, breadcrumbs, searchId }
     })
   }, [])
 
   const setCompanyResults = useCallback((
-    results: CompanySearchResult[], 
-    pagination: SearchPagination, 
-    breadcrumbs: SearchBreadcrumb[], 
+    results: CompanySearchResult[],
+    pagination: SearchPagination,
+    breadcrumbs: SearchBreadcrumb[],
     searchId: string
   ) => {
-    dispatch({ 
-      type: 'SET_COMPANY_RESULTS', 
-      payload: { results, pagination, breadcrumbs, searchId } 
+    dispatch({
+      type: 'SET_COMPANY_RESULTS',
+      payload: { results, pagination, breadcrumbs, searchId }
     })
   }, [])
 
@@ -322,7 +322,8 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
       }
 
       const data = await response.json()
-      
+      console.log("breadCrumbs", data.data.breadcrumbs)
+
       if (data.success) {
         setPeopleResults(
           data.data.people || [],
@@ -330,7 +331,7 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
           data.data.breadcrumbs || [],
           data.data.search_id
         )
-        
+
         // Update rate limit info if available
         if (data.meta?.rate_limit_info) {
           setRateLimitInfo(data.meta.rate_limit_info)
@@ -370,7 +371,7 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
       }
 
       const data = await response.json()
-      
+
       if (data.success) {
         setCompanyResults(
           data.data.companies || [],
@@ -378,7 +379,7 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
           data.data.breadcrumbs || [],
           data.data.search_id
         )
-        
+
         if (data.meta?.rate_limit_info) {
           setRateLimitInfo(data.meta.rate_limit_info)
         }
@@ -405,7 +406,7 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
   // Computed values
   const currentFilters = state.searchType === 'people' ? state.peopleFilters : state.companyFilters
   const currentResults = state.searchType === 'people' ? state.peopleResults : state.companyResults
-  
+
   const hasActiveFilters = React.useMemo(() => {
     if (state.searchType === 'people') {
       const filters = state.peopleFilters
@@ -441,7 +442,7 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
   const contextValue: ApolloSearchContextType = {
     state,
     dispatch,
-    
+
     // Action creators
     setSearchType,
     setPeopleFilters,
@@ -457,12 +458,12 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
     resetFilters,
     setPage,
     setSearchResults,
-    
+
     // Search functions
     searchPeople,
     searchCompanies,
     search,
-    
+
     // Computed values
     currentFilters,
     currentResults,
@@ -480,7 +481,7 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
 // Additional hook for easier access to search results
 export function useSearchResults() {
   const { state, currentResults } = useApolloSearch()
-  
+
   return {
     results: currentResults,
     pagination: state.pagination,
@@ -493,16 +494,16 @@ export function useSearchResults() {
 
 // Hook for managing filters
 export function useSearchFilters() {
-  const { 
-    state, 
-    currentFilters, 
+  const {
+    state,
+    currentFilters,
     hasActiveFilters,
-    updatePeopleFilter, 
+    updatePeopleFilter,
     updateCompanyFilter,
     resetFilters,
-    setSearchType 
+    setSearchType
   } = useApolloSearch()
-  
+
   const updateFilter = useCallback((field: string, value: any) => {
     if (state.searchType === 'people') {
       updatePeopleFilter(field as keyof ApolloFilterInput, value)
@@ -510,7 +511,7 @@ export function useSearchFilters() {
       updateCompanyFilter(field as keyof CompanyFilterInput, value)
     }
   }, [state.searchType, updatePeopleFilter, updateCompanyFilter])
-  
+
   return {
     filters: currentFilters,
     hasActiveFilters,
@@ -524,24 +525,24 @@ export function useSearchFilters() {
 // Hook for pagination
 export function useSearchPagination() {
   const { state, setPage, search } = useApolloSearch()
-  
+
   const goToPage = useCallback(async (page: number) => {
     setPage(page)
     await search()
   }, [setPage, search])
-  
+
   const nextPage = useCallback(async () => {
     if (state.pagination && state.pagination.has_more) {
       await goToPage(state.pagination.page + 1)
     }
   }, [state.pagination, goToPage])
-  
+
   const prevPage = useCallback(async () => {
     if (state.pagination && state.pagination.page > 1) {
       await goToPage(state.pagination.page - 1)
     }
   }, [state.pagination, goToPage])
-  
+
   return {
     pagination: state.pagination,
     goToPage,
@@ -550,4 +551,4 @@ export function useSearchPagination() {
     canGoNext: state.pagination?.has_more || false,
     canGoPrev: (state.pagination?.page || 1) > 1,
   }
-} 
+}
