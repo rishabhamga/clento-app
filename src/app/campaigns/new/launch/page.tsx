@@ -176,16 +176,16 @@ export default function LaunchPage() {
         campaignName: launchSettings.campaignName,
         organizationId: organization?.id,
         targeting: targetingData,
-        pitchData: typeof window !== 'undefined'
+        pitch: typeof window !== 'undefined'
           ? JSON.parse(localStorage.getItem('campaignPitchData') || '{}')
           : {},
-        outreachData: typeof window !== 'undefined'
+        outreach: typeof window !== 'undefined'
           ? JSON.parse(localStorage.getItem('campaignOutreachData') || '{}')
           : {},
         workflow: typeof window !== 'undefined'
           ? JSON.parse(localStorage.getItem('campaignWorkflow') || '{}')
           : {},
-        launchSettings
+        launch: launchSettings
       }
 
       console.log('Creating campaign with payload:', campaignPayload)
