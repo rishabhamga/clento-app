@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useReducer, useCallback } from 'react'
+import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react'
 import {
   type SearchState,
   type SearchType,
@@ -13,6 +13,7 @@ import {
   type RateLimitInfo,
   DEFAULT_SEARCH_STATE
 } from '@/types/apollo'
+import { StatHelpText } from '@chakra-ui/react';
 
 // Action types for the reducer
 type SearchAction =
@@ -30,6 +31,7 @@ type SearchAction =
   | { type: 'RESET_FILTERS' }
   | { type: 'SET_PAGE'; payload: number }
   | { type: 'SET_SEARCH_RESULTS'; payload: LeadSearchResult[] }
+  | { type: 'SET_PER_PAGE'; payload: number }
 
 // Reducer function
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
@@ -165,6 +167,29 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
         error: null,
       }
 
+    case 'SET_PER_PAGE': {
+      // Update perPage in the correct filter, reset page to 1
+      if (state.searchType === 'people') {
+        return {
+          ...state,
+          peopleFilters: {
+            ...state.peopleFilters,
+            perPage: action.payload,
+            page: 1,
+          },
+        }
+      } else {
+        return {
+          ...state,
+          companyFilters: {
+            ...state.companyFilters,
+            perPage: action.payload,
+            page: 1,
+          },
+        }
+      }
+    }
+
     default:
       return state
   }
@@ -190,11 +215,12 @@ interface ApolloSearchContextType {
   resetFilters: () => void
   setPage: (page: number) => void
   setSearchResults: (results: LeadSearchResult[]) => void
+  setPerPage: (perPage: number) => void
 
   // Search functions
   searchPeople: () => Promise<void>
   searchCompanies: () => Promise<void>
-  search: () => Promise<void>
+  search: (pageNumber?: number) => Promise<void>
 
   // Computed values
   currentFilters: ApolloFilterInput | CompanyFilterInput
@@ -300,8 +326,12 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
     dispatch({ type: 'SET_SEARCH_RESULTS', payload: results })
   }, [])
 
+  const setPerPage = useCallback((perPage: number) => {
+    dispatch({ type: 'SET_PER_PAGE', payload: perPage })
+  }, [])
+
   // Search functions
-  const searchPeople = useCallback(async () => {
+  const searchPeople = useCallback(async (overridePage?: number) => {
     try {
       setLoading(true)
       setError(null)
@@ -312,7 +342,10 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          filters: state.peopleFilters,
+            filters: {
+            ...state.peopleFilters,
+        },
+        page: overridePage ?? state.peopleFilters.page,
         }),
       })
 
@@ -395,9 +428,9 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
     }
   }, [state.companyFilters, setLoading, setError, setCompanyResults, setRateLimitInfo])
 
-  const search = useCallback(async () => {
+  const search = useCallback(async (overidePage?: number) => {
     if (state.searchType === 'people') {
-      await searchPeople()
+      await searchPeople(overidePage)
     } else {
       await searchCompanies()
     }
@@ -458,6 +491,7 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
     resetFilters,
     setPage,
     setSearchResults,
+    setPerPage,
 
     // Search functions
     searchPeople,
@@ -524,11 +558,11 @@ export function useSearchFilters() {
 
 // Hook for pagination
 export function useSearchPagination() {
-  const { state, setPage, search } = useApolloSearch()
+  const { state, setPage, setPerPage, search, setLoading } = useApolloSearch()
 
   const goToPage = useCallback(async (page: number) => {
     setPage(page)
-    await search()
+    await search(page)
   }, [setPage, search])
 
   const nextPage = useCallback(async () => {
@@ -548,6 +582,7 @@ export function useSearchPagination() {
     goToPage,
     nextPage,
     prevPage,
+    setPerPage, // Expose setPerPage
     canGoNext: state.pagination?.has_more || false,
     canGoPrev: (state.pagination?.page || 1) > 1,
   }

@@ -270,9 +270,6 @@ function B2BFiltersContent() {
   // Apollo search hooks
   const { search, isSearching, clearResults, setSearchResults, state } = useApolloSearch()
   const { searchType, filters, hasActiveFilters, updateFilter, resetFilters, setSearchType } = useSearchFilters()
-  useEffect(() => {
-      console.log(filters, "all filets")
-  }, [filters])
 
   const [savedProfiles, setSavedProfiles] = useState<ICPFilterProfile[]>([])
   const [loadingProfiles, setLoadingProfiles] = useState(false)

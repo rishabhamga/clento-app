@@ -11,18 +11,18 @@ const supabase = createClient(
 async function syncMissingOrganization(clerkOrgId: string, userId: string) {
   try {
     console.log(`🔄 Attempting to sync missing organization: ${clerkOrgId}`)
-    
+
     // Get organization data from Clerk
     const clerk = await clerkClient()
     const organization = await clerk.organizations.getOrganization({
       organizationId: clerkOrgId
     })
-    
+
     if (!organization) {
       console.error(`❌ Organization ${clerkOrgId} not found in Clerk`)
       return null
     }
-    
+
     // Create organization using the database function
     const { data: orgId, error } = await supabase
       .rpc('create_organization_with_admin', {
@@ -58,7 +58,7 @@ function isValidUUID(uuid: string): boolean {
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
-    
+
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -116,9 +116,9 @@ export async function POST(request: NextRequest) {
       } else {
         // Organization not found in database, try to sync from Clerk
         console.warn(`⚠️ Organization ${organizationId} not found in database, attempting to sync from Clerk...`)
-        
+
         const syncedOrgId = await syncMissingOrganization(organizationId, userId)
-        
+
         if (syncedOrgId) {
           orgDbId = syncedOrgId
           console.log(`✅ Organization ${organizationId} successfully synced with ID: ${syncedOrgId}`)
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating campaign:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
