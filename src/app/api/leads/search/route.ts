@@ -257,6 +257,14 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Map perPage from filters to pageSize if present, always prefer the latest value
+    let effectivePageSize = 25
+    if (typeof filters.perPage === 'number') {
+      effectivePageSize = filters.perPage
+    } else if (typeof filters.pageSize === 'number') {
+      effectivePageSize = filters.pageSize
+    }
+
     console.log('📋 Received search request:', { filters, page, pageSize, totalSize })
 
     // Get the current provider
@@ -267,7 +275,7 @@ export async function POST(request: NextRequest) {
     const unifiedFilters = transformFiltersToUnified({
       ...filters,
       page,
-      pageSize,
+      pageSize: effectivePageSize,
       totalSize
     })
 

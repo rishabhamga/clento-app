@@ -26,11 +26,11 @@ import {
   Collapse,
   Divider,
 } from '@chakra-ui/react'
-import { 
-  FiMail, 
-  FiPhone, 
-  FiLinkedin, 
-  FiGlobe, 
+import {
+  FiMail,
+  FiPhone,
+  FiLinkedin,
+  FiGlobe,
   FiMapPin,
   FiUsers,
   FiDollarSign,
@@ -41,13 +41,13 @@ import {
   FiBriefcase,
   FiTarget,
 } from 'react-icons/fi'
-import { 
-  useSearchResults, 
-  useApolloSearch 
+import {
+  useSearchResults,
+  useApolloSearch
 } from '@/hooks/useApolloSearch'
-import { 
-  type LeadSearchResult, 
-  type CompanySearchResult 
+import {
+  type LeadSearchResult,
+  type CompanySearchResult
 } from '@/types/apollo'
 
 
@@ -131,14 +131,14 @@ function SearchResults({ className }: SearchResultsProps) {
           <SimpleGrid columns={{ base: 1, lg: 1 }} spacing={6}>
             {results
               .sort((a, b) => (b.confidence || 0) - (a.confidence || 0)) // Sort by confidence descending
-              .map((result) => 
-              searchType === 'people' 
-                ? <PersonCard 
-                    key={result.id} 
+              .map((result) =>
+              searchType === 'people'
+                ? <PersonCard
+                    key={result.id}
                     person={result as LeadSearchResult}
                   />
-                : <CompanyCard 
-                    key={result.id} 
+                : <CompanyCard
+                    key={result.id}
                     company={result as CompanySearchResult}
                   />
             )}
@@ -179,36 +179,36 @@ function PersonCard({ person }: PersonCardProps) {
     if (person.organization?.logo_url) {
       return person.organization.logo_url
     }
-    
+
     // Try account logo
     if (person.account?.logo_url) {
       return person.account.logo_url
     }
-    
+
     if (person.company_logo_url) {
       return person.company_logo_url
     }
-    
+
     // Fallback to domain-based logo
-    const domain = person.organization?.primary_domain || 
-                   person.account?.primary_domain || 
+    const domain = person.organization?.primary_domain ||
+                   person.account?.primary_domain ||
                    person.company_website?.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
-    
+
     if (domain) {
       return `https://logo.clearbit.com/${domain}`
     }
-    
+
     return undefined
   }
 
   const formatDate = (dateValue?: string | Date) => {
     if (!dateValue) return undefined
-    
+
     try {
       const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short' 
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short'
       })
     } catch {
       return undefined
@@ -217,12 +217,12 @@ function PersonCard({ person }: PersonCardProps) {
 
   const formatGrowthPercentage = (growth?: number) => {
     if (growth === undefined || growth === null) return null
-    
+
     const percentage = Math.round(growth * 100)
     const isPositive = percentage > 0
-    
+
     return (
-      <Badge 
+      <Badge
         colorScheme={isPositive ? 'green' : percentage < 0 ? 'red' : 'gray'}
         size="sm"
         fontWeight="medium"
@@ -239,7 +239,7 @@ function PersonCard({ person }: PersonCardProps) {
   const getCompanySize = () => {
     const org = getCurrentCompany()
     if (!org) return null
-    
+
     // For now, we'll use a placeholder since headcount isn't directly in the response
     // This could be enhanced with actual employee count data
     return null
@@ -295,7 +295,7 @@ function PersonCard({ person }: PersonCardProps) {
                       {person.title}
                     </Text>
                   )}
-                  
+
                   {/* Location - With improved styling */}
                   {(person.city || person.state || person.country) && (
                     <HStack spacing={2} mt={1}>
@@ -305,7 +305,7 @@ function PersonCard({ person }: PersonCardProps) {
                       </Text>
                     </HStack>
                   )}
-                  
+
                   {/* Seniority & Department - Moved here for better organization */}
                   <HStack spacing={3} mt={1}>
                     {person.seniority && (
@@ -313,7 +313,7 @@ function PersonCard({ person }: PersonCardProps) {
                         {person.seniority.replace('_', ' ').toUpperCase()}
                       </Badge>
                     )}
-                    
+
                     {person.departments && person.departments.length > 0 && (
                       <Badge colorScheme="purple" variant="subtle" fontSize="xs" px={2} py={1}>
                         {person.departments[0].replace('_', ' ').toUpperCase()}
@@ -322,11 +322,11 @@ function PersonCard({ person }: PersonCardProps) {
                   </HStack>
                 </VStack>
               </Box>
-              
+
               {/* Confidence Badge - Enhanced */}
               {person.confidence && (
-                <Badge 
-                  colorScheme="purple" 
+                <Badge
+                  colorScheme="purple"
                   variant="solid"
                   fontSize="xs"
                   px={2}
@@ -340,11 +340,11 @@ function PersonCard({ person }: PersonCardProps) {
 
             {/* Company Info Row - Enhanced */}
             {currentCompany && (
-              <Box 
-                bg="gray.50" 
-                p={4} 
-                borderRadius="lg" 
-                border="1px solid" 
+              <Box
+                bg="gray.50"
+                p={4}
+                borderRadius="lg"
+                border="1px solid"
                 borderColor="gray.200"
               >
                 <HStack spacing={4} align="center">
@@ -372,7 +372,7 @@ function PersonCard({ person }: PersonCardProps) {
                       )}
                     </HStack>
                   </VStack>
-                  
+
                   {/* Growth Indicators */}
                   <HStack spacing={3}>
                     {currentCompany.organization_headcount_six_month_growth !== undefined && (
@@ -413,7 +413,7 @@ function PersonCard({ person }: PersonCardProps) {
           <Box px={6} pb={6}>
             <VStack spacing={5} align="stretch">
               <Divider />
-              
+
               {/* Career History */}
               {person.employment_history && person.employment_history.length > 0 && (
                 <Box>
@@ -423,11 +423,11 @@ function PersonCard({ person }: PersonCardProps) {
                   <VStack align="stretch" spacing={3}>
                     {person.employment_history.slice(0, 4).map((job, index) => (
                       <HStack key={job.id || index} spacing={3} align="start">
-                        <Box 
-                          w="8px" 
-                          h="8px" 
+                        <Box
+                          w="8px"
+                          h="8px"
                           bg={job.current ? "green.400" : "gray.300"}
-                          borderRadius="full" 
+                          borderRadius="full"
                           mt={1}
                           flexShrink={0}
                         />
@@ -461,8 +461,8 @@ function PersonCard({ person }: PersonCardProps) {
               )}
 
               {/* Skills & Functions */}
-              {((person.skills && person.skills.length > 0) || 
-                (person.functions && person.functions.length > 0) || 
+              {((person.skills && person.skills.length > 0) ||
+                (person.functions && person.functions.length > 0) ||
                 (person.subdepartments && person.subdepartments.length > 0)) && (
                 <Box>
                   <Text fontSize="md" fontWeight="semibold" color="gray.700" mb={3}>
@@ -481,7 +481,7 @@ function PersonCard({ person }: PersonCardProps) {
                         </Flex>
                       </Box>
                     )}
-                    
+
                     {person.subdepartments && person.subdepartments.length > 0 && (
                       <Box>
                         <Text fontSize="sm" color="gray.600" mb={2}>Specializations</Text>
@@ -494,7 +494,7 @@ function PersonCard({ person }: PersonCardProps) {
                         </Flex>
                       </Box>
                     )}
-                    
+
                     {person.skills && person.skills.length > 0 && (
                       <Box>
                         <Text fontSize="sm" color="gray.600" mb={2}>Skills</Text>
@@ -526,10 +526,10 @@ function PersonCard({ person }: PersonCardProps) {
                     {currentCompany.website_url && (
                       <HStack spacing={2}>
                         <FiGlobe size={14} color="gray" />
-                        <Link 
-                          href={currentCompany.website_url} 
-                          isExternal 
-                          fontSize="sm" 
+                        <Link
+                          href={currentCompany.website_url}
+                          isExternal
+                          fontSize="sm"
                           color="blue.500"
                           _hover={{ textDecoration: 'underline' }}
                         >
@@ -537,14 +537,14 @@ function PersonCard({ person }: PersonCardProps) {
                         </Link>
                       </HStack>
                     )}
-                    
+
                     {currentCompany.linkedin_url && (
                       <HStack spacing={2}>
                         <FiLinkedin size={14} color="gray" />
-                        <Link 
-                          href={currentCompany.linkedin_url} 
-                          isExternal 
-                          fontSize="sm" 
+                        <Link
+                          href={currentCompany.linkedin_url}
+                          isExternal
+                          fontSize="sm"
                           color="blue.500"
                           _hover={{ textDecoration: 'underline' }}
                         >
@@ -552,7 +552,7 @@ function PersonCard({ person }: PersonCardProps) {
                         </Link>
                       </HStack>
                     )}
-                    
+
                     {currentCompany.primary_phone && (
                       <HStack spacing={2}>
                         <FiPhone size={14} color="gray" />
@@ -561,7 +561,7 @@ function PersonCard({ person }: PersonCardProps) {
                         </Text>
                       </HStack>
                     )}
-                    
+
                     {(currentCompany.city || currentCompany.state || currentCompany.country) && (
                       <HStack spacing={2}>
                         <FiMapPin size={14} color="gray" />
@@ -588,7 +588,7 @@ function PersonCard({ person }: PersonCardProps) {
                           {person.email}
                         </Text>
                       </HStack>
-                      <Badge 
+                      <Badge
                         colorScheme={person.email_status === 'verified' ? 'green' : person.email_status === 'likely' ? 'blue' : person.email_status === 'guessed' ? 'yellow' : 'red'}
                         size="sm"
                         variant="subtle"
@@ -597,14 +597,14 @@ function PersonCard({ person }: PersonCardProps) {
                       </Badge>
                     </HStack>
                   )}
-                  
+
                   {person.linkedin_url && (
                     <HStack spacing={2}>
                       <FiLinkedin size={14} color="gray" />
-                      <Link 
-                        href={person.linkedin_url} 
-                        isExternal 
-                        fontSize="sm" 
+                      <Link
+                        href={person.linkedin_url}
+                        isExternal
+                        fontSize="sm"
                         color="blue.500"
                         _hover={{ textDecoration: 'underline' }}
                         isTruncated
@@ -613,14 +613,14 @@ function PersonCard({ person }: PersonCardProps) {
                       </Link>
                     </HStack>
                   )}
-                  
+
                   {person.twitter_url && (
                     <HStack spacing={2}>
                       <Text fontSize="sm" color="gray.400">𝕏</Text>
-                      <Link 
-                        href={person.twitter_url} 
-                        isExternal 
-                        fontSize="sm" 
+                      <Link
+                        href={person.twitter_url}
+                        isExternal
+                        fontSize="sm"
                         color="blue.500"
                         _hover={{ textDecoration: 'underline' }}
                       >
@@ -661,7 +661,7 @@ function CompanyCard({ company }: CompanyCardProps) {
 
   const formatRevenue = (revenue?: number) => {
     if (!revenue) return null
-    
+
     if (revenue >= 1000000000) {
       return `$${(revenue / 1000000000).toFixed(1)}B`
     } else if (revenue >= 1000000) {
@@ -712,7 +712,7 @@ function CompanyCard({ company }: CompanyCardProps) {
                     {company.industry}
                   </Text>
                 )}
-                
+
                 {/* Location - With improved styling */}
                 {company.headquarters_city && (
                   <HStack spacing={2} mt={1}>
@@ -724,7 +724,7 @@ function CompanyCard({ company }: CompanyCardProps) {
                     </Text>
                   </HStack>
                 )}
-                
+
                 {/* Company metrics - Better organized */}
                 <HStack spacing={6} mt={1}>
                   {company.employee_count && (
@@ -735,7 +735,7 @@ function CompanyCard({ company }: CompanyCardProps) {
                       </Text>
                     </HStack>
                   )}
-                  
+
                   {company.estimated_annual_revenue && (
                     <HStack spacing={2}>
                       <FiDollarSign color="#718096" size={16} />
@@ -746,11 +746,11 @@ function CompanyCard({ company }: CompanyCardProps) {
                   )}
                 </HStack>
               </VStack>
-              
+
               {/* Confidence badge - Enhanced */}
               {company.confidence && (
-                <Badge 
-                  colorScheme="blue" 
+                <Badge
+                  colorScheme="blue"
                   variant="solid"
                   fontSize="xs"
                   px={2}
@@ -781,7 +781,7 @@ function CompanyCard({ company }: CompanyCardProps) {
           <Collapse in={isExpanded} animateOpacity>
             <VStack spacing={4} align="stretch" pt={4}>
               <Divider />
-              
+
               {/* Company description */}
               {company.description && (
                 <Box>
@@ -806,7 +806,7 @@ function CompanyCard({ company }: CompanyCardProps) {
                     </Text>
                   </HStack>
                 )}
-                
+
                 {company.founded_year && (
                   <HStack spacing={2}>
                     <FiCalendar color="gray" size={14} />
@@ -855,7 +855,7 @@ function CompanyCard({ company }: CompanyCardProps) {
                           {company.funding_stage.replace('_', ' ')}
                         </Badge>
                       )}
-                      
+
                       {company.funding_total && (
                         <Text fontSize="sm" color="gray.600">
                           {formatRevenue(company.funding_total)} total
@@ -871,4 +871,4 @@ function CompanyCard({ company }: CompanyCardProps) {
       </CardBody>
     </Card>
   )
-} 
+}
