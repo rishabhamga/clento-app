@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const transformedResults: CompanySearchResult[] = apolloResponse.organizations?.map((org: any) => ({
       id: `apollo_company_${org.id || Math.random().toString(36)}`,
       external_id: org.id?.toString() || '',
-      
+
       // Basic company information
       name: org.name || '',
       domain: org.primary_domain || org.website_url || '',
@@ -62,47 +62,47 @@ export async function POST(request: NextRequest) {
       linkedin_url: org.linkedin_url || '',
       twitter_url: org.twitter_url || '',
       facebook_url: org.facebook_url || '',
-      
+
       // Business details
       industry: org.industry || '',
       description: org.short_description || org.description || '',
       keywords: org.keywords || [],
-      
+
       // Size and metrics
       employee_count: org.estimated_num_employees || 0,
       estimated_annual_revenue: org.estimated_annual_revenue || 0,
       revenue_range: mapRevenueRange(org.estimated_annual_revenue),
-      
+
       // Location
       headquarters_city: org.headquarters_city || '',
       headquarters_state: org.headquarters_state || '',
       headquarters_country: org.headquarters_country || '',
       locations: org.locations || [],
-      
+
       // Funding and growth
       founded_year: org.founded_year || 0,
       funding_stage: org.funding_stage || '',
       funding_total: org.funding_total || 0,
       last_funding_date: org.last_funding_date || '',
       investor_count: org.investor_count || 0,
-      
+
       // Technology and signals
       technologies: org.technologies || [],
       intent_topics: org.intent_topics || [],
       job_postings_count: org.job_postings_count || 0,
       recent_news_count: org.recent_news_count || 0,
-      
+
       // Contact information
       phone: org.phone || '',
       email_domain: org.primary_domain || '',
-      
+
       // Social presence
       alexa_ranking: org.alexa_ranking || 0,
       monthly_visits: org.monthly_visits || 0,
-      
+
       // Key personnel
       key_people: org.key_people || [],
-      
+
       // Metadata
       data_source: 'apollo' as const,
       confidence: calculateCompanyConfidence(org),
@@ -281,7 +281,7 @@ function transformToApolloCompanyFilters(filters: any) {
 // Map revenue number to range string
 function mapRevenueRange(revenue?: number): string | undefined {
   if (!revenue) return undefined
-  
+
   if (revenue < 1000000) return '0-1M'
   if (revenue < 10000000) return '1M-10M'
   if (revenue < 50000000) return '10M-50M'
@@ -305,4 +305,4 @@ function calculateCompanyConfidence(org: any): number {
   if (org.technologies && org.technologies.length > 0) confidence += 0.05
 
   return Math.min(confidence, 1.0)
-} 
+}

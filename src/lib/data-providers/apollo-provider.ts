@@ -188,7 +188,6 @@ export class ApolloProviderService implements DataProvider {
 
   async searchProspects(filters: UnifiedSearchFilters): Promise<UnifiedSearchResponse> {
     try {
-      console.log("Filters right before sending to apollo", filters)
       const apolloParams = this.transformFilters(filters)
       console.log('🔍 Apollo search with params:', apolloParams)
 
@@ -204,11 +203,14 @@ export class ApolloProviderService implements DataProvider {
       })
       console.log("BREADCRUMBS" ,response.breadcrumbs)
 
+    //   console.log(response, "ACTUAL SEARCH RESULT")
+
       console.log('✅ Apollo response received:', {
         total: response.pagination.total_entries,
         page: response.pagination.page,
         per_page: response.pagination.per_page,
-        results: response.people.length
+        results: response.people.length,
+        totalPages: response.pagination.total_pages
       })
 
       return this.normalizeResponse(response, filters)
