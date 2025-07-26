@@ -20,6 +20,7 @@ import {
   Tab,
   TabPanel,
   SimpleGrid,
+  Avatar,
 } from '@chakra-ui/react'
 import { 
   FiChevronLeft, 
@@ -27,7 +28,7 @@ import {
   FiLinkedin, 
   FiMail,
   FiRefreshCw,
-  FiEye
+  FiCopy
 } from 'react-icons/fi'
 import { keyframes } from '@emotion/react'
 import { LinkedInMessageFrame } from './LinkedInMessageFrame'
@@ -71,6 +72,7 @@ interface SampleMessagesCarouselProps {
   emailMessages?: SampleMessage[]
   isLoading?: boolean
   onRegenerateMessages?: () => void
+  toneOfVoice?: string
 }
 
 // Sample data for demonstration
@@ -247,6 +249,7 @@ export const SampleMessagesCarousel: React.FC<SampleMessagesCarouselProps> = ({
   emailMessages = defaultEmailMessages,
   isLoading = false,
   onRegenerateMessages,
+  toneOfVoice = 'Professional',
 }) => {
   console.log('🎨 [CAROUSEL] SampleMessagesCarousel rendered with:', {
     linkedinCount: linkedinMessages?.length || 0,
@@ -262,6 +265,13 @@ export const SampleMessagesCarousel: React.FC<SampleMessagesCarouselProps> = ({
   const [currentLinkedInIndex, setCurrentLinkedInIndex] = useState(0)
   const [currentEmailIndex, setCurrentEmailIndex] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
+
+  /* --- helper: copy to clipboard --- */
+  const copyCurrentMessage = () => {
+    const current = activeTab === 0 ? currentLinkedInMessage : currentEmailMessage
+    if (!current) return
+    navigator.clipboard.writeText(current.type === 'email' ? `${current.subject}\n\n${current.message}` : current.message)
+  }
 
   // Log when messages change
   React.useEffect(() => {
@@ -331,7 +341,7 @@ export const SampleMessagesCarousel: React.FC<SampleMessagesCarouselProps> = ({
     >
       <CardBody p={8}>
         <VStack spacing={8} align="stretch">
-          {/* Header */}
+          {/* Header & Stat bar */}
           <VStack spacing={4} textAlign="center">
             <Heading 
               size="lg" 
@@ -360,6 +370,19 @@ export const SampleMessagesCarousel: React.FC<SampleMessagesCarouselProps> = ({
                 Generate New Messages
               </Button>
             )}
+
+            {/* Stat Bar */}
+            <HStack mt={2} spacing={3} justify="center">
+              <Badge colorScheme="blue" px={2} py={1} borderRadius="md">
+                {linkedinMessages.length} LinkedIn
+              </Badge>
+              <Badge colorScheme="green" px={2} py={1} borderRadius="md">
+                {emailMessages.length} Email
+              </Badge>
+              <Badge colorScheme="purple" px={2} py={1} borderRadius="md">
+                Tone: {toneOfVoice}
+              </Badge>
+            </HStack>
           </VStack>
 
           {/* Message Type Tabs */}
@@ -412,7 +435,7 @@ export const SampleMessagesCarousel: React.FC<SampleMessagesCarouselProps> = ({
               {/* LinkedIn Messages */}
               <TabPanel px={0} py={6}>
                 <VStack spacing={6}>
-                  {/* Navigation */}
+                  {/* Navigation + Copy */}
                   <HStack spacing={4} justify="center" w="full">
                     <IconButton
                       aria-label="Previous LinkedIn message"
@@ -444,6 +467,16 @@ export const SampleMessagesCarousel: React.FC<SampleMessagesCarouselProps> = ({
                       borderRadius="full"
                       isDisabled={isTransitioning}
                     />
+                    {/* Copy button */}
+                    <IconButton
+                      aria-label="Copy message"
+                      icon={<FiCopy />}
+                      onClick={copyCurrentMessage}
+                      size="lg"
+                      variant="ghost"
+                      colorScheme="purple"
+                      borderRadius="full"
+                    />
                   </HStack>
 
                   {/* Message Display */}
@@ -467,19 +500,18 @@ export const SampleMessagesCarousel: React.FC<SampleMessagesCarouselProps> = ({
                     </Box>
                   </Flex>
 
-                  {/* Dots indicator */}
-                  <HStack spacing={2}>
-                    {linkedinMessages.map((_, index) => (
-                      <Box
-                        key={index}
-                        w={2}
-                        h={2}
-                        borderRadius="full"
-                        bg={index === currentLinkedInIndex ? 'purple.500' : 'gray.300'}
+                  {/* Thumbnail navigation */}
+                  <HStack spacing={2} overflowX="auto" pt={2} pb={1} px={2}>
+                    {linkedinMessages.map((msg, index) => (
+                      <Avatar
+                        key={msg.id}
+                        size="xs"
+                        src={msg.senderImage}
+                        name={msg.senderName}
                         cursor="pointer"
+                        border={index === currentLinkedInIndex ? '2px solid #805AD5' : '2px solid transparent'}
                         onClick={() => setCurrentLinkedInIndex(index)}
-                        transition="all 0.2s"
-                        _hover={{ transform: 'scale(1.2)' }}
+                        _hover={{ transform: 'scale(1.1)' }}
                       />
                     ))}
                   </HStack>
@@ -489,7 +521,7 @@ export const SampleMessagesCarousel: React.FC<SampleMessagesCarouselProps> = ({
               {/* Email Messages */}
               <TabPanel px={0} py={6}>
                 <VStack spacing={6}>
-                  {/* Navigation */}
+                  {/* Navigation + Copy */}
                   <HStack spacing={4} justify="center" w="full">
                     <IconButton
                       aria-label="Previous email message"
@@ -521,6 +553,16 @@ export const SampleMessagesCarousel: React.FC<SampleMessagesCarouselProps> = ({
                       borderRadius="full"
                       isDisabled={isTransitioning}
                     />
+                    {/* Copy button */}
+                    <IconButton
+                      aria-label="Copy message"
+                      icon={<FiCopy />}
+                      onClick={copyCurrentMessage}
+                      size="lg"
+                      variant="ghost"
+                      colorScheme="purple"
+                      borderRadius="full"
+                    />
                   </HStack>
 
                   {/* Message Display */}
@@ -546,19 +588,18 @@ export const SampleMessagesCarousel: React.FC<SampleMessagesCarouselProps> = ({
                     </Box>
                   </Flex>
 
-                  {/* Dots indicator */}
-                  <HStack spacing={2}>
-                    {emailMessages.map((_, index) => (
-                      <Box
-                        key={index}
-                        w={2}
-                        h={2}
-                        borderRadius="full"
-                        bg={index === currentEmailIndex ? 'purple.500' : 'gray.300'}
+                  {/* Thumbnail navigation */}
+                  <HStack spacing={2} overflowX="auto" pt={2} pb={1} px={2}>
+                    {emailMessages.map((msg, index) => (
+                      <Avatar
+                        key={msg.id}
+                        size="xs"
+                        name={msg.senderName}
+                        src={msg.senderImage}
                         cursor="pointer"
+                        border={index === currentEmailIndex ? '2px solid #805AD5' : '2px solid transparent'}
                         onClick={() => setCurrentEmailIndex(index)}
-                        transition="all 0.2s"
-                        _hover={{ transform: 'scale(1.2)' }}
+                        _hover={{ transform: 'scale(1.1)' }}
                       />
                     ))}
                   </HStack>

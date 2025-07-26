@@ -49,7 +49,7 @@ import {
   type LeadSearchResult,
   type CompanySearchResult
 } from '@/types/apollo'
-import SearchPagination from './SearchPagination'
+
 
 interface SearchResultsProps {
   className?: string
@@ -145,10 +145,12 @@ function SearchResults({ className }: SearchResultsProps) {
           </SimpleGrid>
         </Box>
 
-        {/* Pagination */}
-        {pagination && pagination.total_pages > 1 && (
-          <Box flexShrink={0}>
-            <SearchPagination />
+        {/* Results Count Display */}
+        {pagination && pagination.total_entries > 0 && (
+          <Box flexShrink={0} p={4} bg={useColorModeValue('gray.50', 'gray.700')} borderRadius="lg">
+            <Text fontSize="sm" color="gray.600" textAlign="center">
+              Showing {((pagination.page - 1) * pagination.per_page) + 1} to {Math.min(pagination.page * pagination.per_page, pagination.total_entries)} of {pagination.total_entries.toLocaleString()} results
+            </Text>
           </Box>
         )}
       </VStack>

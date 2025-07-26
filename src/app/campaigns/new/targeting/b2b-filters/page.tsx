@@ -71,6 +71,8 @@ function LoadingSpinner() {
 function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchType: string }) {
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.95)', 'rgba(26, 32, 44, 0.95)')
   const borderColor = useColorModeValue('rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.2)')
+  const filterChipBg = useColorModeValue('purple.50', 'purple.900')
+  const filterChipBorderColor = useColorModeValue('purple.200', 'purple.700')
 
   // Helper function to format filter values
   const formatFilterValue = (value: any): string => {
@@ -212,9 +214,9 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
               {activeFilters.map((filter, index) => (
                 <Box
                   key={index}
-                  bg={useColorModeValue('purple.50', 'purple.900')}
+                  bg={filterChipBg}
                   border="1px solid"
-                  borderColor={useColorModeValue('purple.200', 'purple.700')}
+                  borderColor={filterChipBorderColor}
                   borderRadius="lg"
                   px={3}
                   py={1}
@@ -287,6 +289,10 @@ function B2BFiltersContent() {
     'linear-gradient(45deg, #667eea, #764ba2)',
     'linear-gradient(45deg, #5b21b6, #7c3aed)'
   )
+  
+  // Text colors
+  const titleTextColor = useColorModeValue('white', 'gray.100')
+  const subtitleTextColor = useColorModeValue('whiteAlpha.900', 'gray.200')
 
   // Handle URL parameter for search type
   useEffect(() => {
@@ -544,14 +550,14 @@ function B2BFiltersContent() {
             <Heading
               size="2xl"
               mb={4}
-              color={useColorModeValue('white', 'gray.100')}
+              color={titleTextColor}
               textShadow="0 2px 4px rgba(0,0,0,0.3)"
             >
               Ideal Customer Profile Preview
             </Heading>
             <Text
               fontSize="lg"
-              color={useColorModeValue('whiteAlpha.900', 'gray.200')}
+              color={subtitleTextColor}
               maxW="2xl"
               mx="auto"
               textShadow="0 1px 2px rgba(0,0,0,0.2)"

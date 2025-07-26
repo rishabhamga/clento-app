@@ -18,15 +18,7 @@ import {
   Heading,
   Badge,
   Button,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   useColorModeValue,
-  useDisclosure,
   Divider,
   SimpleGrid,
   RadioGroup,
@@ -39,14 +31,20 @@ import {
   useToast,
   Flex,
   IconButton,
-  Tooltip
+  Tooltip,
+  Collapse
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 import { CampaignStepper } from '@/components/ui/CampaignStepper'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { useRouter } from 'next/navigation'
-import { FiGlobe, FiUser, FiTarget, FiSettings, FiEye, FiPlus, FiTrash2, FiEdit3, FiMessageCircle } from 'react-icons/fi'
+import { FiGlobe, FiUser, FiTarget, FiSettings, FiEye, FiPlus, FiTrash2, FiEdit3, FiMessageCircle, FiLinkedin, FiMail } from 'react-icons/fi'
 import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
+import { generateSampleMessages } from '@/lib/message-generation-service'
+import type { GenerateMessagesResponse } from '@/lib/message-generation-service'
+import { LinkedInMessageFrame } from '@/components/ui/LinkedInMessageFrame'
+import { EmailMessageFrame } from '@/components/ui/EmailMessageFrame'
+import { SampleMessagesCarousel } from '@/components/ui/SampleMessagesCarousel'
 
 interface PitchData {
   websiteUrl: string
@@ -74,11 +72,15 @@ const shimmer = keyframes`
   100% { background-position: 200% 0; }
 `
 
+const pulse = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+`
+
 export default function OutreachPage() {
   const router = useRouter()
   const toast = useToast()
   const customToast = createCustomToast(toast)
-  const { isOpen, onOpen, onClose } = useDisclosure()
   
   // Enhanced color mode values with 3D styling
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')
@@ -119,13 +121,87 @@ export default function OutreachPage() {
   // Pitch data from previous step
   const [pitchData, setPitchData] = useState<PitchData | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [sampleMessage, setSampleMessage] = useState('')
+  const [sampleMessages, setSampleMessages] = useState<GenerateMessagesResponse | null>(null)
+  const [carouselData, setCarouselData] = useState<{linkedin: any[], email: any[]} | null>(null)
 
-  // Load pitch data from localStorage
+  // Load pitch data from localStorage OR backend
   useEffect(() => {
+    console.log('🔍 [OUTREACH] Loading pitch data...')
     const savedPitchData = localStorage.getItem('campaignPitchData')
+
     if (savedPitchData) {
-      setPitchData(JSON.parse(savedPitchData))
+      console.log('✅ [OUTREACH] Found pitch data in localStorage')
+      try {
+        const parsed = JSON.parse(savedPitchData)
+        setPitchData(parsed)
+        console.log('✅ [OUTREACH] Pitch data loaded:', {
+          hasWebsiteAnalysis: !!parsed.websiteAnalysis,
+          websiteUrl: parsed.websiteUrl,
+          painPointsCount: parsed.painPoints?.length || 0,
+          proofPointsCount: parsed.proofPoints?.length || 0,
+          websiteAnalysisKeys: parsed.websiteAnalysis ? Object.keys(parsed.websiteAnalysis) : 'null',
+          websiteAnalysisStructure: parsed.websiteAnalysis ? {
+            hasCoreOffer: !!parsed.websiteAnalysis.core_offer,
+            hasTargetPersonas: !!parsed.websiteAnalysis.target_personas,
+            targetPersonasCount: parsed.websiteAnalysis.target_personas?.length || 0,
+            hasCompetitiveAdvantages: !!parsed.websiteAnalysis.competitive_advantages
+          } : 'null'
+        })
+      } catch (error) {
+        console.error('❌ [OUTREACH] Error parsing localStorage pitch data:', error)
+        localStorage.removeItem('campaignPitchData') // Clear corrupted data
+      }
+    } else {
+      console.log('🔍 [OUTREACH] No localStorage data, fetching from backend...')
+      // Fetch from backend draft API
+      const fetchDraft = async () => {
+        try {
+          const res = await fetch('/api/campaigns/save-draft')
+          console.log('📡 [OUTREACH] Backend response status:', res.status)
+          
+          if (res.ok) {
+            const data = await res.json()
+            console.log('📋 [OUTREACH] Backend response:', {
+              success: data.success,
+              hasDrafts: !!data.drafts,
+              draftsType: Array.isArray(data.drafts) ? 'array' : typeof data.drafts
+            })
+            
+            if (data.success && data.drafts) {
+              // If multiple drafts, take the most recent
+              const draft = Array.isArray(data.drafts) ? data.drafts[0] : data.drafts
+              console.log('📄 [OUTREACH] Processing draft:', {
+                hasDraft: !!draft,
+                hasWebsiteAnalysis: !!draft?.website_analysis,
+                websiteUrl: draft?.website_url
+              })
+              
+              if (draft && draft.website_analysis) {
+                const pd: PitchData = {
+                  websiteUrl: draft.website_url || '',
+                  websiteAnalysis: draft.website_analysis || null,
+                  offeringDescription: draft.offering_description || '',
+                  painPoints: draft.pain_points || [],
+                  proofPoints: draft.proof_points || [],
+                  coachingPoints: draft.coaching_points || [],
+                  emailCoachingPoints: draft.email_body_coaching || []
+                }
+                setPitchData(pd)
+                // Cache locally for subsequent steps
+                localStorage.setItem('campaignPitchData', JSON.stringify(pd))
+                console.log('✅ [OUTREACH] Pitch data loaded from backend')
+              } else {
+                console.log('⚠️ [OUTREACH] Draft found but missing website analysis')
+              }
+            }
+          } else {
+            console.error('❌ [OUTREACH] Backend fetch failed:', res.status, res.statusText)
+          }
+        } catch (err) {
+          console.error('❌ [OUTREACH] Failed to fetch pitch draft:', err)
+        }
+      }
+      fetchDraft()
     }
   }, [])
 
@@ -180,37 +256,77 @@ export default function OutreachPage() {
   }
 
   const generateSampleMessage = async () => {
+    console.log('🚀 [SAMPLE GEN] Starting sample message generation...')
+    console.log('📋 [SAMPLE GEN] Pitch data check:', {
+      hasPitchData: !!pitchData,
+      hasWebsiteAnalysis: !!(pitchData as any)?.websiteAnalysis,
+      websiteUrl: (pitchData as any)?.websiteUrl
+    })
+    
     if (!pitchData) {
+      console.error('❌ [SAMPLE GEN] No pitch data available')
       customToast.warning({
-        title: 'No Pitch Data',
-        description: 'Please complete the pitch step first.',
+        title: 'Missing Pitch Data',
+        description: 'Please complete the pitch step first to generate sample messages.',
+      })
+      return
+    }
+    
+    if (!(pitchData as any).websiteAnalysis) {
+      console.error('❌ [SAMPLE GEN] No website analysis data available')
+      customToast.warning({
+        title: 'Missing Website Analysis',
+        description: 'Website analysis is required to generate personalized messages. Please complete the pitch step.',
       })
       return
     }
 
     setIsGenerating(true)
     try {
-      // Mock sample message generation based on pitch data
-      const message = `Hi {{firstName}},
+      const outreachData = {
+        campaignLanguage,
+        signOffs,
+        toneOfVoice,
+        callsToAction,
+        messagePersonalization
+      }
 
-${pitchData.offeringDescription}
+      console.log('📤 [SAMPLE GEN] Sending generation request with outreach data:', outreachData)
 
-${pitchData.painPoints.length > 0 ? `I noticed that ${pitchData.painPoints[0].description.toLowerCase()}. ${pitchData.painPoints[0].title}` : ''}
+      const result = await generateSampleMessages((pitchData as any).websiteAnalysis, 3, outreachData)
 
-${pitchData.proofPoints.length > 0 ? pitchData.proofPoints[0].description : ''}
-
-${callsToAction[0]}
-
-${signOffs[0]},
-{{senderName}}`
-
-      setSampleMessage(message)
-      onOpen()
+      if (result.success) {
+        setSampleMessages(result)
+        // Transform for carousel
+        const linked = result.linkedinMessages.map((gm) => ({
+          id: gm.id,
+          type: 'linkedin',
+          senderName: gm.content.sender.name,
+          senderRole: gm.content.sender.role,
+          senderCompany: gm.content.sender.company,
+          senderImage: undefined,
+          message: gm.content.message,
+          timestamp: 'Just now'
+        }))
+        const emails = result.emailMessages.map((gm) => ({
+          id: gm.id,
+          type: 'email',
+          senderName: gm.content.sender.name,
+          senderEmail: (gm.content.sender as any).email,
+          subject: gm.content.subject,
+          message: gm.content.message,
+          timestamp: 'Just now'
+        }))
+        setCarouselData({ linkedin: linked, email: emails })
+        console.log('✅ [SAMPLE GEN] Messages generated and transformed successfully')
+      } else {
+        throw new Error(result.error || 'Generation failed')
+      }
     } catch (error) {
-      console.error('Error generating sample message:', error)
+      console.error('Error generating sample messages:', error)
       customToast.error({
         title: 'Generation Failed',
-        description: 'Failed to generate sample message. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to generate sample messages',
       })
     } finally {
       setIsGenerating(false)
@@ -278,9 +394,32 @@ ${signOffs[0]},
             fontWeight="500"
             maxW="2xl"
             mx="auto"
+            mb={4}
           >
             Configure your messaging settings and personalization options with AI-powered precision
           </Text>
+          
+          {/* Pitch Data Status Indicator */}
+          <HStack justify="center" spacing={2}>
+            <Box
+              w={3}
+              h={3}
+              borderRadius="full"
+              bg={pitchData && (pitchData as any).websiteAnalysis ? 'green.400' : 'orange.400'}
+              animation={!pitchData ? `${pulse} 2s infinite` : undefined}
+            />
+            <Text 
+              fontSize="sm" 
+              color="whiteAlpha.800"
+              fontWeight="500"
+            >
+              {pitchData && (pitchData as any).websiteAnalysis 
+                ? `✅ Analysis ready for ${(pitchData as any).websiteUrl || 'website'} • ${(pitchData as any).websiteAnalysis?.target_personas?.length || 0} personas` 
+                : pitchData 
+                  ? '⚠️ Missing website analysis data' 
+                  : '🔄 Loading pitch data...'}
+            </Text>
+          </HStack>
         </Box>
 
         <VStack spacing={8} align="stretch">
@@ -607,21 +746,82 @@ ${signOffs[0]},
           </CardBody>
         </Card>
 
-        {/* Generate Sample Message - TODO: Show this later when message is personalized */}
-        {/* <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-          <CardBody textAlign="center">
-            <GradientButton
-              variant="primary"
-              size="lg"
-              leftIcon={<FiEye />}
-              onClick={generateSampleMessage}
-              isLoading={isGenerating}
-              loadingText="Generating..."
-            >
-              Generate Sample Message
-            </GradientButton>
+        {/* Generate Sample Messages Preview */}
+        <Card 
+          bg={glassBg}
+          borderRadius="2xl"
+          border="1px solid"
+          borderColor={borderColor}
+          backdropFilter="blur(20px)"
+          boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+          _hover={{
+            transform: 'translateY(-4px)',
+            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+            transition: 'all 0.3s ease-in-out'
+          }}
+          transition="all 0.3s ease-in-out"
+        >
+          <CardHeader pb={2}>
+            <HStack spacing={3}>
+              <Box
+                p={3}
+                borderRadius="xl"
+                bg={accentGradient}
+                color="white"
+                boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+              >
+                <FiMessageCircle size="20" />
+              </Box>
+              <VStack align="start" spacing={0}>
+                <Heading size="md" color="gray.800">Sample Messages Preview</Heading>
+                <Text fontSize="sm" color="gray.600">Generate personalized LinkedIn and email samples</Text>
+              </VStack>
+            </HStack>
+          </CardHeader>
+          <CardBody pt={0}>
+            <VStack spacing={4}>
+              <Text fontSize="sm" color="gray.600" textAlign="center">
+                Preview how your personalized messages will look to prospects based on your current settings.
+              </Text>
+              <GradientButton
+                variant="primary"
+                size="lg"
+                leftIcon={<FiEye />}
+                onClick={generateSampleMessage}
+                isLoading={isGenerating}
+                loadingText="Generating Messages..."
+                minW="240px"
+                _hover={{
+                  transform: 'scale(1.05)',
+                  boxShadow: '0 20px 40px rgba(102, 126, 234, 0.4)'
+                }}
+                transition="all 0.3s ease"
+              >
+                {isGenerating ? 'Generating Messages...' : 'Generate Sample Messages'}
+              </GradientButton>
+              {sampleMessages && (
+                <Text fontSize="xs" color="gray.500" textAlign="center">
+                  Generated {sampleMessages.totalGenerated} messages • Ready to preview
+                </Text>
+              )}
+              
+              {/* Sample Messages Carousel Display */}
+              <Collapse in={!!sampleMessages && !!carouselData} animateOpacity>
+                <Box w="full" display="flex" justifyContent="center" pt={4}>
+                  {carouselData && (
+                    <SampleMessagesCarousel
+                      linkedinMessages={carouselData.linkedin}
+                      emailMessages={carouselData.email}
+                      isLoading={isGenerating}
+                      onRegenerateMessages={generateSampleMessage}
+                      toneOfVoice={toneOfVoice}
+                    />
+                  )}
+                </Box>
+              </Collapse>
+            </VStack>
           </CardBody>
-        </Card> */}
+        </Card>
 
         {/* Navigation */}
         <HStack justify="space-between" pt={4}>
@@ -664,42 +864,6 @@ ${signOffs[0]},
         </VStack>
       </Container>
 
-      {/* Sample Message Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Sample Message Preview</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Box>
-                <Text fontWeight="semibold" mb={2}>Message Type</Text>
-                <Select defaultValue="First Email">
-                                      <option value="First Email">First Email</option>
-                    <option value="Follow-up Email">Follow-up Email</option>
-                    <option value="LinkedIn Message">LinkedIn Message</option>
-                </Select>
-              </Box>
-              
-              <Box>
-                <Text fontWeight="semibold" mb={2}>Message</Text>
-                <Box p={4} bg={grayBg} borderRadius="md" whiteSpace="pre-line">
-                  <Text fontSize="sm">Subject: proposal</Text>
-                  <Divider my={2} />
-                  <Text>{sampleMessage}</Text>
-                </Box>
-              </Box>
-              
-              <Text fontSize="xs" color="gray.600">
-                Please note, this message is a representation and actual outputs may vary based on selected personalization.
-              </Text>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={onClose}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Box>
   )
 } 

@@ -16,6 +16,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('📝 [SAVE DRAFT] Request body keys:', Object.keys(body))
+    console.log('📝 [SAVE DRAFT] User ID:', userId)
+    
     const {
       campaignName,
       websiteUrl,
@@ -38,6 +41,10 @@ export async function POST(request: NextRequest) {
       .eq('campaign_name', campaignName || 'Untitled Campaign')
       .single()
 
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('❌ [SAVE DRAFT] Error fetching existing draft:', fetchError)
+    }
+
     const draftData = {
       user_id: userId,
       campaign_name: campaignName || 'Untitled Campaign',
@@ -54,8 +61,16 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString()
     }
 
+    console.log('💾 [SAVE DRAFT] Draft data prepared:', {
+      hasWebsiteAnalysis: !!draftData.website_analysis,
+      painPointsCount: draftData.pain_points.length,
+      proofPointsCount: draftData.proof_points.length,
+      currentStep: draftData.current_step
+    })
+
     let result
     if (existingDraft && !fetchError) {
+      console.log('🔄 [SAVE DRAFT] Updating existing draft:', existingDraft.id)
       // Update existing draft
       const { data, error } = await supabase
         .from('campaign_drafts')
@@ -66,6 +81,7 @@ export async function POST(request: NextRequest) {
       
       result = { data, error }
     } else {
+      console.log('✨ [SAVE DRAFT] Creating new draft')
       // Create new draft
       const { data, error } = await supabase
         .from('campaign_drafts')
@@ -77,13 +93,24 @@ export async function POST(request: NextRequest) {
     }
 
     if (result.error) {
-      console.error('Error saving campaign draft:', result.error)
+      console.error('❌ [SAVE DRAFT] Database error:', {
+        error: result.error,
+        code: result.error.code,
+        message: result.error.message,
+        details: result.error.details,
+        hint: result.error.hint
+      })
       return NextResponse.json(
-        { error: 'Failed to save campaign draft' },
+        { 
+          error: 'Failed to save campaign draft',
+          details: result.error.message,
+          code: result.error.code
+        },
         { status: 500 }
       )
     }
 
+    console.log('✅ [SAVE DRAFT] Successfully saved draft:', result.data?.id)
     return NextResponse.json({
       success: true,
       draft: result.data,
@@ -91,9 +118,15 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error in save-draft API:', error)
+    console.error('💥 [SAVE DRAFT] Unexpected error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

@@ -21,6 +21,7 @@ import {
   FiPaperclip,
   FiClock
 } from 'react-icons/fi'
+import { parseSimpleMarkdown } from '@/lib/utils/markdown-parser'
 
 interface EmailMessageProps {
   senderName: string
@@ -190,7 +191,7 @@ export const EmailMessageFrame: React.FC<EmailMessageProps> = ({
             color={textColor}
             whiteSpace="pre-wrap"
           >
-            {message}
+            {parseSimpleMarkdown(message)}
           </Text>
 
           <Divider />

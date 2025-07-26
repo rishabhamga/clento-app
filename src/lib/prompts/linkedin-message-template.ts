@@ -21,10 +21,11 @@ export interface LinkedInMessageContext {
     company: string
   }
   messageVariant: number
+  toneOfVoice: string
 }
 
 export const createLinkedInMessagePrompt = (context: LinkedInMessageContext): string => {
-  const { websiteAnalysis, recipient, personalization, sender, messageVariant } = context
+  const { websiteAnalysis, recipient, personalization, sender, messageVariant, toneOfVoice } = context
 
   const basePrompt = `
 You are an expert at writing hyper-personalized LinkedIn messages that get responses. Generate a compelling LinkedIn DM based on the following context:
@@ -58,8 +59,9 @@ You are an expert at writing hyper-personalized LinkedIn messages that get respo
 3. Be conversational and genuine
 4. Connect their challenge/interest to our solution
 5. End with a soft ask (NOT a meeting request)
-6. Use professional but friendly tone
+6. IMPORTANT: Use a ${toneOfVoice.toLowerCase()} tone throughout the entire message
 7. No salesy language or buzzwords
+8. Ensure the tone reflects ${toneOfVoice} characteristics (${getToneDescription(toneOfVoice)})
 
 **STRUCTURE VARIANTS** (Use variant ${messageVariant}):
 ${getLinkedInStructureVariants()}
@@ -68,6 +70,20 @@ Generate ONLY the message content, no subject line or additional formatting.
 `
 
   return basePrompt
+}
+
+const getToneDescription = (tone: string): string => {
+  const toneDescriptions: Record<string, string> = {
+    'Urgent': 'pressing and immediate, emphasizing the importance of quick action',
+    'Professional': 'formal and respectful, maintaining a business-like demeanor',
+    'Supportive': 'encouraging and helpful, offering assistance and understanding',
+    'Sincere': 'genuine and honest, building trust through authenticity',
+    'Storytelling': 'engaging and narrative, using compelling stories to connect',
+    'Challenging': 'provocative and thought-provoking, questioning the status quo',
+    'Confident': 'assured and self-assured, demonstrating expertise and authority',
+    'Friendly': 'warm and approachable, creating a personal connection with enthusiasm'
+  }
+  return toneDescriptions[tone] || 'professional and appropriate for business communication'
 }
 
 const getLinkedInStructureVariants = (): string => {

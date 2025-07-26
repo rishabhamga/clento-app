@@ -670,23 +670,31 @@ export class AIICPService {
   }
 
   private async performAIAnalysis(pageContents: Array<{url: string, content: string, title: string}>, websiteUrl: string): Promise<ComprehensiveICPAnalysis> {
-    console.log(`Starting AI analysis for ${pageContents.length} pages from ${websiteUrl}`);
+    console.log(`🤖 Starting AI analysis for ${pageContents.length} pages from ${websiteUrl}`);
     
     // Check OpenAI configuration first
     if (!isOpenAIConfigured) {
-      console.error('OpenAI API key is not configured - check environment variables');
+      console.error('❌ OpenAI API key is not configured - check environment variables');
       throw new Error('OpenAI API key is not configured. Please check your environment variables.');
     }
     
+    console.log('✅ OpenAI configuration validated');
+    
     // Combine all content with page context
+    console.log('📝 Combining content from all pages...');
     const combinedContent = pageContents.map(page => 
       `PAGE: ${page.title} (${page.url})\n${page.content}`
     ).join('\n\n---\n\n');
 
-    console.log(`Combined content length: ${combinedContent.length} characters`);
+    console.log(`📊 Combined content stats:`, {
+      totalLength: combinedContent.length,
+      pageCount: pageContents.length,
+      avgContentPerPage: Math.round(combinedContent.length / pageContents.length),
+      preview: combinedContent.substring(0, 200) + '...'
+    });
     
     if (combinedContent.length < 100) {
-      console.error('Insufficient content for analysis');
+      console.error('❌ Insufficient content for analysis (less than 100 chars)');
       throw new Error('Insufficient content for analysis');
     }
 
@@ -772,7 +780,13 @@ IMPORTANT GUIDELINES:
 Respond with valid JSON only.`;
 
     try {
-      console.log('Sending request to OpenAI with model: gpt-4o');
+      console.log('🚀 Sending request to OpenAI...');
+      console.log('📋 Request details:', {
+        model: 'gpt-4o',
+        temperature: 0.1,
+        max_tokens: 4000,
+        promptLength: prompt.length
+      });
       
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -790,45 +804,86 @@ Respond with valid JSON only.`;
         max_tokens: 4000
       });
 
-      console.log('OpenAI response received successfully');
+      console.log('✅ OpenAI response received successfully');
+      console.log('📊 Response metadata:', {
+        model: completion.model,
+        usage: completion.usage,
+        finishReason: completion.choices[0]?.finish_reason
+      });
 
       const responseContent = completion.choices[0]?.message?.content;
       if (!responseContent) {
+        console.error('❌ No response content from OpenAI');
         throw new Error('No response from OpenAI');
       }
 
-      console.log('Response content length:', responseContent.length);
-      console.log('Raw OpenAI response:', responseContent);
+      console.log('📝 Response content stats:', {
+        length: responseContent.length,
+        preview: responseContent.substring(0, 200) + '...'
+      });
 
       // Clean the response content (remove markdown formatting if present)
       let cleanedContent = responseContent.trim();
       
+      console.log('🧹 Cleaning response content...');
       // Remove markdown code blocks if present
       if (cleanedContent.startsWith('```json')) {
         cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        console.log('🔧 Removed JSON markdown blocks');
       } else if (cleanedContent.startsWith('```')) {
         cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        console.log('🔧 Removed generic markdown blocks');
       }
       
       // Remove any leading/trailing backticks
       cleanedContent = cleanedContent.replace(/^`+|`+$/g, '');
       
-      console.log('Cleaned response content:', cleanedContent.substring(0, 200) + '...');
+      console.log('🧹 Content cleaned, parsing JSON...');
 
       // Parse and validate the JSON response
-      const analysisData = JSON.parse(cleanedContent);
-      const validatedAnalysis = ICPAnalysisSchema.parse(analysisData);
-      
-      console.log('AI analysis validation successful');
-      
-      return validatedAnalysis;
+      let analysisData;
+      try {
+        analysisData = JSON.parse(cleanedContent);
+        console.log('✅ JSON parsing successful');
+      } catch (parseError) {
+        console.error('❌ JSON parsing failed:', parseError);
+        console.error('🔍 Raw cleaned content that failed to parse:', cleanedContent);
+        throw new Error(`Failed to parse AI response as JSON: ${parseError instanceof Error ? parseError.message : 'Unknown parse error'}`);
+      }
+
+      console.log('🔍 Validating analysis structure...');
+      console.log('📊 Analysis preview:', {
+        core_offer: analysisData.core_offer?.substring(0, 100) + '...',
+        industry: analysisData.industry,
+        confidence_score: analysisData.confidence_score,
+        personas_count: analysisData.target_personas?.length,
+        case_studies_count: analysisData.case_studies?.length
+      });
+
+      try {
+        const validatedAnalysis = ICPAnalysisSchema.parse(analysisData);
+        console.log('✅ AI analysis validation successful');
+        console.log('🎯 Final analysis summary:', {
+          confidence_score: validatedAnalysis.confidence_score,
+          personas: validatedAnalysis.target_personas.length,
+          case_studies: validatedAnalysis.case_studies.length,
+          competitive_advantages: validatedAnalysis.competitive_advantages.length,
+          tech_stack: validatedAnalysis.tech_stack.length
+        });
+        
+        return validatedAnalysis;
+      } catch (validationError) {
+        console.error('❌ Analysis validation failed:', validationError);
+        console.error('🔍 Raw analysis data that failed validation:', JSON.stringify(analysisData, null, 2));
+        throw new Error(`AI response validation failed: ${validationError instanceof Error ? validationError.message : 'Unknown validation error'}`);
+      }
 
     } catch (error) {
-      console.error('Error in AI analysis:', error);
+      console.error('💥 Error in AI analysis:', error);
       
       // Log more details about the error
       if (error instanceof Error) {
-        console.error('Error details:', {
+        console.error('❌ Error details:', {
           name: error.name,
           message: error.message,
           stack: error.stack?.substring(0, 500)
@@ -846,6 +901,8 @@ Respond with valid JSON only.`;
 
   // Add a fast analysis method for better UX
   async analyzeWebsiteFast(websiteUrl: string): Promise<ComprehensiveICPAnalysis> {
+    console.log(`🚀 Fast analysis started for: ${websiteUrl}`);
+    
     // Use optimized settings for speed
     const originalMaxPages = this.maxPages;
     const originalTimeout = this.timeout;
@@ -854,23 +911,32 @@ Respond with valid JSON only.`;
     this.maxPages = 6; // Reduce to 6 most important pages
     this.timeout = 15000; // 15-second timeout instead of 30
     
+    console.log(`⚙️ Fast analysis settings: ${this.maxPages} pages, ${this.timeout}ms timeout`);
+    
     try {
       // Try browser-based analysis first
-      return await this.analyzeWebsite(websiteUrl);
+      console.log('🌐 Attempting browser-based analysis...');
+      const result = await this.analyzeWebsite(websiteUrl);
+      console.log('✅ Browser-based analysis succeeded');
+      return result;
     } catch (error) {
-      console.warn('Browser-based analysis failed, falling back to browser-free mode:', error);
+      console.warn('⚠️ Browser-based analysis failed, falling back to browser-free mode:', error);
       
       // Fallback to browser-free analysis for cloud environments
       try {
-        return await this.analyzeWebsiteNoBrowser(websiteUrl);
+        console.log('🔄 Starting browser-free fallback analysis...');
+        const result = await this.analyzeWebsiteNoBrowser(websiteUrl);
+        console.log('✅ Browser-free analysis succeeded');
+        return result;
       } catch (fallbackError) {
-        console.error('Both browser and browser-free analysis failed:', fallbackError);
+        console.error('💥 Both browser and browser-free analysis failed:', fallbackError);
         throw new Error(`Analysis failed: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
       }
     } finally {
       // Restore original settings
       this.maxPages = originalMaxPages;
       this.timeout = originalTimeout;
+      console.log(`🔧 Restored original settings: ${this.maxPages} pages, ${this.timeout}ms timeout`);
     }
   }
 
@@ -904,45 +970,64 @@ Respond with valid JSON only.`;
   // Add browser-free analysis for cloud environments
   async analyzeWebsiteNoBrowser(websiteUrl: string): Promise<ComprehensiveICPAnalysis> {
     try {
-      console.log(`Starting browser-free analysis of ${websiteUrl}`);
+      console.log(`🖥️ Starting browser-free analysis of ${websiteUrl}`);
       
       // Step 1: Discover pages without browser
+      console.log('🔍 Step 1: Discovering pages without browser...');
       const pages = await this.discoverPagesNoBrowser(websiteUrl);
-      console.log(`Found ${pages.length} pages to analyze`);
+      console.log(`📋 Found ${pages.length} pages to analyze:`, pages);
 
       if (pages.length === 0) {
+        console.error('❌ No pages found to analyze');
         throw new Error('No pages found to analyze');
       }
 
       // Step 2: Fetch content without browser
+      console.log('📄 Step 2: Fetching content without browser...');
       const pageContents = await this.fetchPagesNoBrowser(pages);
       
-      console.log(`Successfully fetched ${pageContents.length} pages out of ${pages.length} discovered`);
+      console.log(`📊 Successfully fetched ${pageContents.length} pages out of ${pages.length} discovered`);
+      
+      // Log content details for debugging
+      pageContents.forEach((page, index) => {
+        console.log(`📝 Page ${index + 1}: ${page.url} - ${page.content.length} chars, title: "${page.title}"`);
+      });
       
       // Step 3: Handle different content scenarios
       if (pageContents.length === 0) {
-        console.warn('No content fetched, attempting fallback analysis with URL only');
+        console.warn('⚠️ No content fetched, attempting fallback analysis with URL only');
         return await this.performFallbackAnalysis(websiteUrl, pages);
       }
       
       // If we have very little content, try to supplement with URL analysis
-      if (pageContents.length < 2 || pageContents.every(p => p.content.length < 200)) {
-        console.warn('Very limited content available, supplementing with URL analysis');
+      const minContentLength = 200;
+      const hasMinimalContent = pageContents.length < 2 || pageContents.every(p => p.content.length < minContentLength);
+      
+      if (hasMinimalContent) {
+        console.warn(`⚠️ Very limited content available (${pageContents.length} pages, max ${Math.max(...pageContents.map(p => p.content.length))} chars), supplementing with URL analysis`);
+        
+        console.log('🔍 Performing URL-based analysis...');
         const urlAnalysis = await this.analyzeFromUrl(websiteUrl);
         
         // Merge URL analysis with any content we have
-        const contentAnalysis = pageContents.length > 0 
-          ? await this.performAIAnalysis(pageContents, websiteUrl)
-          : urlAnalysis;
-          
-        return this.mergeAnalyses(urlAnalysis, contentAnalysis);
+        if (pageContents.length > 0) {
+          console.log('🔗 Merging URL analysis with limited content analysis...');
+          const contentAnalysis = await this.performAIAnalysis(pageContents, websiteUrl);
+          const merged = this.mergeAnalyses(urlAnalysis, contentAnalysis);
+          console.log('✅ Merged analysis complete with confidence:', merged.confidence_score);
+          return merged;
+        } else {
+          console.log('📋 Using URL-only analysis');
+          return urlAnalysis;
+        }
       }
 
       // Step 4: Normal analysis with good content
+      console.log('🧠 Step 4: Performing AI analysis with good content...');
       const analysis = await this.performAIAnalysis(pageContents, websiteUrl);
 
-      console.log('Browser-free analysis complete!', {
-        coreOffer: analysis.core_offer,
+      console.log('✅ Browser-free analysis complete!', {
+        coreOffer: analysis.core_offer?.substring(0, 100) + '...',
         industry: analysis.industry,
         confidence: analysis.confidence_score,
         personasFound: analysis.target_personas.length
@@ -951,16 +1036,17 @@ Respond with valid JSON only.`;
       return analysis;
 
     } catch (error) {
-      console.error('Error in browser-free website analysis:', error);
+      console.error('💥 Error in browser-free website analysis:', error);
       
       // Ultimate fallback: try to analyze just from the URL
       try {
-        console.log('Attempting ultimate fallback: URL-only analysis');
+        console.log('🆘 Attempting ultimate fallback: URL-only analysis');
         const fallbackAnalysis = await this.analyzeFromUrl(websiteUrl);
         fallbackAnalysis.confidence_score = Math.min(fallbackAnalysis.confidence_score, 0.3); // Lower confidence
+        console.log('⚠️ Ultimate fallback analysis created with confidence:', fallbackAnalysis.confidence_score);
         return fallbackAnalysis;
       } catch (fallbackError) {
-        console.error('Even fallback analysis failed:', fallbackError);
+        console.error('💥 Even fallback analysis failed:', fallbackError);
         throw new Error(`Failed to analyze website: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
@@ -968,27 +1054,37 @@ Respond with valid JSON only.`;
 
   // Fallback analysis when no content can be fetched
   private async performFallbackAnalysis(websiteUrl: string, discoveredPages: string[]): Promise<ComprehensiveICPAnalysis> {
-    console.log('Performing fallback analysis with URL and page structure only');
+    console.log('🆘 Performing fallback analysis with URL and page structure only');
+    console.log('📋 Discovered pages for structure analysis:', discoveredPages);
     
     const urlAnalysis = await this.analyzeFromUrl(websiteUrl);
     
     // Enhance with page structure insights
+    console.log('🔍 Analyzing page structure for additional insights...');
     const pageStructureInsights = this.analyzePageStructure(discoveredPages);
+    console.log('📊 Page structure insights:', pageStructureInsights);
     
-    return {
+    const result = {
       ...urlAnalysis,
       confidence_score: Math.min(urlAnalysis.confidence_score, 0.2), // Very low confidence
       icp_summary: `${urlAnalysis.icp_summary}\n\nNote: This analysis is based on URL and page structure only due to content fetching limitations.`,
       tech_stack: [...urlAnalysis.tech_stack, ...pageStructureInsights.techStack],
       competitive_advantages: [...urlAnalysis.competitive_advantages, ...pageStructureInsights.advantages]
     };
+    
+    console.log('⚠️ Fallback analysis complete with confidence:', result.confidence_score);
+    return result;
   }
 
   // Analyze website based on URL patterns and domain info
   private async analyzeFromUrl(websiteUrl: string): Promise<ComprehensiveICPAnalysis> {
+    console.log('🔗 Starting URL-based analysis for:', websiteUrl);
+    
     const baseUrl = new Url(websiteUrl);
     const domain = baseUrl.hostname;
     const path = baseUrl.pathname;
+    
+    console.log('📊 URL components:', { domain, path });
     
     // Extract insights from URL structure
     const urlInsights = {
@@ -999,6 +1095,8 @@ Respond with valid JSON only.`;
       hasIndustryKeywords: this.extractIndustryFromUrl(domain + path),
       hasTechKeywords: /tech|ai|ml|cloud|data|analytics|automation/.test(domain + path)
     };
+
+    console.log('🔍 URL insights extracted:', urlInsights);
 
     // Generate basic analysis from URL
     const prompt = `Based on this website URL: ${websiteUrl}
@@ -1015,6 +1113,7 @@ Respond with valid JSON only.`;
     Please provide a basic ICP analysis based on the URL structure and domain name. This is a fallback analysis when content cannot be fetched.`;
 
     try {
+      console.log('🤖 Requesting AI analysis for URL-only data...');
       const completion = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
@@ -1032,15 +1131,21 @@ Respond with valid JSON only.`;
       });
 
       const analysisText = completion.choices[0].message.content;
+      console.log('✅ AI URL analysis received, parsing response...');
       
       // Parse the AI response into structured format
-      return this.parseBasicAnalysis(analysisText || '', websiteUrl);
+      const result = this.parseBasicAnalysis(analysisText || '', websiteUrl);
+      console.log('✅ URL-based analysis complete with confidence:', result.confidence_score);
+      return result;
       
     } catch (error) {
-      console.error('Error in URL-based analysis:', error);
+      console.error('💥 Error in URL-based AI analysis:', error);
       
       // Return a very basic fallback structure
-      return this.createMinimalAnalysis(websiteUrl, urlInsights);
+      console.log('🆘 Creating minimal analysis as last resort...');
+      const result = this.createMinimalAnalysis(websiteUrl, urlInsights);
+      console.log('⚠️ Minimal analysis created with confidence:', result.confidence_score);
+      return result;
     }
   }
 
@@ -1199,30 +1304,38 @@ Respond with valid JSON only.`;
     const baseUrl = new Url(websiteUrl);
     const discoveredUrls = new Set<string>();
     
-    // Add the main URL first
+    // ALWAYS start with the homepage - this is the most important page
     discoveredUrls.add(websiteUrl);
     
-    // Add high-priority pages
-    this.addHighPriorityPages(baseUrl, discoveredUrls);
-
     try {
-      // Check robots.txt and sitemap (this works without browser)
-      await Promise.race([
-        this.checkRobotsAndSitemap(baseUrl.origin, discoveredUrls),
-        new Promise(resolve => setTimeout(resolve, 3000)) // Shorter timeout for cloud
-      ]);
-
-      // Try to fetch homepage and extract links
+      // First priority: Extract real links from homepage
+      console.log('🔍 Extracting real links from homepage...');
       await Promise.race([
         this.extractLinksNoBrowser(websiteUrl, baseUrl, discoveredUrls),
+        new Promise(resolve => setTimeout(resolve, 5000)) // Increased timeout for homepage parsing
+      ]);
+
+      // Second priority: Check robots.txt and sitemap
+      console.log('🔍 Checking sitemaps...');
+      await Promise.race([
+        this.checkRobotsAndSitemap(baseUrl.origin, discoveredUrls),
         new Promise(resolve => setTimeout(resolve, 3000))
       ]);
 
+      // Only add generic pages if we found very few real pages
+      if (discoveredUrls.size <= 2) {
+        console.log('⚠️ Found very few pages, adding common page patterns as fallback...');
+        this.addHighPriorityPages(baseUrl, discoveredUrls);
+      }
+
     } catch (error) {
       console.error('Error discovering pages (browser-free):', error);
+      // Even if discovery fails, we still have the homepage
     }
 
     const urlArray = Array.from(discoveredUrls);
+    console.log(`📋 Discovered ${urlArray.length} total pages:`, urlArray);
+    
     const prioritizedUrls = this.prioritizeUrls(urlArray, baseUrl);
     
     return prioritizedUrls.slice(0, this.maxPages);
@@ -1266,28 +1379,133 @@ Respond with valid JSON only.`;
 
   // Fetch pages using simple HTTP requests
   private async fetchPagesNoBrowser(urls: string[]): Promise<Array<{url: string, content: string, title: string}>> {
-    const results: Array<{url: string, content: string, title: string}> = [];
     const urlsToFetch = urls.slice(0, this.maxPages);
     
     console.log(`Starting to fetch ${urlsToFetch.length} pages:`, urlsToFetch);
     
-    // Parallel fetching with improved error handling
-    const fetchPromises = urlsToFetch.map(async (url, index) => {
+    // CRITICAL: Separate homepage (first URL) from other pages for special handling
+    const homepage = urlsToFetch[0];
+    const otherPages = urlsToFetch.slice(1);
+    
+    // First, ensure we ALWAYS get the homepage content
+    let homepageResult: {url: string, content: string, title: string} | null = null;
+    
+    try {
+      console.log(`🏠 Fetching homepage first (critical): ${homepage}`);
+      homepageResult = await this.fetchSinglePageNoBrowser(homepage, { retryCount: 2, timeout: 20000 });
+      
+      if (homepageResult && homepageResult.content.length > 100) {
+        console.log(`✅ Homepage successfully fetched: ${homepageResult.content.length} chars`);
+      } else {
+        console.warn(`⚠️ Homepage fetch returned minimal content: ${homepageResult?.content.length || 0} chars`);
+      }
+    } catch (error) {
+      console.error(`❌ Critical: Homepage fetch failed:`, error);
+      // Still try to continue with a basic result
+      homepageResult = {
+        url: homepage,
+        title: 'Homepage',
+        content: `Website: ${homepage} - Content could not be fetched`
+      };
+    }
+    
+    // Then fetch other pages in parallel (with more lenient error handling)
+    const otherResults: Array<{url: string, content: string, title: string} | null> = [];
+    
+    if (otherPages.length > 0) {
+      console.log(`📄 Fetching ${otherPages.length} additional pages...`);
+      
+      const fetchPromises = otherPages.map(async (url, index) => {
+        try {
+          console.log(`Fetching page ${index + 1}/${otherPages.length}: ${url}`);
+          return await this.fetchSinglePageNoBrowser(url, { retryCount: 1, timeout: 15000 });
+        } catch (error) {
+          console.warn(`Failed to fetch ${url}:`, error);
+          return null;
+        }
+      });
+
+      // Execute with concurrency limit
+      const concurrencyLimit = 3;
+      for (let i = 0; i < fetchPromises.length; i += concurrencyLimit) {
+        const batch = fetchPromises.slice(i, i + concurrencyLimit);
+        const batchResults = await Promise.all(batch);
+        otherResults.push(...batchResults);
+        
+        // Small delay between batches
+        if (i + concurrencyLimit < fetchPromises.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+    }
+
+    // Combine results: Always include homepage, then add successful other pages
+    const allResults: Array<{url: string, content: string, title: string}> = [];
+    
+    if (homepageResult) {
+      allResults.push(homepageResult);
+    }
+    
+    // Add other successful pages
+    const validOtherResults = otherResults.filter((result): result is {url: string, content: string, title: string} => 
+      result !== null && result.content.length > 30
+    );
+    
+    allResults.push(...validOtherResults);
+
+    const failedCount = otherResults.filter(r => r === null).length;
+    console.log(`📊 Fetch results: ${allResults.length} successful (${homepageResult ? 'homepage + ' : ''}${validOtherResults.length} others), ${failedCount} failed`);
+    
+    // Log detailed results
+    allResults.forEach(result => {
+      console.log(`✓ ${result.url}: ${result.content.length} chars, title: "${result.title}"`);
+    });
+    
+    if (failedCount > 0) {
+      otherResults.forEach((result, index) => {
+        if (result === null) {
+          console.log(`✗ ${otherPages[index]}: failed to fetch`);
+        }
+      });
+    }
+
+    // Ensure we return at least the homepage
+    if (allResults.length === 0) {
+      console.error(`🚨 Critical: No pages could be fetched, including homepage!`);
+      // Return minimal homepage result as absolute fallback
+      return [{
+        url: homepage,
+        title: 'Homepage - Fetch Failed',
+        content: `Unable to fetch content from ${homepage}. This appears to be a business website.`
+      }];
+    }
+
+    return allResults;
+  }
+
+  // Helper method to fetch a single page with retry logic
+  private async fetchSinglePageNoBrowser(
+    url: string, 
+    options: { retryCount?: number; timeout?: number } = {}
+  ): Promise<{url: string, content: string, title: string} | null> {
+    const { retryCount = 1, timeout = 15000 } = options;
+    
+    for (let attempt = 0; attempt <= retryCount; attempt++) {
       try {
-        console.log(`Fetching page ${index + 1}/${urlsToFetch.length}: ${url}`);
+        if (attempt > 0) {
+          console.log(`🔄 Retry ${attempt}/${retryCount} for ${url}`);
+        }
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased timeout
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
         
         const response = await fetch(url, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'DNT': '1',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1'
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
           },
           signal: controller.signal
         });
@@ -1295,16 +1513,18 @@ Respond with valid JSON only.`;
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-          console.warn(`HTTP ${response.status} for ${url}`);
-          // Don't throw immediately, try to get what we can
-          if (response.status >= 500) {
-            throw new Error(`Server error: HTTP ${response.status}`);
-          }
-          // For 4xx errors, continue but log the issue
-          if (response.status >= 400) {
-            console.warn(`Client error HTTP ${response.status} for ${url}, skipping`);
+          if (response.status >= 400 && response.status < 500) {
+            // Client errors (404, 403, etc.) - don't retry
+            console.warn(`Client error HTTP ${response.status} for ${url}, not retrying`);
             return null;
           }
+          if (response.status >= 500 && attempt < retryCount) {
+            // Server errors - might be temporary, retry
+            console.warn(`Server error HTTP ${response.status} for ${url}, will retry`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+            continue;
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const html = await response.text();
@@ -1313,11 +1533,12 @@ Respond with valid JSON only.`;
         // Extract title
         const title = $('title').text().trim() || 
                      $('h1').first().text().trim() || 
+                     $('meta[property="og:title"]').attr('content')?.trim() ||
                      url.split('/').pop() || 
                      'Untitled Page';
 
-        // Extract main content (remove scripts, styles, etc.)
-        $('script, style, nav, footer, header, .nav, .footer, .header, .sidebar, .menu, .navigation, .breadcrumb, .cookie-banner, .popup, .modal').remove();
+        // Extract main content with better selectors
+        $('script, style, nav, footer, header, .nav, .footer, .header, .sidebar, .menu, .navigation, .breadcrumb, .cookie-banner, .popup, .modal, .advertisement, .ads').remove();
         
         // Try to get main content in order of preference
         let content = '';
@@ -1329,7 +1550,8 @@ Respond with valid JSON only.`;
           '.post-content',
           '.page-content',
           'article',
-          '.container',
+          '.container .content',
+          '.main',
           'body'
         ];
         
@@ -1344,13 +1566,14 @@ Respond with valid JSON only.`;
         // Clean up content
         content = content.replace(/\s+/g, ' ').trim();
 
-        // More lenient content validation
-        if (content.length < 50) {
-          console.warn(`Very short content (${content.length} chars) for ${url}: "${content.substring(0, 100)}..."`);
-          // Don't reject immediately, let the filter handle it
+        // Content validation
+        if (content.length < 20) {
+          console.warn(`Very short content (${content.length} chars) for ${url}`);
+          if (attempt < retryCount) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
+          }
         }
-
-        console.log(`Successfully fetched ${url}: ${content.length} chars, title: "${title}"`);
 
         return {
           url,
@@ -1359,43 +1582,17 @@ Respond with valid JSON only.`;
         };
         
       } catch (error) {
-        console.error(`Error fetching ${url}:`, error);
-        return null;
-      }
-    });
-
-    // Execute with concurrency limit
-    const concurrencyLimit = 3; // Reduced to be more respectful
-    const batchedResults: Array<{url: string, content: string, title: string} | null> = [];
-    
-    for (let i = 0; i < fetchPromises.length; i += concurrencyLimit) {
-      const batch = fetchPromises.slice(i, i + concurrencyLimit);
-      const batchResults = await Promise.all(batch);
-      batchedResults.push(...batchResults);
-      
-      // Small delay between batches to be respectful
-      if (i + concurrencyLimit < fetchPromises.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.error(`Attempt ${attempt + 1} failed for ${url}:`, error);
+        
+        if (attempt < retryCount) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        } else {
+          throw error;
+        }
       }
     }
-
-    // Filter successful results with more lenient criteria
-    const validResults = batchedResults.filter((result): result is {url: string, content: string, title: string} => 
-      result !== null && result.content.length > 30 // Reduced from 100 to 30
-    );
-
-    console.log(`Fetch results: ${validResults.length} valid out of ${batchedResults.length} total, ${batchedResults.filter(r => r === null).length} failed`);
     
-    // Log detailed results for debugging
-    validResults.forEach(result => {
-      console.log(`✓ ${result.url}: ${result.content.length} chars`);
-    });
-    
-    batchedResults.filter(r => r === null).forEach((_, index) => {
-      console.log(`✗ ${urlsToFetch[index]}: failed to fetch`);
-    });
-
-    return validResults;
+    return null;
   }
 }
 
@@ -1421,32 +1618,40 @@ export async function analyzeWebsiteICP(websiteUrl: string, fast: boolean = true
   
   // Step 2: Optional connectivity check (can be disabled to speed up analysis)
   try {
+    console.log('🌐 Checking URL connectivity...');
     await validateUrlConnectivity(normalizedUrl);
+    console.log('✅ URL connectivity check passed');
   } catch (connectivityError) {
     const errorMessage = connectivityError instanceof Error ? connectivityError.message : String(connectivityError);
     console.warn(`⚠️ Connectivity check failed: ${errorMessage}`);
-    console.log('Proceeding with analysis despite connectivity warning...');
+    console.log('🔄 Proceeding with analysis despite connectivity warning...');
     // Don't throw here - sometimes sites block HEAD requests but allow analysis
   }
   
   const service = new AIICPService();
   
   try {
+    console.log(`⚙️ Analysis mode: ${fast ? 'FAST' : 'COMPREHENSIVE'}`);
+    
     if (fast) {
       // Use optimized fast analysis (6 pages, 15s timeout) with browser fallback
+      console.log('🚀 Starting fast analysis with browser fallback...');
       return await service.analyzeWebsiteFast(normalizedUrl);
     } else {
       // Use comprehensive analysis (15 pages, 30s timeout)
+      console.log('🔬 Starting comprehensive analysis...');
       return await service.analyzeWebsite(normalizedUrl);
     }
   } catch (error) {
+    console.error('💥 Analysis failed:', error);
+    
     // If comprehensive analysis fails, try browser-free as last resort
     if (!fast) {
-      console.warn('Comprehensive analysis failed, trying browser-free fallback');
+      console.warn('🔄 Comprehensive analysis failed, trying browser-free fallback');
       try {
         return await service.analyzeWebsiteNoBrowser(normalizedUrl);
       } catch (fallbackError) {
-        console.error('All analysis methods failed:', fallbackError);
+        console.error('💥 All analysis methods failed:', fallbackError);
         throw error; // Throw original error
       }
     } else {

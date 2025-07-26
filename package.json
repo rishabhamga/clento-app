@@ -8,14 +8,16 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p ${PORT:-8080}",
     "lint": "next lint --max-warnings=0",
     "lint:fix": "next lint --fix",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "type-check": "tsc --noEmit",
-    "ci": "npm run lint && npm run type-check && npm run test"
+    "ci": "npm run lint && npm run type-check && npm run test",
+    "postinstall": "npm run puppeteer:install",
+    "puppeteer:install": "npx puppeteer browsers install chrome || echo 'Puppeteer browser install failed, continuing...'"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.2.4",
@@ -34,6 +36,9 @@
     "autoprefixer": "10.4.17",
     "aws-sdk": "^2.1692.0",
     "cheerio": "^1.0.0-rc.12",
+    "csv-parse": "^5.5.0",
+    "uuid": "^9.0.0",
+    "p-limit": "^4.0.0",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "dotenv": "^17.0.1",

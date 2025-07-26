@@ -12,6 +12,7 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react'
 import { FiLinkedin, FiCheck } from 'react-icons/fi'
+import { parseSimpleMarkdown } from '@/lib/utils/markdown-parser'
 
 interface LinkedInMessageProps {
   senderName: string
@@ -139,7 +140,7 @@ export const LinkedInMessageFrame: React.FC<LinkedInMessageProps> = ({
             position="relative"
           >
             <Text fontSize="sm" lineHeight="tall" whiteSpace="pre-wrap">
-              {message}
+              {parseSimpleMarkdown(message)}
             </Text>
           </Box>
         </HStack>

@@ -10,6 +10,14 @@ const openai = new OpenAI({
 })
 
 // Types for the request and response
+interface OutreachData {
+  campaignLanguage: string
+  signOffs: string[]
+  toneOfVoice: string
+  callsToAction: string[]
+  messagePersonalization: boolean
+}
+
 interface GenerateMessagesRequest {
   websiteAnalysis: {
     core_offer: string
@@ -22,6 +30,7 @@ interface GenerateMessagesRequest {
     social_proof: string[]
     website_url: string
   }
+  outreach?: OutreachData
   messageCount?: number // Optional, defaults to 5 each
 }
 
@@ -121,19 +130,36 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateM
       }, { status: 400 })
     }
 
-    const messageCount = body.messageCount || 5
-    const { websiteAnalysis } = body
+    const messageCount = body.messageCount || 1
+    const { websiteAnalysis, outreach } = body
 
     console.log('⚙️ [SAMPLE MESSAGES API] Starting message generation with count:', messageCount)
+    console.log('📊 [SAMPLE MESSAGES API] Website analysis structure:', {
+      coreOffer: websiteAnalysis.core_offer,
+      industry: websiteAnalysis.industry,
+      businessModel: websiteAnalysis.business_model,
+      icpSummary: websiteAnalysis.icp_summary,
+      targetPersonasCount: websiteAnalysis.target_personas?.length || 0,
+      competitiveAdvantagesCount: websiteAnalysis.competitive_advantages?.length || 0,
+      techStackCount: websiteAnalysis.tech_stack?.length || 0,
+      socialProofCount: websiteAnalysis.social_proof?.length || 0
+    })
+    console.log('🎛️ [SAMPLE MESSAGES API] Outreach configuration:', {
+      campaignLanguage: outreach?.campaignLanguage,
+      toneOfVoice: outreach?.toneOfVoice,
+      signOffsCount: outreach?.signOffs?.length || 0,
+      callsToActionCount: outreach?.callsToAction?.length || 0,
+      messagePersonalization: outreach?.messagePersonalization
+    })
 
     // Generate LinkedIn messages
     console.log('📱 [SAMPLE MESSAGES API] Generating LinkedIn messages...')
-    const linkedinMessages = await generateLinkedInMessages(websiteAnalysis, messageCount)
+    const linkedinMessages = await generateLinkedInMessages(websiteAnalysis, messageCount, outreach)
     console.log('✅ [SAMPLE MESSAGES API] LinkedIn messages generated:', linkedinMessages.length)
     
     // Generate email messages  
     console.log('📧 [SAMPLE MESSAGES API] Generating email messages...')
-    const emailMessages = await generateEmailMessages(websiteAnalysis, messageCount)
+    const emailMessages = await generateEmailMessages(websiteAnalysis, messageCount, outreach)
     console.log('✅ [SAMPLE MESSAGES API] Email messages generated:', emailMessages.length)
 
     const response = {
@@ -170,7 +196,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateM
 
 async function generateLinkedInMessages(
   analysis: GenerateMessagesRequest['websiteAnalysis'], 
-  count: number
+  count: number,
+  outreach?: OutreachData
 ): Promise<GeneratedMessage[]> {
   console.log('📱 [LINKEDIN GEN] Starting LinkedIn message generation:', { count, industry: analysis.industry })
   const messages: GeneratedMessage[] = []
@@ -196,7 +223,8 @@ async function generateLinkedInMessages(
           role: 'Business Development Manager',
           company: getCompanyNameFromUrl(analysis.website_url)
         },
-        messageVariant: variant
+        messageVariant: variant,
+        toneOfVoice: outreach?.toneOfVoice || 'Professional'
       }
       
       console.log(`🎯 [LINKEDIN GEN] Message ${i + 1} context:`, {
@@ -207,6 +235,26 @@ async function generateLinkedInMessages(
       
       const prompt = createLinkedInMessagePrompt(context)
       console.log(`📋 [LINKEDIN GEN] Generated prompt for message ${i + 1}, length:`, prompt.length)
+      console.log(`📝 [LINKEDIN GEN] Full prompt for message ${i + 1}:`)
+      console.log('='.repeat(80))
+      console.log(prompt)
+      console.log('='.repeat(80))
+      console.log(`🎯 [LINKEDIN GEN] Context for message ${i + 1}:`, {
+        recipient: {
+          name: prospect.name,
+          role: prospect.role,
+          company: prospect.company,
+          industry: prospect.industry
+        },
+        personalization: {
+          type: prospect.personalization.type,
+          content: prospect.personalization.content,
+          context: prospect.personalization.context
+        },
+        sender: context.sender,
+        messageVariant: variant,
+        outreachSettings: outreach || 'none'
+      })
       
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -273,12 +321,21 @@ async function generateLinkedInMessages(
   }
   
   console.log(`🎉 [LINKEDIN GEN] Completed LinkedIn message generation: ${messages.length} messages`)
-  return messages
+  
+  // If we don't have enough messages, add fallback messages to reach the target count
+  if (messages.length < count) {
+    const additionalFallbacks = generateFallbackLinkedInMessages(analysis, count - messages.length)
+    console.log(`🔄 [LINKEDIN GEN] Adding ${additionalFallbacks.length} additional fallback messages`)
+    messages.push(...additionalFallbacks)
+  }
+  
+  return messages.slice(0, count) // Ensure we don't exceed the requested count
 }
 
 async function generateEmailMessages(
   analysis: GenerateMessagesRequest['websiteAnalysis'], 
-  count: number
+  count: number,
+  outreach?: OutreachData
 ): Promise<GeneratedMessage[]> {
   console.log('📧 [EMAIL GEN] Starting email message generation:', { count, industry: analysis.industry })
   const messages: GeneratedMessage[] = []
@@ -305,7 +362,8 @@ async function generateEmailMessages(
           company: getCompanyNameFromUrl(analysis.website_url),
           email: `alex@${getCompanyNameFromUrl(analysis.website_url).toLowerCase()}.com`
         },
-        messageVariant: variant
+        messageVariant: variant,
+        toneOfVoice: outreach?.toneOfVoice || 'Professional'
       }
       
       console.log(`🎯 [EMAIL GEN] Message ${i + 1} context:`, {
@@ -316,6 +374,26 @@ async function generateEmailMessages(
       
       const prompt = createEmailMessagePrompt(context)
       console.log(`📋 [EMAIL GEN] Generated prompt for message ${i + 1}, length:`, prompt.length)
+      console.log(`📝 [EMAIL GEN] Full prompt for message ${i + 1}:`)
+      console.log('='.repeat(80))
+      console.log(prompt)
+      console.log('='.repeat(80))
+      console.log(`🎯 [EMAIL GEN] Context for message ${i + 1}:`, {
+        recipient: {
+          name: prospect.name,
+          role: prospect.role,
+          company: prospect.company,
+          industry: prospect.industry
+        },
+        personalization: {
+          type: prospect.personalization.type,
+          content: prospect.personalization.content,
+          context: prospect.personalization.context
+        },
+        sender: context.sender,
+        messageVariant: variant,
+        outreachSettings: outreach || 'none'
+      })
       
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -390,19 +468,39 @@ async function generateEmailMessages(
       // Add fallback message if individual generation fails
       const fallbackMessages = generateFallbackEmailMessages(analysis, 1)
       if (fallbackMessages.length > 0) {
+        // Update the ID to match the expected sequence
+        const fallbackMessage = {
+          ...fallbackMessages[0],
+          id: `email_fallback_${Date.now()}_${i}`
+        }
         console.log(`🔄 [EMAIL GEN] Using fallback message for ${i + 1}`)
-        messages.push(fallbackMessages[0])
+        messages.push(fallbackMessage)
       }
     }
   }
   
   console.log(`🎉 [EMAIL GEN] Completed email message generation: ${messages.length} messages`)
-  return messages
+  
+  // If we don't have enough messages, add fallback messages to reach the target count
+  if (messages.length < count) {
+    const additionalFallbacks = generateFallbackEmailMessages(analysis, count - messages.length)
+    console.log(`🔄 [EMAIL GEN] Adding ${additionalFallbacks.length} additional fallback messages`)
+    messages.push(...additionalFallbacks)
+  }
+  
+  return messages.slice(0, count) // Ensure we don't exceed the requested count
 }
 
-function createLinkedInPrompt(analysis: GenerateMessagesRequest['websiteAnalysis'], count: number): string {
+function createLinkedInPrompt(
+  analysis: GenerateMessagesRequest['websiteAnalysis'], 
+  count: number,
+  outreach?: OutreachData
+): string {
   const primaryPersona = analysis.target_personas?.[0] || {}
   const competitiveAdvantages = analysis.competitive_advantages?.slice(0, 3).join(', ') || 'innovative solutions'
+  const tone = outreach?.toneOfVoice || 'Professional'
+  const ctaExamples = outreach?.callsToAction?.slice(0, 3).join(' | ') || 'Interested in learning more?'
+  const signOffExample = outreach?.signOffs?.[0] || 'Best'
   
   return `Generate ${count} hyper-personalized LinkedIn messages for selling "${analysis.core_offer}" to prospects in the "${analysis.industry}" industry.
 
@@ -415,38 +513,31 @@ BUSINESS CONTEXT:
 - Business Model: ${analysis.business_model}
 - Key Advantages: ${competitiveAdvantages}
 - ICP Summary: ${analysis.icp_summary}
+- Tone of Voice: ${tone}
 
 LINKEDIN MESSAGE REQUIREMENTS:
 1. Each message must be under 150 words
 2. Include realistic personalization (recent post, company update, industry news)
 3. Reference specific pain points relevant to their role
 4. Mention 1-2 competitive advantages naturally
-5. End with a soft, low-friction ask
-6. Use conversational, not sales-y tone
-7. Each message should feel completely unique
-
-PERSONALIZATION SCENARIOS (use different ones):
-- Recent LinkedIn post about industry challenges
-- Company funding announcement or product launch
-- Industry trend affecting their business
-- Recent job change or promotion
-- Company expansion or new market entry
-- Published article or speaking engagement
+5. End with a soft, low-friction ask like one of: ${ctaExamples}
+6. Use ${tone.toLowerCase()} tone
+7. Sign-off with "${signOffExample}"
 
 OUTPUT FORMAT:
-For each message, provide:
-1. PERSONALIZATION_TYPE: [recent_post|company_news|funding|product_launch|role_change|industry_trend]
-2. PERSONALIZATION_HOOK: [specific detail being referenced]
-3. PROSPECT_PROFILE: [Name, Role, Company, Industry]
-4. MESSAGE: [full LinkedIn message]
-5. RESPONSE_RATE_ESTIMATE: [percentage]
-
-Generate ${count} completely different messages with varied personalization approaches.`
+For each message, provide JSON with keys: PERSONALIZATION_TYPE, PERSONALIZATION_HOOK, PROSPECT_PROFILE, MESSAGE, RESPONSE_RATE_ESTIMATE`
 }
 
-function createEmailPrompt(analysis: GenerateMessagesRequest['websiteAnalysis'], count: number): string {
+function createEmailPrompt(
+  analysis: GenerateMessagesRequest['websiteAnalysis'], 
+  count: number,
+  outreach?: OutreachData
+): string {
   const primaryPersona = analysis.target_personas?.[0] || {}
   const competitiveAdvantages = analysis.competitive_advantages?.slice(0, 3).join(', ') || 'innovative solutions'
+  const tone = outreach?.toneOfVoice || 'Professional'
+  const ctaExamples = outreach?.callsToAction?.slice(0, 3).join(' | ') || 'Would you be interested in learning more?'
+  const signOffExample = outreach?.signOffs?.[0] || 'Best'
   
   return `Generate ${count} hyper-personalized cold emails for selling "${analysis.core_offer}" to prospects in the "${analysis.industry}" industry.
 
@@ -459,42 +550,27 @@ BUSINESS CONTEXT:
 - Business Model: ${analysis.business_model}
 - Key Advantages: ${competitiveAdvantages}
 - ICP Summary: ${analysis.icp_summary}
+- Tone of Voice: ${tone}
 
 COLD EMAIL REQUIREMENTS:
 1. Compelling, curiosity-driven subject lines
 2. 100% personalized opening line (recent post, company news, etc.)
 3. Concise body with bullet points for easy scanning
 4. Clear WIIFM (What's In It For Me) value proposition
-5. Single, simple call-to-action
-6. Professional signature
+5. Single, simple call-to-action (e.g., ${ctaExamples})
+6. Professional signature ending with "${signOffExample}"
 7. Each email should be unique and authentic
 
-PERSONALIZATION SCENARIOS (use different ones):
-- Recent funding round or acquisition
-- New product launch or market expansion
-- Published case study or company milestone
-- Industry award or recognition
-- Recent blog post or thought leadership
-- Technology implementation or upgrade
-
 EMAIL STRUCTURE:
-1. Subject line (curiosity + benefit)
-2. Personalized opening (reference specific detail)
+1. Subject line
+2. Personalized opening
 3. Brief credibility statement
 4. 2-3 bullet points of value/benefits
-5. Soft CTA with next step
-6. Professional signature
+5. Soft CTA
+6. Signature with sign-off
 
 OUTPUT FORMAT:
-For each email, provide:
-1. PERSONALIZATION_TYPE: [recent_post|company_news|funding|product_launch|role_change|industry_trend]
-2. PERSONALIZATION_HOOK: [specific detail being referenced]
-3. PROSPECT_PROFILE: [Name, Role, Company, Industry]
-4. SUBJECT: [email subject line]
-5. EMAIL: [full email content]
-6. RESPONSE_RATE_ESTIMATE: [percentage]
-
-Generate ${count} completely different emails with varied personalization approaches.`
+For each email, provide JSON with keys: PERSONALIZATION_TYPE, PERSONALIZATION_HOOK, PROSPECT_PROFILE, SUBJECT, EMAIL, RESPONSE_RATE_ESTIMATE`
 }
 
 function parseLinkedInMessages(response: string, analysis: GenerateMessagesRequest['websiteAnalysis']): GeneratedMessage[] {
@@ -707,6 +783,8 @@ function generateFallbackLinkedInMessages(analysis: GenerateMessagesRequest['web
   console.log(`🎉 [FALLBACK] Generated ${fallbackMessages.length} LinkedIn fallback messages`)
   return fallbackMessages
 }
+
+
 
 function generateFallbackEmailMessages(analysis: GenerateMessagesRequest['websiteAnalysis'], count: number): GeneratedMessage[] {
   console.log('🔄 [FALLBACK] Generating fallback email messages:', { count, coreOffer: analysis.core_offer })

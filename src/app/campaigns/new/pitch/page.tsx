@@ -30,6 +30,7 @@ import { AnalysisDisplay } from '@/components/AnalysisDisplay'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
+import { useOrganization } from '@clerk/nextjs'
 
 // Enhanced animations
 const float = keyframes`
@@ -139,6 +140,7 @@ export default function PitchPage() {
   const toast = useToast()
   const customToast = createCustomToast(toast)
   const { user } = useUser()
+  const { organization } = useOrganization()
 
   // Enhanced color mode values with glassmorphism
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')
@@ -198,9 +200,18 @@ export default function PitchPage() {
           
           if (data.profile?.icp && typeof data.profile.icp === 'object') {
             setICPAnalysis(data.profile.icp)
+            setWebsiteAnalysis(data.profile.icp) // ✅ FIX: Set websiteAnalysis for saving
             setWebsiteUrl(data.profile.website_url || '')
             setOfferingDescription(data.profile.icp.core_offer || '')
             setShowAnalysisSection(true)
+            
+            console.log('✅ [PROFILE LOADED] Website analysis loaded from profile:', {
+              hasICPAnalysis: !!data.profile.icp,
+              hasWebsiteAnalysis: !!data.profile.icp,
+              analysisKeys: Object.keys(data.profile.icp || {}),
+              coreOffer: data.profile.icp?.core_offer,
+              websiteUrl: data.profile.website_url
+            })
             
             // Extract pain points and proof points from personas if available
             if (data.profile.icp.target_personas && data.profile.icp.target_personas.length > 0) {
@@ -315,8 +326,17 @@ export default function PitchPage() {
                 console.log('==========================')
                 
                 setICPAnalysis(resultData.analysis)
+                setWebsiteAnalysis(resultData.analysis) // ✅ FIX: Set websiteAnalysis for saving
                 setOfferingDescription(resultData.analysis.core_offer || '')
                 setShowAnalysisSection(true)
+                
+                console.log('✅ [ANALYSIS COMPLETE] Website analysis data set:', {
+                  hasICPAnalysis: !!resultData.analysis,
+                  hasWebsiteAnalysis: !!resultData.analysis,
+                  analysisKeys: Object.keys(resultData.analysis || {}),
+                  coreOffer: resultData.analysis?.core_offer,
+                  targetPersonasCount: resultData.analysis?.target_personas?.length || 0
+                })
                 
                 // Extract pain points and proof points from personas
                 if (resultData.analysis.target_personas && resultData.analysis.target_personas.length > 0) {
@@ -525,8 +545,86 @@ export default function PitchPage() {
     setEmailCoachingPoints(emailCoachingPoints.filter(point => point.id !== id))
   }
 
-  const handleContinueToOutreach = () => {
-    // Save pitch data to localStorage
+  const saveDraftToBackend = async (step: string) => {
+    try {
+      console.log('🚀 [PITCH SAVE] Starting saveDraftToBackend with step:', step)
+      console.log('📊 [PITCH SAVE] Current state variables:', {
+        websiteUrl: websiteUrl,
+        hasWebsiteAnalysis: !!websiteAnalysis,
+        websiteAnalysisType: typeof websiteAnalysis,
+        websiteAnalysisValue: websiteAnalysis,
+        offeringDescription: offeringDescription?.substring(0, 50) + '...',
+        painPointsCount: painPoints?.length || 0,
+        proofPointsCount: proofPoints?.length || 0,
+        coachingPointsCount: coachingPoints?.length || 0,
+        emailCoachingPointsCount: emailCoachingPoints?.length || 0
+      })
+      
+      const draftBody = {
+        campaignName: 'Untitled Campaign',
+        websiteUrl,
+        websiteAnalysis,
+        offeringDescription,
+        painPoints,
+        proofPoints,
+        coachingPoints,
+        emailBodyCoaching: emailCoachingPoints,
+        step
+      }
+
+      console.log('📦 [PITCH SAVE] Draft body prepared:', {
+        campaignName: draftBody.campaignName,
+        websiteUrl: draftBody.websiteUrl,
+        hasWebsiteAnalysis: !!draftBody.websiteAnalysis,
+        websiteAnalysisKeys: draftBody.websiteAnalysis ? Object.keys(draftBody.websiteAnalysis) : 'null',
+        offeringDescriptionLength: draftBody.offeringDescription?.length || 0,
+        painPointsCount: draftBody.painPoints?.length || 0,
+        proofPointsCount: draftBody.proofPoints?.length || 0,
+        step: draftBody.step
+      })
+
+      const response = await fetch('/api/campaigns/save-draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(draftBody)
+      })
+
+      console.log('📡 [PITCH SAVE] Save response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      })
+
+      if (!response.ok) {
+        const errText = await response.text()
+        console.error('❌ [PITCH SAVE] Save failed:', errText)
+        throw new Error(errText || 'Failed to save draft')
+      }
+
+      const data = await response.json()
+      console.log('✅ [PITCH SAVE] Save successful:', data)
+      return data
+    } catch (error) {
+      console.error('💥 [PITCH SAVE] Error saving draft:', error)
+      throw error
+    }
+  }
+
+  const handleContinueToOutreach = async () => {
+    console.log('🎯 [PITCH NAVIGATE] Starting handleContinueToOutreach')
+    console.log('📊 [PITCH NAVIGATE] Current state before saving:', {
+      websiteUrl: websiteUrl,
+      hasWebsiteAnalysis: !!websiteAnalysis,
+      websiteAnalysisValue: websiteAnalysis,
+      offeringDescription: offeringDescription?.substring(0, 50) + '...',
+      painPointsCount: painPoints?.length || 0,
+      proofPointsCount: proofPoints?.length || 0,
+      coachingPointsCount: coachingPoints?.length || 0,
+      emailCoachingPointsCount: emailCoachingPoints?.length || 0
+    })
+    
     const pitchData = {
       websiteUrl,
       websiteAnalysis,
@@ -536,17 +634,40 @@ export default function PitchPage() {
       coachingPoints,
       emailCoachingPoints
     }
-    
-    localStorage.setItem('campaignPitchData', JSON.stringify(pitchData))
-    
-    customToast.success({
-      title: 'Pitch Data Saved',
-      description: 'Your pitch configuration has been saved.',
+
+    console.log('💾 [PITCH NAVIGATE] Pitch data prepared for localStorage:', {
+      websiteUrl: pitchData.websiteUrl,
+      hasWebsiteAnalysis: !!pitchData.websiteAnalysis,
+      websiteAnalysisKeys: pitchData.websiteAnalysis ? Object.keys(pitchData.websiteAnalysis) : 'null',
+      websiteAnalysisValue: pitchData.websiteAnalysis,
+      offeringDescriptionLength: pitchData.offeringDescription?.length || 0,
+      painPointsCount: pitchData.painPoints?.length || 0,
+      proofPointsCount: pitchData.proofPoints?.length || 0,
+      coachingPointsCount: pitchData.coachingPoints?.length || 0,
+      emailCoachingPointsCount: pitchData.emailCoachingPoints?.length || 0
     })
-    
+
+    localStorage.setItem('campaignPitchData', JSON.stringify(pitchData))
+    console.log('✅ [PITCH NAVIGATE] Saved to localStorage')
+
+    try {
+      await saveDraftToBackend('pitch')
+      customToast.success({
+        title: 'Pitch Data Saved',
+        description: 'Your pitch configuration has been saved to your campaign draft.'
+      })
+    } catch (error) {
+      console.error('❌ [PITCH NAVIGATE] Failed to save draft:', error)
+      customToast.error({
+        title: 'Failed to Save Draft',
+        description: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
+    }
+
+    console.log('🔄 [PITCH NAVIGATE] Navigating to outreach page in 500ms')
     setTimeout(() => {
       router.push('/campaigns/new/outreach')
-    }, 1000)
+    }, 500)
   }
 
   const handleSaveDraft = async () => {
@@ -559,13 +680,21 @@ export default function PitchPage() {
       coachingPoints,
       emailCoachingPoints
     }
-    
+
     localStorage.setItem('campaignPitchData', JSON.stringify(pitchData))
-    
-    customToast.success({
-      title: 'Draft Saved',
-      description: 'Your pitch data has been saved locally.',
-    })
+
+    try {
+      await saveDraftToBackend('pitch')
+      customToast.success({
+        title: 'Draft Saved',
+        description: 'Your pitch data has been saved securely.'
+      })
+    } catch (error) {
+      customToast.error({
+        title: 'Failed to Save Draft',
+        description: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
+    }
   }
 
   const handleBackToTargeting = () => {
