@@ -35,16 +35,11 @@ interface ParsedICP {
 
   // Person-level filters
   jobTitles: string[]
-  excludeJobTitles?: string[]
   seniorities: string[]
   personLocations?: string[]
-  excludePersonLocations?: string[]
 
   // Company-level filters
-  industries: string[]
-  excludeIndustries?: string[]
   organizationLocations?: string[]
-  excludeOrganizationLocations?: string[]
   companySize: string[]
   revenueMin?: number | null
   revenueMax?: number | null
@@ -60,20 +55,11 @@ interface ParsedICP {
   organizationJobPostedAtMax?: string | null
 
   // Funding & growth signals
-  fundingStages?: string[]
   fundingAmountMin?: number | null
   fundingAmountMax?: number | null
-  foundedYearMin?: number | null
-  foundedYearMax?: number | null
-
-  // Activity signals
-  jobPostings?: boolean | null
-  newsEvents?: boolean | null
-  webTraffic?: boolean | null
 
   // Other filters
   keywords: string[]
-  intentTopics?: string[]
   companyDomains?: string[]
 
   // Metadata
@@ -142,6 +128,89 @@ const SAMPLE_MESSAGES = [
     category: "refine"
   }
 ]
+
+// Whitelist of supported filter keys (should match ParsedICP interface)
+const SUPPORTED_FILTER_KEYS = [
+  'searchType',
+  'jobTitles',
+  'seniorities',
+  'personLocations',
+  'organizationLocations',
+  'companySize',
+  'revenueMin',
+  'revenueMax',
+  'technologies',
+  'excludeTechnologies',
+  'organizationJobTitles',
+  'organizationJobLocations',
+  'organizationNumJobsMin',
+  'organizationNumJobsMax',
+  'organizationJobPostedAtMin',
+  'organizationJobPostedAtMax',
+  'fundingAmountMin',
+  'fundingAmountMax',
+  'keywords',
+  'companyDomains',
+  'confidence',
+  'reasoning',
+];
+
+function filterSupportedFields(obj: any): ParsedICP {
+  if (!obj) return {
+    searchType: 'people',
+    jobTitles: [],
+    seniorities: [],
+    companySize: [],
+    technologies: [],
+    keywords: [],
+    confidence: 0,
+    // Add all other required fields with safe defaults
+    personLocations: [],
+    organizationLocations: [],
+    revenueMin: null,
+    revenueMax: null,
+    excludeTechnologies: [],
+    organizationJobTitles: [],
+    organizationJobLocations: [],
+    organizationNumJobsMin: null,
+    organizationNumJobsMax: null,
+    organizationJobPostedAtMin: null,
+    organizationJobPostedAtMax: null,
+    fundingAmountMin: null,
+    fundingAmountMax: null,
+    companyDomains: [],
+    reasoning: '',
+  };
+  // Start with defaults, then override with filtered values
+  const defaults: ParsedICP = {
+    searchType: 'people',
+    jobTitles: [],
+    seniorities: [],
+    companySize: [],
+    technologies: [],
+    keywords: [],
+    confidence: 0,
+    personLocations: [],
+    organizationLocations: [],
+    revenueMin: null,
+    revenueMax: null,
+    excludeTechnologies: [],
+    organizationJobTitles: [],
+    organizationJobLocations: [],
+    organizationNumJobsMin: null,
+    organizationNumJobsMax: null,
+    organizationJobPostedAtMin: null,
+    organizationJobPostedAtMax: null,
+    fundingAmountMin: null,
+    fundingAmountMax: null,
+    companyDomains: [],
+    reasoning: '',
+  };
+  const filtered = Object.fromEntries(
+    Object.entries(obj).filter(([key]) => SUPPORTED_FILTER_KEYS.includes(key))
+  );
+  return { ...defaults, ...filtered };
+}
 
 export function ConversationalICP({ onICPParsed, onReset, disabled = false }: ConversationalICPProps) {
   // Conversation state
@@ -253,32 +322,40 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
       if (data.success && data.conversation) {
         const conversation = data.conversation
 
+        // Filter updatedFilters to only supported fields
+        const filteredFilters = filterSupportedFields(conversation.updatedFilters)
+
+        // Filter filterChanges to only supported fields
+        const filteredFilterChanges = (conversation.filterChanges || []).filter((fc: any) =>
+          SUPPORTED_FILTER_KEYS.includes(fc.field)
+        )
+
         // Update conversation ID if this is the first message
         if (!conversationId) {
           setConversationId(conversation.conversationId)
           setShowWelcome(false)
         }
 
-        // Add Alex's response
+        // Add Alex's response (with filtered filterChanges)
         addMessage('assistant', conversation.assistantMessage, {
           confidence: conversation.confidence,
-          filtersApplied: conversation.filterChanges?.map((fc: any) => fc.field) || [],
+          filtersApplied: filteredFilterChanges.map((fc: any) => fc.field) || [],
           reasoningExplanation: conversation.reasoningExplanation,
           conflictsDetected: conversation.conflictsDetected,
           clarificationNeeded: conversation.clarificationNeeded
         })
 
         // Update current filters
-        setCurrentFilters(conversation.updatedFilters)
+        setCurrentFilters(filteredFilters)
 
         // Notify parent component about filter updates
-        onICPParsed(conversation.updatedFilters)
+        onICPParsed(filteredFilters)
 
         // Show success toast with filter changes
-        if (conversation.filterChanges && conversation.filterChanges.length > 0) {
+        if (filteredFilterChanges.length > 0) {
           toast({
             title: 'Filters Updated!',
-            description: `Updated ${conversation.filterChanges.length} filter categories`,
+            description: `Updated ${filteredFilterChanges.length} filter categories`,
             status: 'success',
             duration: 3000,
             isClosable: true,
@@ -745,8 +822,15 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                   Active filters:
                 </Text>
                 <Badge size="xs" colorScheme="purple">
-                  {Object.values(currentFilters).filter(val =>
-                    Array.isArray(val) ? val.length > 0 : val !== null && val !== undefined
+                  {/* Only count supported and non-empty filters */}
+                  {Object.entries(currentFilters || {}).filter(
+                    ([key, val]) =>
+                      SUPPORTED_FILTER_KEYS.includes(key) &&
+                      key !== 'confidence' && key !== 'reasoning' && key !== 'searchType' &&
+                      ((Array.isArray(val) && val.length > 0) ||
+                        (typeof val === 'number' && val !== null && val !== undefined) ||
+                        (typeof val === 'string' && val) ||
+                        (typeof val === 'boolean' && val !== null && val !== undefined))
                   ).length} applied
                 </Badge>
               </HStack>
