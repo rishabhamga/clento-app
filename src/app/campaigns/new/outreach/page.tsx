@@ -81,7 +81,7 @@ export default function OutreachPage() {
   const router = useRouter()
   const toast = useToast()
   const customToast = createCustomToast(toast)
-  
+
   // Enhanced color mode values with 3D styling
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')
   const glassBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
@@ -95,7 +95,7 @@ export default function OutreachPage() {
     'linear-gradient(45deg, #667eea, #764ba2)',
     'linear-gradient(45deg, #5b21b6, #7c3aed)'
   )
-  
+
   // State for outreach settings
   const [campaignLanguage, setCampaignLanguage] = useState('English (United States)')
   const [signOffs, setSignOffs] = useState(['Best', 'Regards', 'Thanks'])
@@ -107,17 +107,18 @@ export default function OutreachPage() {
     'I can record a quick custom video to show what we offer. Are you the right person to send it to?',
     'Do you mind if I show you some examples of how our system can help generate leads for you?'
   ])
+  const [addingCTA, setAddingCTA] = useState(false)
   const [newCTA, setNewCTA] = useState('')
   const [messagePersonalization, setMessagePersonalization] = useState(true)
   const [maxResourceAge, setMaxResourceAge] = useState(4)
   const [personalizationSources, setPersonalizationSources] = useState([
     'Website Scrape',
-    'X Posts', 
+    'X Posts',
     'LinkedIn Posts',
     'Press Release',
     'Funding Announcement'
   ])
-  
+
   // Pitch data from previous step
   const [pitchData, setPitchData] = useState<PitchData | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -158,7 +159,7 @@ export default function OutreachPage() {
         try {
           const res = await fetch('/api/campaigns/save-draft')
           console.log('📡 [OUTREACH] Backend response status:', res.status)
-          
+
           if (res.ok) {
             const data = await res.json()
             console.log('📋 [OUTREACH] Backend response:', {
@@ -166,7 +167,7 @@ export default function OutreachPage() {
               hasDrafts: !!data.drafts,
               draftsType: Array.isArray(data.drafts) ? 'array' : typeof data.drafts
             })
-            
+
             if (data.success && data.drafts) {
               // If multiple drafts, take the most recent
               const draft = Array.isArray(data.drafts) ? data.drafts[0] : data.drafts
@@ -175,7 +176,7 @@ export default function OutreachPage() {
                 hasWebsiteAnalysis: !!draft?.website_analysis,
                 websiteUrl: draft?.website_url
               })
-              
+
               if (draft && draft.website_analysis) {
                 const pd: PitchData = {
                   websiteUrl: draft.website_url || '',
@@ -205,21 +206,15 @@ export default function OutreachPage() {
     }
   }, [])
 
+  // Languages that can actually be used for outreach campaigns
   const languages = [
-    'English (United States)',
-    'Finnish',
-    'French', 
-    'German (Formal)',
-    'German (Informal)',
-    'Gujarati',
+    'English',
+    'French',
+    'German',
     'Spanish',
     'Portuguese',
     'Italian',
-    'Dutch',
-    'Russian',
-    'Chinese (Simplified)',
-    'Japanese',
-    'Korean'
+    'Dutch'
   ]
 
   const toneOptions = [
@@ -248,6 +243,7 @@ export default function OutreachPage() {
     if (newCTA.trim() && !callsToAction.includes(newCTA.trim())) {
       setCallsToAction([...callsToAction, newCTA.trim()])
       setNewCTA('')
+      setAddingCTA(false)
     }
   }
 
@@ -262,7 +258,7 @@ export default function OutreachPage() {
       hasWebsiteAnalysis: !!(pitchData as any)?.websiteAnalysis,
       websiteUrl: (pitchData as any)?.websiteUrl
     })
-    
+
     if (!pitchData) {
       console.error('❌ [SAMPLE GEN] No pitch data available')
       customToast.warning({
@@ -271,7 +267,7 @@ export default function OutreachPage() {
       })
       return
     }
-    
+
     if (!(pitchData as any).websiteAnalysis) {
       console.error('❌ [SAMPLE GEN] No website analysis data available')
       customToast.warning({
@@ -343,7 +339,7 @@ export default function OutreachPage() {
       maxResourceAge,
       personalizationSources
     }
-    
+
     localStorage.setItem('campaignOutreachData', JSON.stringify(outreachData))
     router.push('/campaigns/new/workflow')
   }
@@ -353,8 +349,8 @@ export default function OutreachPage() {
   }
 
   return (
-    <Box 
-      minH="100vh" 
+    <Box
+      minH="100vh"
       bg={gradientBg}
       position="relative"
       overflow="hidden"
@@ -371,14 +367,14 @@ export default function OutreachPage() {
         backgroundSize="50px 50px"
         animation={`${float} 20s ease-in-out infinite`}
       />
-      
+
       <Container maxW="7xl" py={8} position="relative" zIndex="1">
         <CampaignStepper currentStep={2} />
-        
+
         <Box textAlign="center" mb={8}>
-          <Heading 
-            as="h1" 
-            size="2xl" 
+          <Heading
+            as="h1"
+            size="2xl"
             mb={4}
             bgGradient="linear(to-r, white, purple.100)"
             bgClip="text"
@@ -388,8 +384,8 @@ export default function OutreachPage() {
           >
             Outreach Configuration
           </Heading>
-          <Text 
-            fontSize="xl" 
+          <Text
+            fontSize="xl"
             color="whiteAlpha.900"
             fontWeight="500"
             maxW="2xl"
@@ -398,7 +394,7 @@ export default function OutreachPage() {
           >
             Configure your messaging settings and personalization options with AI-powered precision
           </Text>
-          
+
           {/* Pitch Data Status Indicator */}
           <HStack justify="center" spacing={2}>
             <Box
@@ -408,15 +404,15 @@ export default function OutreachPage() {
               bg={pitchData && (pitchData as any).websiteAnalysis ? 'green.400' : 'orange.400'}
               animation={!pitchData ? `${pulse} 2s infinite` : undefined}
             />
-            <Text 
-              fontSize="sm" 
+            <Text
+              fontSize="sm"
               color="whiteAlpha.800"
               fontWeight="500"
             >
-              {pitchData && (pitchData as any).websiteAnalysis 
-                ? `✅ Analysis ready for ${(pitchData as any).websiteUrl || 'website'} • ${(pitchData as any).websiteAnalysis?.target_personas?.length || 0} personas` 
-                : pitchData 
-                  ? '⚠️ Missing website analysis data' 
+              {pitchData && (pitchData as any).websiteAnalysis
+                ? `✅ Analysis ready for ${(pitchData as any).websiteUrl || 'website'} • ${(pitchData as any).websiteAnalysis?.target_personas?.length || 0} personas`
+                : pitchData
+                  ? '⚠️ Missing website analysis data'
                   : '🔄 Loading pitch data...'}
             </Text>
           </HStack>
@@ -424,7 +420,7 @@ export default function OutreachPage() {
 
         <VStack spacing={8} align="stretch">
           {/* Campaign Language */}
-          <Card 
+          <Card
             bg={glassBg}
             borderRadius="2xl"
             border="1px solid"
@@ -456,8 +452,8 @@ export default function OutreachPage() {
               </HStack>
             </CardHeader>
             <CardBody pt={0}>
-              <Select 
-                value={campaignLanguage} 
+              <Select
+                value={campaignLanguage}
                 onChange={(e) => setCampaignLanguage(e.target.value)}
                 size="lg"
                 borderRadius="xl"
@@ -481,7 +477,7 @@ export default function OutreachPage() {
           </Card>
 
           {/* Message Sign Offs */}
-          <Card 
+          <Card
             bg={glassBg}
             borderRadius="2xl"
             border="1px solid"
@@ -516,8 +512,8 @@ export default function OutreachPage() {
               <VStack spacing={4} align="stretch">
                 <Flex wrap="wrap" gap={3}>
                   {signOffs.map((signOff) => (
-                    <Badge 
-                      key={signOff} 
+                    <Badge
+                      key={signOff}
                       px={4}
                       py={2}
                       borderRadius="xl"
@@ -631,17 +627,17 @@ export default function OutreachPage() {
                   </HStack>
                 </HStack>
               ))}
-              
-              <Button 
-                variant="outline" 
-                colorScheme="blue" 
-                onClick={() => setNewCTA('Add new CTA')}
+
+              <Button
+                variant="outline"
+                colorScheme="blue"
+                onClick={() => setAddingCTA(true)}
                 leftIcon={<Text>⊕</Text>}
               >
                 Add CTA
               </Button>
-              
-              {newCTA && (
+
+              {addingCTA && (
                 <HStack>
                   <Textarea
                     placeholder="Enter your call-to-action"
@@ -653,7 +649,7 @@ export default function OutreachPage() {
                     <GradientButton variant="secondary" onClick={addCTA}>
                       Add
                     </GradientButton>
-                    <Button variant="ghost" onClick={() => setNewCTA('')}>
+                    <Button variant="ghost" onClick={() => {setAddingCTA(false) ,setNewCTA('')}}>
                       Cancel
                     </Button>
                   </VStack>
@@ -674,8 +670,8 @@ export default function OutreachPage() {
                   <Badge colorScheme="purple" variant="subtle">Recommended</Badge>
                 </VStack>
               </HStack>
-              <Switch 
-                isChecked={messagePersonalization} 
+              <Switch
+                isChecked={messagePersonalization}
                 onChange={(e) => setMessagePersonalization(e.target.checked)}
                 size="lg"
                 colorScheme="purple"
@@ -684,20 +680,20 @@ export default function OutreachPage() {
           </CardHeader>
           <CardBody>
             <Text fontSize="sm" color="gray.600" mb={6}>
-              Select the sources you want us to use to personalize your messages. We will automatically 
+              Select the sources you want us to use to personalize your messages. We will automatically
               select the personalization most likely to garner a response from the lead.
             </Text>
-            
+
             <VStack spacing={6} align="stretch">
               <Box>
                 <FormLabel>Select Maximum Resource Age</FormLabel>
                 <HStack spacing={4}>
                   <Text fontSize="sm">2</Text>
-                  <Slider 
-                    value={maxResourceAge} 
+                  <Slider
+                    value={maxResourceAge}
                     onChange={setMaxResourceAge}
-                    min={2} 
-                    max={12} 
+                    min={2}
+                    max={12}
                     step={1}
                     flex={1}
                   >
@@ -724,7 +720,7 @@ export default function OutreachPage() {
                     <Card key={source.name} variant="outline" p={4}>
                       <VStack align="start" spacing={2}>
                         <HStack>
-                          <Checkbox 
+                          <Checkbox
                             isChecked={personalizationSources.includes(source.name)}
                             onChange={(e) => {
                               if (e.target.checked) {
@@ -747,7 +743,7 @@ export default function OutreachPage() {
         </Card>
 
         {/* Generate Sample Messages Preview */}
-        <Card 
+        <Card
           bg={glassBg}
           borderRadius="2xl"
           border="1px solid"
@@ -804,7 +800,7 @@ export default function OutreachPage() {
                   Generated {sampleMessages.totalGenerated} messages • Ready to preview
                 </Text>
               )}
-              
+
               {/* Sample Messages Carousel Display */}
               <Collapse in={!!sampleMessages && !!carouselData} animateOpacity>
                 <Box w="full" display="flex" justifyContent="center" pt={4}>
@@ -866,4 +862,4 @@ export default function OutreachPage() {
 
     </Box>
   )
-} 
+}
