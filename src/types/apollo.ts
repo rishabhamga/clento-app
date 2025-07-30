@@ -1,3 +1,4 @@
+import Papa from 'papaparse';
 // Apollo Data Types and Interfaces
 // Comprehensive TypeScript definitions for Apollo integration
 
@@ -378,15 +379,34 @@ export const COMMON_INTENT_TOPICS = [
   'backup solutions'
 ]
 
-export const COMMON_TECHNOLOGIES = [
-  'Salesforce', 'HubSpot', 'Slack', 'Microsoft Office 365', 'Google Workspace',
-  'AWS', 'Azure', 'Google Cloud', 'Docker', 'Kubernetes',
-  'React', 'Angular', 'Vue.js', 'Node.js', 'Python',
-  'Java', 'PHP', 'Ruby', 'Go', 'Rust',
-  'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch',
-  'Shopify', 'WooCommerce', 'Magento', 'BigCommerce',
-  'Tableau', 'Power BI', 'Looker', 'Segment', 'Mixpanel'
-]
+export async function getTechnologies(): Promise<string[]> {
+  const response = await fetch('/supported_technologies.csv');
+  const csvText = await response.text();
+
+  return new Promise((resolve, reject) => {
+    Papa.parse(csvText, {
+      header: true,
+      complete: (results) => {
+        const technologies = results.data
+          .map((row: any) => row.Technology)
+          .filter((tech: string | undefined) => typeof tech === 'string');
+        resolve(technologies);
+      },
+      error: reject,
+    });
+  });
+}
+
+// // Fallback list of common technologies (used if CSV loading fails)
+// export const COMMON_TECHNOLOGIES = [
+//   'Salesforce', 'HubSpot', 'Slack', 'Microsoft Office 365', 'Google Workspace',
+//   'AWS', 'Azure', 'Google Cloud', 'Docker', 'Kubernetes',
+//   'React', 'Angular', 'Vue.js', 'Node.js', 'Python',
+//   'Java', 'PHP', 'Ruby', 'Go', 'Rust',
+//   'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch',
+//   'Shopify', 'WooCommerce', 'Magento', 'BigCommerce',
+//   'Tableau', 'Power BI', 'Looker', 'Segment', 'Mixpanel'
+// ]
 
 // Search result interfaces
 export interface SearchPagination {
