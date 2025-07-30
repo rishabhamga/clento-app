@@ -44,7 +44,7 @@ import {
   COMMON_INDUSTRIES,
   COMMON_JOB_TITLES,
   COMMON_INTENT_TOPICS,
-  COMMON_TECHNOLOGIES,
+  getTechnologies,
 } from '@/types/apollo'
 import { TechnologySelect } from './TechnologySelect'
 
@@ -391,6 +391,15 @@ interface CompanyFiltersProps {
 export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.600')
+  const [COMMON_TECHNOLOGIES, setCommonTechnologies] = useState<string[]>([]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    getTechnologies().then(techs => {
+      if (mounted) setCommonTechnologies(techs);
+    });
+    return () => { mounted = false; };
+  }, []);
 
   return (
     <VStack spacing={6} align="stretch">
@@ -547,7 +556,7 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
         <CardBody pt={2}>
           <VStack spacing={4} align="stretch">
             <TagInput
-              label="Technologies Used (Apollo UIDs)"
+              label="Technologies Used"
               placeholder="e.g., salesforce, workday, hubspot"
               values={filters.technologyUids || []}
               onAdd={(value) => onChange('technologyUids', [...(filters.technologyUids || []), value])}
@@ -559,12 +568,13 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
             />
 
             <TagInput
-              label="Exclude Technologies (Apollo UIDs)"
+              label="Exclude Technologies"
               placeholder="e.g., microsoft, oracle, sap"
               values={filters.excludeTechnologyUids || []}
               onAdd={(value) => onChange('excludeTechnologyUids', [...(filters.excludeTechnologyUids || []), value])}
               onRemove={(value) => onChange('excludeTechnologyUids', (filters.excludeTechnologyUids || []).filter(item => item !== value))}
               maxTags={20}
+              suggestions={COMMON_TECHNOLOGIES}
               description="Exclude companies that use these technologies"
               colorScheme="red"
             />
