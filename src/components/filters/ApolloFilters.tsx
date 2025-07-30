@@ -565,7 +565,7 @@ export function CompanyFilters({ filters, onChange }: CompanyFiltersProps) {
               suggestions={COMMON_TECHNOLOGIES}
               description="Technologies the company uses (Apollo verified list)"
               colorScheme="orange"
-            />
+            /> 
 
             <TagInput
               label="Exclude Technologies"
