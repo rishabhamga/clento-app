@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   Box,
   Container,
@@ -44,13 +44,14 @@ import {
   AccordionButton,
   AccordionPanel,
   AccordionIcon,
-  Button
+  Button,
+  Spacer
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
-import { 
-  AddIcon, 
-  DeleteIcon, 
-  DragHandleIcon, 
+import {
+  AddIcon,
+  DeleteIcon,
+  DragHandleIcon,
   ChevronRightIcon,
   CheckIcon,
   TimeIcon,
@@ -60,12 +61,12 @@ import {
 import { CampaignStepper } from '@/components/ui/CampaignStepper'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { useRouter } from 'next/navigation'
-import { 
-  FiMail, 
-  FiUser, 
-  FiClock, 
-  FiSettings, 
-  FiPlay, 
+import {
+  FiMail,
+  FiUser,
+  FiClock,
+  FiSettings,
+  FiPlay,
   FiPause,
   FiEdit3,
   FiTrash2,
@@ -245,6 +246,7 @@ export default function WorkflowPage() {
   const [isCustom, setIsCustom] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [selectedStep, setSelectedStep] = useState<string | null>(null)
+  const workflowStepsContainerRef = useRef<HTMLDivElement>(null)
 
   // Enhanced color values for glassmorphism
   const bgGradient = useColorModeValue(
@@ -297,6 +299,15 @@ export default function WorkflowPage() {
     }
     setCustomSteps([...customSteps, newStep])
     setIsCustom(true)
+
+    setTimeout(() => {
+      if (workflowStepsContainerRef.current) {
+        const lastStep = workflowStepsContainerRef.current?.lastElementChild
+        if (lastStep) {
+          lastStep.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'end' })
+        }
+      }
+    }, 100)
   }
 
   const updateStep = (stepId: string, field: keyof WorkflowStep, value: string | number | string[]) => {
@@ -328,13 +339,13 @@ export default function WorkflowPage() {
 
   const renderConnectionLine = (index: number) => {
     if (index === customSteps.length - 1) return null
-    
+
     return (
-      <Box 
-        position="absolute" 
-        top="50%" 
-        right="-20px" 
-        width="40px" 
+      <Box
+        position="absolute"
+        top="50%"
+        right="-20px"
+        width="40px"
         height="2px"
         zIndex={0}
       >
@@ -367,9 +378,9 @@ export default function WorkflowPage() {
         customSteps: customSteps,
         isCustom
       }
-      
+
       localStorage.setItem('campaignWorkflow', JSON.stringify(workflowData))
-      
+
       customToast.success({
         title: 'Workflow Saved',
         description: 'Your campaign workflow has been saved successfully.',
@@ -392,8 +403,8 @@ export default function WorkflowPage() {
   }
 
   return (
-    <Box 
-      minH="100vh" 
+    <Box
+      minH="100vh"
       bg={bgGradient}
       position="relative"
       overflow="hidden"
@@ -409,16 +420,16 @@ export default function WorkflowPage() {
         backgroundImage="radial-gradient(circle at 25% 25%, white 2px, transparent 2px)"
         backgroundSize="50px 50px"
       />
-      
+
       <Container maxW="7xl" py={8} position="relative" zIndex="1">
         <VStack spacing={8} align="stretch">
           <CampaignStepper currentStep={4} />
-          
+
           {/* Header */}
           <Box textAlign="center" mb={8}>
-            <Heading 
-              as="h1" 
-              size="2xl" 
+            <Heading
+              as="h1"
+              size="2xl"
               mb={4}
               bgGradient="linear(to-r, white, purple.100)"
               bgClip="text"
@@ -428,8 +439,8 @@ export default function WorkflowPage() {
             >
               Workflow Designer
             </Heading>
-            <Text 
-              fontSize="xl" 
+            <Text
+              fontSize="xl"
               color="whiteAlpha.900"
               fontWeight="500"
               maxW="2xl"
@@ -440,7 +451,7 @@ export default function WorkflowPage() {
           </Box>
 
           {/* Template Selection */}
-          <Card 
+          <Card
             bg={glassBg}
             borderRadius="2xl"
             border="1px solid"
@@ -466,7 +477,7 @@ export default function WorkflowPage() {
                 <Box ml="auto">
                   <HStack>
                     <Text fontSize="sm" color="gray.600">Preview Mode</Text>
-                    <Switch 
+                    <Switch
                       colorScheme="purple"
                       isChecked={isPreviewMode}
                       onChange={(e) => setIsPreviewMode(e.target.checked)}
@@ -486,7 +497,7 @@ export default function WorkflowPage() {
                     borderColor={selectedTemplate === template.id ? 'purple.400' : 'transparent'}
                     bg={selectedTemplate === template.id ? glassBg : 'white'}
                     borderRadius="xl"
-                    _hover={{ 
+                    _hover={{
                       transform: 'translateY(-4px)',
                       boxShadow: '0 20px 40px -8px rgba(102, 126, 234, 0.3)'
                     }}
@@ -511,8 +522,8 @@ export default function WorkflowPage() {
                           <Text fontSize="2xl">{template.icon}</Text>
                           <VStack align="start" spacing={0} flex="1">
                             <Text fontWeight="bold" fontSize="lg">{template.name}</Text>
-                            <Badge 
-                              colorScheme={template.color} 
+                            <Badge
+                              colorScheme={template.color}
                               variant="subtle"
                               fontSize="xs"
                               px={2}
@@ -553,7 +564,7 @@ export default function WorkflowPage() {
 
           {/* Workflow Visualization */}
           {customSteps.length > 0 && (
-            <Card 
+            <Card
               bg={glassBg}
               borderRadius="2xl"
               border="1px solid"
@@ -589,15 +600,15 @@ export default function WorkflowPage() {
                 </HStack>
               </CardHeader>
               <CardBody>
-                <Box overflowX="auto" pb={4}>
+                <Box overflowX="auto" pb={4} ref={workflowStepsContainerRef}>
                   <Flex minW="fit-content" position="relative" alignItems="stretch">
                     {customSteps.map((step, index) => {
                       const Icon = getChannelIcon(step.channel)
                       const status = getStepStatus(step, index)
-                      
+
                       return (
-                        <Box 
-                          key={step.id} 
+                        <Box
+                          key={step.id}
                           position="relative"
                           mr={index < customSteps.length - 1 ? 8 : 0}
                           display="flex"
@@ -605,7 +616,7 @@ export default function WorkflowPage() {
                         >
                           {/* Connection Line */}
                           {renderConnectionLine(index)}
-                          
+
                           {/* Step Card */}
                           <Card
                             width="280px"
@@ -652,26 +663,34 @@ export default function WorkflowPage() {
                                     <Text fontSize="sm" fontWeight="bold">
                                       Step {index + 1}
                                     </Text>
-                                    <Badge 
-                                      colorScheme={getChannelColor(step.channel)}
-                                      size="sm"
-                                    >
-                                      {step.channel.toUpperCase()}
-                                    </Badge>
+                                    {selectedTemplate === 'aggressive-multi' ? (
+                                        <Select
+                                            size="xs"
+                                            width="auto"
+                                            value={step.channel}
+                                            onChange={(e) => updateStep(step.id, 'channel', e.target.value)}
+                                            bg={`${getChannelColor(step.channel)}.100`}
+                                            color={`${getChannelColor(step.channel)}.800`}
+                                            fontWeight="bold"
+                                            borderRadius="md"
+                                            borderColor={`${getChannelColor(step.channel)}.300`}
+                                            _focus={{ borderColor: `${getChannelColor(step.channel)}.500` }}
+                                            cursor="pointer"
+                                      >
+                                        <option value="email">EMAIL</option>
+                                        <option value="linkedin">LINKEDIN</option>
+                                      </Select>
+                                    ) : (
+                                        <Badge
+                                            colorScheme={getChannelColor(step.channel)}
+                                            size="sm"
+                                        >
+                                            {step.channel.toUpperCase()}
+                                        </Badge>
+                                    )}
                                   </VStack>
                                 </HStack>
                                 <VStack spacing={1}>
-                                  <IconButton
-                                    aria-label="Edit step"
-                                    icon={<FiEdit3 />}
-                                    size="xs"
-                                    variant="ghost"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setSelectedStep(step.id)
-                                      onOpen()
-                                    }}
-                                  />
                                   <IconButton
                                     aria-label="Delete step"
                                     icon={<FiTrash2 />}
@@ -686,36 +705,14 @@ export default function WorkflowPage() {
                                 </VStack>
                               </HStack>
                             </CardHeader>
-                            <CardBody pt={0} flex="1" display="flex" flexDirection="column">
-                              <VStack align="start" spacing={3} flex="1">
+                            <Spacer height={20}/>
+                            <CardBody>
                                 <HStack spacing={2}>
-                                  <TimeIcon boxSize={3} color="gray.500" />
-                                  <Text fontSize="sm" color="gray.600">
+                                  <TimeIcon boxSize={5} color="gray.500" />
+                                  <Text fontSize="md" color="gray.600">
                                     {step.delay === 0 ? 'Immediate' : `Day ${step.delay}`}
                                   </Text>
                                 </HStack>
-                                {step.subject && (
-                                  <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>
-                                    {step.subject}
-                                  </Text>
-                                )}
-                                <Text fontSize="xs" color="gray.600" noOfLines={3} flex="1">
-                                  {step.template}
-                                </Text>
-                                {status === 'active' && (
-                                  <Box 
-                                    position="absolute" 
-                                    top="-2px" 
-                                    left="-2px" 
-                                    right="-2px" 
-                                    bottom="-2px"
-                                    borderRadius="md"
-                                    background="linear-gradient(45deg, #667eea, #764ba2)"
-                                    zIndex={-1}
-                                    animation={`${pulse} 2s ease-in-out infinite`}
-                                  />
-                                )}
-                              </VStack>
                             </CardBody>
                           </Card>
                         </Box>
@@ -729,7 +726,7 @@ export default function WorkflowPage() {
 
           {/* Workflow Stats */}
           {selectedTemplate && (
-            <Card 
+            <Card
               bg={glassBg}
               borderRadius="2xl"
               border="1px solid"
@@ -806,7 +803,7 @@ export default function WorkflowPage() {
             >
               Back to Outreach
             </Button>
-            
+
             <HStack spacing={3}>
               <Button
                 onClick={handleSaveWorkflow}
@@ -817,7 +814,7 @@ export default function WorkflowPage() {
                 borderColor="gray.300"
                 borderWidth="2px"
                 variant="outline"
-                _hover={{ 
+                _hover={{
                   bg: 'gray.50',
                   borderColor: 'gray.400'
                 }}
@@ -866,4 +863,4 @@ export default function WorkflowPage() {
       </Modal>
     </Box>
   )
-} 
+}

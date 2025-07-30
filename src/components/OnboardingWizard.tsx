@@ -142,7 +142,7 @@ export default function OnboardingWizard() {
   const toast = useToast()
   const { organization } = useOrganization()
   const { user } = useUser()
-  
+
   // Enhanced color mode values with 3D styling matching campaign creation
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')
   const glassBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
@@ -165,7 +165,7 @@ export default function OnboardingWizard() {
   ]
 
   const customToast = createCustomToast(toast)
-  
+
   // Check for LinkedIn connection success on mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
@@ -183,7 +183,7 @@ export default function OnboardingWizard() {
     try {
       const response = await fetch('/api/linkedin/accounts')
       const data = await response.json()
-      
+
       if (data.success) {
         setLinkedinAccounts(data.accounts)
       }
@@ -201,15 +201,15 @@ export default function OnboardingWizard() {
       } catch (error) {
         console.error('Error syncing user:', error)
       }
-      
+
       // Load LinkedIn accounts
       fetchLinkedInAccounts()
-      
+
       // For onboarding, we don't load existing analysis - users should start fresh
       // This ensures they can enter a new website URL and run a new analysis
       console.log('Onboarding: Starting fresh - not loading existing analysis')
     }
-    
+
     syncUserAndLoadData()
   }, [])
 
@@ -246,15 +246,15 @@ export default function OnboardingWizard() {
       if (data.success && data.analysisId) {
         setAnalysisId(data.analysisId)
         setAnalysisProgress(10)
-        
+
         // Start polling for results instead of immediately moving to next step
         let pollCount = 0
         const maxPolls = 60 // 3 minutes timeout
-        
+
         const pollForResults = async () => {
           try {
             pollCount++
-            
+
             if (pollCount > maxPolls) {
               console.log('Onboarding polling timeout reached')
               setIsAnalyzing(false)
@@ -265,19 +265,19 @@ export default function OnboardingWizard() {
               })
               return
             }
-            
+
             const resultResponse = await fetch(`/api/analyze-site?id=${data.analysisId}`)
             if (resultResponse.ok) {
               const resultData = await resultResponse.json()
-              
+
               console.log('=== ONBOARDING POLLING DEBUG ===')
               console.log('Result data:', resultData)
               console.log('Analysis status:', resultData.analysis?.status)
               console.log('===============================')
-              
+
               if (resultData.success && resultData.analysis) {
                 const status = resultData.analysis.status
-                
+
                 if (status === 'completed') {
                   setIcpAnalysis(resultData.analysis)
                   setIsAnalyzing(false)
@@ -307,7 +307,7 @@ export default function OnboardingWizard() {
             })
           }
         }
-        
+
         // Start polling
         setTimeout(pollForResults, 1000)
       } else {
@@ -334,9 +334,9 @@ export default function OnboardingWizard() {
       const response = await fetch(`/api/linkedin/accounts?id=${accountId}`, {
         method: 'DELETE'
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         customToast.success({
           title: 'Account Disconnected',
@@ -369,7 +369,7 @@ export default function OnboardingWizard() {
     try {
       // Ensure user is synced to Supabase first
       await fetch('/api/sync-user', { method: 'POST' })
-      
+
       // Mark onboarding as completed - SET BOTH FIELDS to prevent redirect loop
       const response = await fetch('/api/user/profile', {
         method: 'POST',
@@ -411,7 +411,7 @@ export default function OnboardingWizard() {
       // case 0:
       //   return (
       //     <VStack spacing={8} w="full">
-      //       <Card 
+      //       <Card
       //         bg={cardBg}
       //         backdropFilter="blur(10px)"
       //         border="1px solid"
@@ -443,7 +443,7 @@ export default function OnboardingWizard() {
       //                   </VStack>
       //                 </HStack>
       //               </Card>
-      //               
+      //
       //               {/* TODO: Re-enable LinkedIn integration card when step is re-enabled */}
       //               {/* <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
       //                 <HStack>
@@ -454,7 +454,7 @@ export default function OnboardingWizard() {
       //                   </VStack>
       //                 </HStack>
       //               </Card> */}
-      //               
+      //
       //               <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
       //                 <HStack>
       //                   <Icon as={FiUsers} color="green.500" boxSize={6} />
@@ -464,7 +464,7 @@ export default function OnboardingWizard() {
       //                   </VStack>
       //                 </HStack>
       //               </Card>
-      //               
+      //
       //               <Card bg={glassBg} p={4} borderRadius="xl" border="1px solid" borderColor={borderColor}>
       //                 <HStack>
       //                   <Icon as={FiBookOpen} color="purple.500" boxSize={6} />
@@ -485,7 +485,7 @@ export default function OnboardingWizard() {
       //               >
       //                 Start Setup
       //               </GradientButton>
-      //               
+      //
       //               <Button
       //                 variant="ghost"
       //                 size="lg"
@@ -506,7 +506,7 @@ export default function OnboardingWizard() {
       case 0: // Website Analysis (was case 1, now case 0 since Welcome step is skipped)
         return (
           <VStack spacing={8} w="full">
-            <Card 
+            <Card
               bg={cardBg}
               backdropFilter="blur(10px)"
               border="1px solid"
@@ -522,7 +522,7 @@ export default function OnboardingWizard() {
                   {isAnalyzing ? '🔍 Analyzing Your Website' : '🌐 Website Analysis'}
                 </Heading>
                 <Text color="gray.600">
-                  {isAnalyzing 
+                  {isAnalyzing
                     ? 'Our AI is discovering your ideal customer profile...'
                     : 'Help us understand your business better with AI-powered website analysis'
                   }
@@ -574,7 +574,7 @@ export default function OnboardingWizard() {
                         >
                           Analyze Website
                         </GradientButton>
-                        
+
                         <Button
                           variant="ghost"
                           size="lg"
@@ -596,9 +596,9 @@ export default function OnboardingWizard() {
                           <Text fontSize="sm" fontWeight="medium">Analysis Progress</Text>
                           <Text fontSize="sm" color="gray.600">{analysisProgress}%</Text>
                         </Flex>
-                        <Progress 
-                          value={analysisProgress} 
-                          colorScheme="purple" 
+                        <Progress
+                          value={analysisProgress}
+                          colorScheme="purple"
                           bg="gray.100"
                           borderRadius="full"
                           size="lg"
@@ -613,9 +613,9 @@ export default function OnboardingWizard() {
                           { threshold: 90, text: 'Generating ICP insights', icon: analysisProgress > 90 ? CheckCircleIcon : TimeIcon }
                         ].map((step, index) => (
                           <HStack key={index}>
-                            <Icon 
-                              as={step.icon} 
-                              color={analysisProgress > step.threshold ? "green.500" : "gray.400"} 
+                            <Icon
+                              as={step.icon}
+                              color={analysisProgress > step.threshold ? "green.500" : "gray.400"}
                               {...(step.icon === Spinner && { spin: true })}
                             />
                             <Text color={analysisProgress > step.threshold ? "black" : "gray.500"}>
@@ -650,8 +650,8 @@ export default function OnboardingWizard() {
                       </Alert>
 
                       <Card bg={glassBg} p={6} borderRadius="xl" w="full">
-                        <AnalysisDisplay 
-                          analysis={icpAnalysis} 
+                        <AnalysisDisplay
+                          analysis={icpAnalysis}
                           showHeader={false}
                           compact={true}
                         />
@@ -666,7 +666,7 @@ export default function OnboardingWizard() {
                         >
                           Continue Setup
                         </GradientButton>
-                        
+
                         <Button
                           variant="outline"
                           size="lg"
@@ -705,7 +705,7 @@ export default function OnboardingWizard() {
       case 1: // Organization Setup
         return (
           <VStack spacing={8} w="full">
-            <Card 
+            <Card
               bg={cardBg}
               backdropFilter="blur(10px)"
               border="1px solid"
@@ -753,7 +753,7 @@ export default function OnboardingWizard() {
                       {/* Organization Form - Seamlessly Integrated */}
                       <Flex justify="center" w="full">
                         <Box w="full" maxW="md" mx="auto">
-                          <CreateOrganization 
+                          <CreateOrganization
                             afterCreateOrganizationUrl="/onboarding?step=2"
                             appearance={{
                               elements: {
@@ -853,8 +853,8 @@ export default function OnboardingWizard() {
                         </Box>
                       </Flex>
 
-                      {/* Skip Option */}
-                      <Box textAlign="center" mt={4}>
+                      {/* Skip Option */} {/* REMOVED: causing issue when skipped*/}
+                      {/* <Box textAlign="center" mt={4}>
                         <Text fontSize="sm" color="gray.600" mb={3}>
                           You can create an organization later from your dashboard
                         </Text>
@@ -864,7 +864,7 @@ export default function OnboardingWizard() {
                           onClick={() => setCurrentStep(3)} // Skip LinkedIn step, go directly to Complete Setup
                           leftIcon={<FiSkipForward />}
                           color="gray.500"
-                          _hover={{ 
+                          _hover={{
                             color: 'gray.700',
                             bg: 'gray.50'
                           }}
@@ -873,7 +873,7 @@ export default function OnboardingWizard() {
                         >
                           Skip for now
                         </Button>
-                      </Box>
+                      </Box> */}
                     </>
                   ) : (
                     <VStack spacing={6} w="full">
@@ -890,8 +890,8 @@ export default function OnboardingWizard() {
                       <Card bg={glassBg} p={6} borderRadius="xl" w="full">
                         <VStack spacing={4}>
                           <HStack spacing={4}>
-                            <Avatar 
-                              src={organization?.imageUrl} 
+                            <Avatar
+                              src={organization?.imageUrl}
                               name={organization?.name}
                               size="lg"
                               icon={<HiOutlineOfficeBuilding />}
@@ -928,7 +928,7 @@ export default function OnboardingWizard() {
       // case 3:
       //   return (
       //     <VStack spacing={8} w="full">
-      //       <Card 
+      //       <Card
       //         bg={cardBg}
       //         backdropFilter="blur(10px)"
       //         border="1px solid"
@@ -955,12 +955,12 @@ export default function OnboardingWizard() {
       //                 <Text fontWeight="semibold" color="gray.700">
       //                   Connected Accounts ({linkedinAccounts.length}/10)
       //                 </Text>
-      //                 
+      //
       //                 {linkedinAccounts.map((account) => (
       //                   <Card key={account.id} bg={glassBg} p={4} borderRadius="xl">
       //                     <HStack spacing={4} w="full">
-      //                       <Avatar 
-      //                         src={account.profile_picture_url} 
+      //                       <Avatar
+      //                         src={account.profile_picture_url}
       //                         name={account.display_name}
       //                         size="md"
       //                       />
@@ -998,11 +998,11 @@ export default function OnboardingWizard() {
 
       //             {/* Add New Account */}
       //             {linkedinAccounts.length < 10 && (
-      //               <Card 
-      //                 bg={glassBg} 
-      //                 p={6} 
-      //                 borderRadius="xl" 
-      //                 border="2px dashed" 
+      //               <Card
+      //                 bg={glassBg}
+      //                 p={6}
+      //                 borderRadius="xl"
+      //                 border="2px dashed"
       //                 borderColor={useColorModeValue('purple.200', 'purple.700')}
       //                 w="full"
       //                 cursor="pointer"
@@ -1020,7 +1020,7 @@ export default function OnboardingWizard() {
       //                       Add another LinkedIn account for outreach diversity and higher sending limits
       //                     </Text>
       //                   </VStack>
-      //                   
+      //
       //                   <GradientButton
       //                     variant="primary"
       //                     size="md"
@@ -1075,7 +1075,7 @@ export default function OnboardingWizard() {
       //               >
       //                 {linkedinAccounts.length > 0 ? 'Continue' : 'Continue Without LinkedIn'}
       //               </GradientButton>
-      //               
+      //
       //               <Button
       //                 variant="ghost"
       //                 size="lg"
@@ -1096,7 +1096,7 @@ export default function OnboardingWizard() {
       case 2: // Complete Setup
         return (
           <VStack spacing={8} w="full">
-            <Card 
+            <Card
               bg={cardBg}
               backdropFilter="blur(10px)"
               border="1px solid"
@@ -1123,7 +1123,7 @@ export default function OnboardingWizard() {
                     <Text fontWeight="semibold" color="gray.700">
                       Your Setup Summary:
                     </Text>
-                    
+
                     <SimpleGrid columns={1} spacing={3}>
                       <HStack>
                         <Icon as={icpAnalysis ? FiCheck : FiTarget} color={icpAnalysis ? "green.500" : "gray.400"} />
@@ -1131,14 +1131,14 @@ export default function OnboardingWizard() {
                           Website Analysis: {icpAnalysis ? '✅ Complete' : '⏭️ Skipped'}
                         </Text>
                       </HStack>
-                      
+
                       <HStack>
                         <Icon as={organization ? FiCheck : HiOutlineOfficeBuilding} color={organization ? "green.500" : "gray.400"} />
                         <Text>
                           Organization: {organization ? `✅ ${organization.name}` : '⏭️ Personal Account'}
                         </Text>
                       </HStack>
-                      
+
                       {/* TODO: Re-enable LinkedIn accounts summary when step is re-enabled */}
                       {/* <HStack>
                         <Icon as={linkedinAccounts.length > 0 ? FiCheck : FiLinkedin} color={linkedinAccounts.length > 0 ? "green.500" : "gray.400"} />
@@ -1193,7 +1193,7 @@ export default function OnboardingWizard() {
   }
 
   return (
-    <Box 
+    <Box
       minH="100vh"
       bg={gradientBg}
       position="relative"
@@ -1224,22 +1224,22 @@ export default function OnboardingWizard() {
         animation={`${float} 8s ease-in-out infinite reverse`}
         zIndex={0}
       />
-      
+
       <Container maxW="7xl" py={8} position="relative" zIndex={1}>
         <VStack spacing={10} align="stretch">
           {/* Header */}
           <Box textAlign="center">
-            <Text 
-              fontSize="3xl" 
-              fontWeight="bold" 
+            <Text
+              fontSize="3xl"
+              fontWeight="bold"
               mb={2}
               color={useColorModeValue('white', 'gray.100')}
               textShadow="0 2px 4px rgba(0,0,0,0.3)"
             >
-              
+
             </Text>
-            <Text 
-              fontSize="lg" 
+            <Text
+              fontSize="lg"
               color={useColorModeValue('whiteAlpha.900', 'gray.200')}
               maxW="3xl"
               mx="auto"
@@ -1267,4 +1267,4 @@ export default function OnboardingWizard() {
       </Container>
     </Box>
   )
-} 
+}

@@ -289,7 +289,7 @@ function B2BFiltersContent() {
     'linear-gradient(45deg, #667eea, #764ba2)',
     'linear-gradient(45deg, #5b21b6, #7c3aed)'
   )
-  
+
   // Text colors
   const titleTextColor = useColorModeValue('white', 'gray.100')
   const subtitleTextColor = useColorModeValue('whiteAlpha.900', 'gray.200')
@@ -618,25 +618,8 @@ function B2BFiltersContent() {
                                 if (parsedICP.personLocations && parsedICP.personLocations.length > 0) {
                                   handleFilterChange('personLocations', parsedICP.personLocations)
                                 }
-                                if (parsedICP.excludePersonLocations && parsedICP.excludePersonLocations.length > 0) {
-                                  handleFilterChange('excludePersonLocations', parsedICP.excludePersonLocations)
-                                }
-
-                                // Company-level filters
-                                if (parsedICP.industries && parsedICP.industries.length > 0) {
-                                  handleFilterChange('industries', parsedICP.industries)
-                                }
-                                if (parsedICP.excludeIndustries && parsedICP.excludeIndustries.length > 0) {
-                                  handleFilterChange('excludeIndustries', parsedICP.excludeIndustries)
-                                }
                                 if (parsedICP.organizationLocations && parsedICP.organizationLocations.length > 0) {
                                   handleFilterChange('organizationLocations', parsedICP.organizationLocations)
-                                }
-                                if (parsedICP.excludeOrganizationLocations && parsedICP.excludeOrganizationLocations.length > 0) {
-                                  handleFilterChange('excludeOrganizationLocations', parsedICP.excludeOrganizationLocations)
-                                }
-                                if (parsedICP.companySize?.length > 0) {
-                                  handleFilterChange('companyHeadcount', parsedICP.companySize)
                                 }
                                 if (parsedICP.revenueMin !== null && parsedICP.revenueMin !== undefined) {
                                   handleFilterChange('revenueMin', parsedICP.revenueMin)
@@ -675,52 +658,28 @@ function B2BFiltersContent() {
                                 }
 
                                 // Funding & growth filters
-                                if (parsedICP.fundingStages && parsedICP.fundingStages.length > 0) {
-                                  handleFilterChange('fundingStages', parsedICP.fundingStages)
-                                }
                                 if (parsedICP.fundingAmountMin !== null && parsedICP.fundingAmountMin !== undefined) {
                                   handleFilterChange('fundingAmountMin', parsedICP.fundingAmountMin)
                                 }
                                 if (parsedICP.fundingAmountMax !== null && parsedICP.fundingAmountMax !== undefined) {
                                   handleFilterChange('fundingAmountMax', parsedICP.fundingAmountMax)
                                 }
-                                if (parsedICP.foundedYearMin !== null && parsedICP.foundedYearMin !== undefined) {
-                                  handleFilterChange('foundedYearMin', parsedICP.foundedYearMin)
-                                }
-                                if (parsedICP.foundedYearMax !== null && parsedICP.foundedYearMax !== undefined) {
-                                  handleFilterChange('foundedYearMax', parsedICP.foundedYearMax)
-                                }
-
-                                // Activity signals
-                                if (parsedICP.jobPostings !== null && parsedICP.jobPostings !== undefined) {
-                                  handleFilterChange('jobPostings', parsedICP.jobPostings)
-                                }
-                                if (parsedICP.newsEvents !== null && parsedICP.newsEvents !== undefined) {
-                                  handleFilterChange('newsEvents', parsedICP.newsEvents)
-                                }
-                                if (parsedICP.webTraffic !== null && parsedICP.webTraffic !== undefined) {
-                                  handleFilterChange('webTraffic', parsedICP.webTraffic)
-                                }
 
                                 // Other filters
                                 if (parsedICP.keywords && parsedICP.keywords.length > 0) {
                                   handleFilterChange('keywords', parsedICP.keywords)
                                 }
-                                if (parsedICP.intentTopics && parsedICP.intentTopics.length > 0) {
-                                  handleFilterChange('intentTopics', parsedICP.intentTopics)
-                                }
 
                                 // Count applied filters more accurately
                                 const appliedFiltersCount = [
                                   parsedICP.jobTitles, parsedICP.personLocations, parsedICP.organizationLocations,
-                                  parsedICP.seniorities, parsedICP.industries, parsedICP.companySize,
+                                  parsedICP.seniorities, parsedICP.companySize,
                                   parsedICP.technologies, parsedICP.organizationJobTitles,
                                   parsedICP.organizationJobLocations, parsedICP.keywords
                                 ].filter(arr => Array.isArray(arr) && arr.length > 0).length +
                                 [
                                   parsedICP.revenueMin, parsedICP.revenueMax, parsedICP.organizationNumJobsMin,
-                                  parsedICP.organizationNumJobsMax, parsedICP.jobPostings, parsedICP.newsEvents,
-                                  parsedICP.webTraffic
+                                  parsedICP.organizationNumJobsMax
                                 ].filter(val => val !== null && val !== undefined).length
 
                                 // Show success message
