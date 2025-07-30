@@ -25,11 +25,11 @@ import {
   AccordionIcon,
   useColorModeValue
 } from '@chakra-ui/react'
-import { 
-  FiTarget, 
-  FiUsers, 
-  FiTrendingUp, 
-  FiBookOpen, 
+import {
+  FiTarget,
+  FiUsers,
+  FiTrendingUp,
+  FiBookOpen,
   FiGift,
   FiStar,
   FiSettings
@@ -104,10 +104,10 @@ interface AnalysisDisplayProps {
   compact?: boolean
 }
 
-export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ 
-  analysis, 
-  showHeader = true, 
-  compact = false 
+export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
+  analysis,
+  showHeader = true,
+  compact = false
 }) => {
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.600')
@@ -180,13 +180,13 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
               {analysis.target_personas.map((persona, index) => (
                 <Box key={index} p={4} bg={personaBg} borderRadius="md" border="1px" borderColor={personaBorderColor}>
                   <VStack align="start" spacing={3}>
-                    <Heading size="sm" color="blue.600">{persona.title}</Heading>
+                    {persona.title && <Heading size="sm" color="blue.600">{persona.title}</Heading>}
                     <HStack wrap="wrap">
-                      <Badge colorScheme="blue">{persona.company_size}</Badge>
-                      <Badge colorScheme="green">{persona.industry}</Badge>
-                      <Badge colorScheme="purple">{persona.demographics.seniority_level}</Badge>
+                      {persona.company_size && <Badge colorScheme="blue">{persona.company_size}</Badge>}
+                      {persona.industry && <Badge colorScheme="green">{persona.industry}</Badge>}
+                      {persona.demographics?.seniority_level && <Badge colorScheme="purple">{persona.demographics.seniority_level}</Badge>}
                     </HStack>
-                    
+
                     <Box>
                       <Text fontWeight="semibold" fontSize="sm" color="red.600">Pain Points:</Text>
                       <List spacing={1} fontSize="sm">
@@ -265,8 +265,8 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
       )}
 
       {/* Expandable Sections */}
-      {((analysis.case_studies && analysis.case_studies.length > 0) || 
-        (analysis.lead_magnets && analysis.lead_magnets.length > 0) || 
+      {((analysis.case_studies && analysis.case_studies.length > 0) ||
+        (analysis.lead_magnets && analysis.lead_magnets.length > 0) ||
         (analysis.social_proof && analysis.social_proof.testimonials && analysis.social_proof.testimonials.length > 0)) && (
         <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} w="full">
           <CardBody>
@@ -377,7 +377,7 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
                           </VStack>
                         </Box>
                       )}
-                      
+
                       {/* Metrics */}
                       {analysis.social_proof.metrics && analysis.social_proof.metrics.length > 0 && (
                         <Box>
@@ -405,4 +405,4 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
   )
 }
 
-export default AnalysisDisplay 
+export default AnalysisDisplay

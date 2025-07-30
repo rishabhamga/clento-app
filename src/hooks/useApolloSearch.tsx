@@ -585,6 +585,6 @@ export function useSearchPagination() {
 
     setPerPage, // Expose setPerPage
     canGoNext: (state.pagination?.page || 1) < (state.pagination?.total_pages || 1),
-
+    canGoPrev: (state.pagination?.page || 1) > 1
   }
 }

@@ -91,11 +91,14 @@ export default clerkMiddleware(async (auth, req) => {
         try {
             const { data: u, error } = await supabase
                 .from('users')
-                .select('isAdmin')
+                .select('*')
                 .eq('clerk_id', userId)
                 .single()
-            if (error || !u?.isAdmin) {
+            if (error) {
                 // not an admin → 403
+                return new NextResponse('Forbidden', { status: 403 })
+            }
+            if (!u?.isAdmin) {
                 return new NextResponse('Forbidden', { status: 403 })
             }
         } catch (err) {
