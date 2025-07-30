@@ -217,11 +217,11 @@ function buildConversationContext(conversation: ConversationState, provider: str
   // Summarize current filter state
   const filterSummary: string[] = []
   if (currentFilters.jobTitles.length > 0) filterSummary.push(`Job Titles: ${currentFilters.jobTitles.join(', ')}`)
-  if (currentFilters.industries.length > 0) filterSummary.push(`Industries: ${currentFilters.industries.join(', ')}`)
+//   if (currentFilters.industries.length > 0) filterSummary.push(`Industries: ${currentFilters.industries.join(', ')}`)
   if (currentFilters.companySize.length > 0) filterSummary.push(`Company Size: ${currentFilters.companySize.join(', ')}`)
-  if (currentFilters.personLocations.length > 0) filterSummary.push(`Person Locations: ${currentFilters.personLocations.join(', ')}`)
-  if (currentFilters.organizationJobTitles.length > 0) filterSummary.push(`Hiring For: ${currentFilters.organizationJobTitles.join(', ')}`)
-  if (currentFilters.organizationJobLocations.length > 0) filterSummary.push(`Job Locations: ${currentFilters.organizationJobLocations.join(', ')}`)
+//   if (currentFilters.personLocations.length > 0) filterSummary.push(`Person Locations: ${currentFilters.personLocations.join(', ')}`)
+//   if (currentFilters.organizationJobTitles.length > 0) filterSummary.push(`Hiring For: ${currentFilters.organizationJobTitles.join(', ')}`)
+//   if (currentFilters.organizationJobLocations.length > 0) filterSummary.push(`Job Locations: ${currentFilters.organizationJobLocations.join(', ')}`)
 
   let context = `CONVERSATION CONTEXT:\n`
   context += `Provider: ${provider}\n`
