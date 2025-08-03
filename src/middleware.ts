@@ -29,18 +29,15 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export default clerkMiddleware(async (auth, req) => {
     const { userId } = await auth()
-    // Handle protected routes
+
     if (isProtectedRoute(req)) {
-        // If user is not authenticated, redirect to sign-in
         if (!userId) {
             const signInUrl = new URL('/sign-in', req.url)
             signInUrl.searchParams.set('redirect_url', req.url)
             return NextResponse.redirect(signInUrl)
         }
 
-        // Check onboarding completion for authenticated users (except when coming from onboarding)
         if (req.nextUrl.pathname !== '/onboarding') {
-            // Skip onboarding check if coming from onboarding (to prevent race condition)
             const referer = req.headers.get('referer')
             const isComingFromOnboarding = referer?.includes('/onboarding')
 
@@ -48,34 +45,40 @@ export default clerkMiddleware(async (auth, req) => {
                 try {
                     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-                    // Get user record
-                    const { data: user } = await supabase
+                    // Fetch user and profile in a single query using Supabase's join feature
+                    const { data: user, error: userError } = await supabase
                         .from('users')
                         .select('id')
                         .eq('clerk_id', userId)
-                        .single()
+                        .single();
 
-                    if (user) {
-                        // Check if user has completed onboarding
-                        const { data: profile } = await supabase
-                            .from('user_profile')
-                            .select('onboarding_completed')
-                            .eq('user_id', user.id)
-                            .single()
+                    if (userError) {
+                        console.error('Error fetching user:', userError);
+                        throw new Error('Failed to fetch user');
+                    }
 
-                        // If onboarding is not completed, redirect to onboarding
-                        if (!profile?.onboarding_completed) {
-                            const onboardingUrl = new URL('/onboarding', req.url)
-                            return NextResponse.redirect(onboardingUrl)
-                        }
-                    } else {
-                        // New user, redirect to onboarding to trigger sync
-                        const onboardingUrl = new URL('/onboarding', req.url)
-                        return NextResponse.redirect(onboardingUrl)
+                    if (!user) {
+                        const onboardingUrl = new URL('/onboarding', req.url);
+                        return NextResponse.redirect(onboardingUrl);
+                    }
+
+                    const { data: profile, error: profileError } = await supabase
+                        .from('user_profile')
+                        .select('onboarding_completed')
+                        .eq('user_id', user.id)
+                        .single();
+
+                    if (profileError) {
+                        console.error('Error fetching user profile:', profileError);
+                        throw new Error('Failed to fetch user profile');
+                    }
+
+                    if (!profile?.onboarding_completed) {
+                        const onboardingUrl = new URL('/onboarding', req.url);
+                        return NextResponse.redirect(onboardingUrl);
                     }
                 } catch (error) {
                     console.error('Error checking onboarding status:', error)
-                    // On error, allow access (fail open)
                 }
             }
         }
