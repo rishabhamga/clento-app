@@ -1,26 +1,28 @@
 'use client'
 
-import { 
-  Box, 
-  VStack, 
-  HStack, 
-  Text, 
-  Icon, 
+import {
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Icon,
   useColorModeValue,
   Divider
 } from '@chakra-ui/react'
 import { useRouter, usePathname } from 'next/navigation'
-import { 
-  BarChart3, 
+import {
+  BarChart3,
   // Settings, // TODO: Re-enable when Integrations page is ready
-  Users, 
+  Users,
   // Eye, // TODO: Re-enable when Website Visitors page is ready
   // Inbox, // TODO: Re-enable when Inbox page is ready
-  Megaphone, 
+  Megaphone,
   // Clock, // TODO: Re-enable when Pending Messages page is ready
   // Send // TODO: Re-enable when Senders page is ready
 } from 'lucide-react'
 import OrganizationSwitcher from '../OrganizationSwitcher'
+import { UserButton, UserProfile } from '@clerk/nextjs';
+import { userAgent } from 'next/server'
 
 interface NavItemProps {
   icon: React.ComponentType<{ size?: number | string; className?: string }>
@@ -67,6 +69,41 @@ const NavItem = ({ icon, label, href, isActive, onClick }: NavItemProps) => {
   )
 }
 
+const UserProfileButton = () => {
+  const bgActive = useColorModeValue('purple.100', 'purple.800');
+  const colorActive = useColorModeValue('purple.700', 'purple.200');
+  const colorInactive = useColorModeValue('gray.600', 'gray.400');
+
+  const handleClick = () => {
+    const userButtonElement = document.querySelector('[data-clerk-user-button]') as HTMLElement;
+    if (userButtonElement) {
+      userButtonElement.click();
+    }
+  };
+
+  return (
+    <HStack
+      w="100%"
+      p={3}
+      borderRadius="lg"
+      cursor="pointer"
+      bg={bgActive}
+      color={colorActive}
+      _hover={{
+        bg: bgActive,
+        color: colorActive
+      }}
+      transition="all 0.2s ease"
+      onClick={handleClick}
+    >
+      <UserButton />
+      <Text fontSize="sm" fontWeight="semibold">
+        {/* todo */}
+      </Text>
+    </HStack>
+  );
+};
+
 export default function Sidebar() {
   const pathname = usePathname()
   const bgColor = useColorModeValue('white', 'gray.800')
@@ -98,6 +135,9 @@ export default function Sidebar() {
       left={0}
       top={0}
       overflowY="auto"
+      display="flex"
+      flexDirection="column"
+      justifyContent="space-between"
     >
       <VStack spacing={6} align="stretch">
         {/* Logo/Brand */}
@@ -109,11 +149,11 @@ export default function Sidebar() {
 
         {/* Organization Switcher */}
         <Box>
-          <Text 
-            fontSize="xs" 
-            fontWeight="bold" 
-            color="gray.500" 
-            textTransform="uppercase" 
+          <Text
+            fontSize="xs"
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
             letterSpacing="wider"
             mb={2}
           >
@@ -141,11 +181,11 @@ export default function Sidebar() {
 
         {/* Outbound Section */}
         <VStack spacing={2} align="stretch">
-          <Text 
-            fontSize="xs" 
-            fontWeight="bold" 
-            color="gray.500" 
-            textTransform="uppercase" 
+          <Text
+            fontSize="xs"
+            fontWeight="bold"
+            color="gray.500"
+            textTransform="uppercase"
             letterSpacing="wider"
             mb={2}
           >
@@ -162,6 +202,11 @@ export default function Sidebar() {
           ))}
         </VStack>
       </VStack>
+
+      {/* User Profile Button */}
+      <Box mt={4}>
+        <UserProfileButton />
+      </Box>
     </Box>
   )
-} 
+}
