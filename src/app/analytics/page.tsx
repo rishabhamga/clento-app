@@ -82,17 +82,17 @@ export default function AnalyticsPage() {
             <CardBody textAlign="center" py={12}>
               <VStack spacing={4}>
                 <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
-                  COMING SOON
+                  PRO FEATURE
                 </Badge>
                 <Heading size="md" color="purple.700">
                   Advanced Analytics Dashboard
                 </Heading>
                 <Text color="purple.600" maxW="md">
                   Get detailed insights into your campaign performance, lead quality scores, 
-                  conversion funnels, and ROI tracking. Full analytics suite coming soon!
+                  conversion funnels, and ROI tracking. Unlock the full analytics suite with Pro.
                 </Text>
                 <GradientButton size="lg">
-                  Request Early Access
+                  Upgrade to Pro
                 </GradientButton>
               </VStack>
             </CardBody>

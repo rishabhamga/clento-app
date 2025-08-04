@@ -29,7 +29,8 @@ import {
   StatNumber,
   StatHelpText,
   Card,
-  CardBody
+  CardBody,
+  Button
 } from '@chakra-ui/react'
 import { Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -408,13 +409,29 @@ export default function Dashboard() {
 
             <TabPanel>
               <VStack spacing={4} align="center" py={8}>
-                <Text>Team campaigns feature coming soon!</Text>
+                <Text color="gray.600" fontSize="lg">
+                  Collaborate with your team on campaigns
+                </Text>
+                <Text color="gray.500" fontSize="sm">
+                  Team campaigns are available with Pro subscription
+                </Text>
+                <Button colorScheme="blue" size="sm" variant="outline">
+                  Upgrade to Pro
+                </Button>
               </VStack>
             </TabPanel>
 
             <TabPanel>
               <VStack spacing={4} align="center" py={8}>
-                <Text>Campaign templates feature coming soon!</Text>
+                <Text color="gray.600" fontSize="lg">
+                  Save time with pre-built campaign templates
+                </Text>
+                <Text color="gray.500" fontSize="sm">
+                  Campaign templates are available with Pro subscription
+                </Text>
+                <Button colorScheme="blue" size="sm" variant="outline">
+                  Upgrade to Pro
+                </Button>
               </VStack>
             </TabPanel>
           </TabPanels>
