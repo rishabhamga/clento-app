@@ -23,6 +23,8 @@ import {
 import OrganizationSwitcher from '../OrganizationSwitcher'
 import { UserButton, UserProfile } from '@clerk/nextjs';
 import { userAgent } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
+import { useUser } from '@clerk/nextjs';
 
 interface NavItemProps {
   icon: React.ComponentType<{ size?: number | string; className?: string }>
@@ -72,10 +74,11 @@ const NavItem = ({ icon, label, href, isActive, onClick }: NavItemProps) => {
 const UserProfileButton = () => {
   const bgActive = useColorModeValue('purple.100', 'purple.800');
   const colorActive = useColorModeValue('purple.700', 'purple.200');
-  const colorInactive = useColorModeValue('gray.600', 'gray.400');
+  const { user } = useUser();
+  const userName = user?.fullName || user?.username || '';
 
   const handleClick = () => {
-    const userButtonElement = document.querySelector('[data-clerk-user-button]') as HTMLElement;
+    const userButtonElement = document.querySelector('.cl-userButtonTrigger') as HTMLButtonElement;
     if (userButtonElement) {
       userButtonElement.click();
     }
@@ -96,9 +99,11 @@ const UserProfileButton = () => {
       transition="all 0.2s ease"
       onClick={handleClick}
     >
-      <UserButton />
+      <Box>
+        <UserButton data-clerk-user-button />
+      </Box>
       <Text fontSize="sm" fontWeight="semibold">
-        {/* todo */}
+        {userName}
       </Text>
     </HStack>
   );
