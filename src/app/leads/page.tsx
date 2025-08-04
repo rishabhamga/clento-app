@@ -42,6 +42,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { Search, Filter, Download, Plus, CheckCircle, Mail } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ILeads, IRecentActivity } from '../api/leads/view/route'
 
 const sampleLeads: any[] = []
@@ -60,6 +61,7 @@ function getStatusColor(status: string) {
 }
 
 export default function LeadsPage() {
+    const router = useRouter()
     const cardBg = useColorModeValue('white', 'gray.700')
     const { isOpen, onOpen, onClose } = useDisclosure()
     const [leads, setLeads] = useState<ILeads[]>();
@@ -440,7 +442,29 @@ export default function LeadsPage() {
                     {/*Leads Placeholder*/}
                     {!loading && !leads && (
                         <Card bg={cardBg} p={12} alignItems={'center'}>
-                            <Text fontWeight={'semibold'} color={'blackAlpha.400'}>Select A Campaign To See The Leads</Text>
+                            <VStack spacing={4}>
+                                {(!campaigns || campaigns.length === 0) ? (
+                                    <>
+                                        <Text fontWeight={'semibold'} color={'blackAlpha.600'} fontSize="lg">
+                                            No campaigns started yet
+                                        </Text>
+                                        <Text color={'blackAlpha.500'} fontSize="sm" textAlign="center">
+                                            Start a campaign to see all your leads data here
+                                        </Text>
+                                        <GradientButton 
+                                            size="md" 
+                                            variant="primary"
+                                            onClick={() => router.push('/campaigns/new')}
+                                        >
+                                            Start Your First Campaign
+                                        </GradientButton>
+                                    </>
+                                ) : (
+                                    <Text fontWeight={'semibold'} color={'blackAlpha.400'}>
+                                        Select A Campaign To See The Leads
+                                    </Text>
+                                )}
+                            </VStack>
                         </Card>)}
                     {/* Leads Table */}
                     {/* Leads table will be shown when leads are available */}
