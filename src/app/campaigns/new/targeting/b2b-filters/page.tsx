@@ -459,7 +459,6 @@ function B2BFiltersContent() {
 
   // Handle leads selected from CSV upload
   const handleLeadsSelected = (leads: CSVLeadData[]) => {
-    console.log('CSV leads loaded for preview:', leads)
 
     // Convert CSV leads to the format expected by search results
     const convertedLeads = leads.map((lead, index) => {
@@ -506,6 +505,20 @@ function B2BFiltersContent() {
   const canProceedToPitch = (hasActiveFilters) && (
     searchType === 'csv_upload' ? (state.peopleResults && state.peopleResults.length > 0) : true
   )
+
+useEffect(() => {
+    const data = JSON.parse(localStorage.getItem('campaignTargeting') || '{}');
+    if (data && data.filters) {
+        Object.entries(data.filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                updateFilter(key, value);
+            }
+        });
+        if (data.searchType && data.searchType !== searchType) {
+            setSearchType(data.searchType);
+        }
+    }
+}, []);
 
   return (
     <Box

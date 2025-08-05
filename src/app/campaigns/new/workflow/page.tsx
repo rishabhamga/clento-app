@@ -856,7 +856,7 @@ export default function WorkflowPage() {
               <VStack spacing={4} align="stretch">
                 {/* Step editing form would go here */}
                 <Text color="gray.600">
-                  Advanced step editing is available in our Pro plan. 
+                  Advanced step editing is available in our Pro plan.
                   <Text as="span" color="blue.500" cursor="pointer" textDecoration="underline">
                     Upgrade to unlock
                   </Text>
