@@ -187,73 +187,90 @@ export default function PitchPage() {
     { id: 'email-1', instruction: 'Keep subject lines under 50 characters for better open rates', editable: true },
     { id: 'email-2', instruction: 'End with a single, clear call-to-action', editable: true },
   ])
-
-  // Load existing analysis data from user profile
-  useEffect(() => {
-    const loadExistingAnalysis = async () => {
-      if (!user) return
-
-      try {
-        const response = await fetch('/api/user/profile')
-        if (response.ok) {
-          const data = await response.json()
-          
-          if (data.profile?.icp && typeof data.profile.icp === 'object') {
-            setICPAnalysis(data.profile.icp)
-            setWebsiteAnalysis(data.profile.icp) // ✅ FIX: Set websiteAnalysis for saving
-            setWebsiteUrl(data.profile.website_url || '')
-            setOfferingDescription(data.profile.icp.core_offer || '')
-            setShowAnalysisSection(true)
-            
-            console.log('✅ [PROFILE LOADED] Website analysis loaded from profile:', {
-              hasICPAnalysis: !!data.profile.icp,
-              hasWebsiteAnalysis: !!data.profile.icp,
-              analysisKeys: Object.keys(data.profile.icp || {}),
-              coreOffer: data.profile.icp?.core_offer,
-              websiteUrl: data.profile.website_url
-            })
-            
-            // Extract pain points and proof points from personas if available
-            if (data.profile.icp.target_personas && data.profile.icp.target_personas.length > 0) {
-              const allPainPoints: PainPoint[] = []
-              const allProofPoints: ProofPoint[] = []
-              
-              data.profile.icp.target_personas.forEach((persona: any, personaIndex: number) => {
-                if (persona.pain_points) {
-                  persona.pain_points.forEach((point: string, index: number) => {
-                    allPainPoints.push({
-                      id: `persona-${personaIndex}-pain-${index}`,
-                      title: `Pain Point ${allPainPoints.length + 1}`,
-                      description: point
-                    })
-                  })
-                }
-                
-                if (persona.desired_outcomes) {
-                  persona.desired_outcomes.forEach((outcome: string, index: number) => {
-                    allProofPoints.push({
-                      id: `persona-${personaIndex}-outcome-${index}`,
-                      title: `Success Outcome ${allProofPoints.length + 1}`,
-                      description: outcome
-                    })
-                  })
-                }
-              })
-              
-              if (allPainPoints.length > 0) setPainPoints(allPainPoints)
-              if (allProofPoints.length > 0) setProofPoints(allProofPoints)
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error loading existing analysis:', error)
-      } finally {
-        setIsLoadingProfile(false)
+  // Save pitch data to localStorage with validation
+  const savePitchDataToLocalStorage = (pitchData) => {
+    try {
+      if (pitchData && typeof pitchData === 'object') {
+        localStorage.setItem('campaignPitchData', JSON.stringify(pitchData));
+        console.log('✅ Saved pitchData to localStorage:', pitchData);
+      } else {
+        console.warn('Invalid pitchData structure, not saving to localStorage:', pitchData);
       }
+    } catch (error) {
+      console.error('Error saving campaignPitchData to localStorage:', error);
+    }
+  };
+
+  //Load old data if any
+useEffect(() => {
+    // Try to load from localStorage first
+    const localData = JSON.parse(localStorage.getItem('campaignPitchData') || '{}');
+    let loadedFromLocal = false;
+
+    if (localData && typeof localData === 'object' && Object.keys(localData).length > 0) {
+        if (localData.websiteUrl) setWebsiteUrl(localData.websiteUrl);
+        if (localData.websiteAnalysis) setWebsiteAnalysis(localData.websiteAnalysis);
+        if (localData.offeringDescription) setOfferingDescription(localData.offeringDescription);
+        if (Array.isArray(localData.painPoints)) setPainPoints(localData.painPoints);
+        if (Array.isArray(localData.proofPoints)) setProofPoints(localData.proofPoints);
+        if (Array.isArray(localData.coachingPoints)) setCoachingPoints(localData.coachingPoints);
+        if (Array.isArray(localData.emailCoachingPoints)) setEmailCoachingPoints(localData.emailCoachingPoints);
+        loadedFromLocal = true;
+        setIsLoadingProfile(false);
     }
 
-    loadExistingAnalysis()
-  }, [user])
+    // If no local data, load from backend
+    if (!loadedFromLocal && user) {
+        const loadExistingAnalysis = async () => {
+            try {
+                const response = await fetch('/api/user/profile');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.profile?.icp && typeof data.profile.icp === 'object') {
+                        setICPAnalysis(data.profile.icp);
+                        setWebsiteAnalysis(data.profile.icp);
+                        setWebsiteUrl(data.profile.website_url || '');
+                        setOfferingDescription(data.profile.icp.core_offer || '');
+                        setShowAnalysisSection(true);
+
+                        // Extract pain points and proof points from personas if available
+                        if (data.profile.icp.target_personas && data.profile.icp.target_personas.length > 0) {
+                            const allPainPoints: PainPoint[] = [];
+                            const allProofPoints: ProofPoint[] = [];
+                            data.profile.icp.target_personas.forEach((persona: any, personaIndex: number) => {
+                                if (persona.pain_points) {
+                                    persona.pain_points.forEach((point: string, index: number) => {
+                                        allPainPoints.push({
+                                            id: `persona-${personaIndex}-pain-${index}`,
+                                            title: `Pain Point ${allPainPoints.length + 1}`,
+                                            description: point
+                                        });
+                                    });
+                                }
+                                if (persona.desired_outcomes) {
+                                    persona.desired_outcomes.forEach((outcome: string, index: number) => {
+                                        allProofPoints.push({
+                                            id: `persona-${personaIndex}-outcome-${index}`,
+                                            title: `Success Outcome ${allProofPoints.length + 1}`,
+                                            description: outcome
+                                        });
+                                    });
+                                }
+                            });
+                            if (allPainPoints.length > 0) setPainPoints(allPainPoints);
+                            if (allProofPoints.length > 0) setProofPoints(allProofPoints);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading existing analysis:', error);
+            } finally {
+                setIsLoadingProfile(false);
+            }
+        };
+        loadExistingAnalysis();
+    }
+}, [user]);
 
   const handleAnalyzeWebsite = async () => {
     if (!websiteUrl.trim()) {
@@ -289,16 +306,16 @@ export default function PitchPage() {
       }
 
       const data = await response.json()
-      
+
       if (data.analysisId) {
         // Poll for results
         let pollCount = 0
         const maxPolls = 60 // 2 minutes timeout
-        
+
         const pollForResults = async () => {
           try {
             pollCount++
-            
+
             if (pollCount > maxPolls) {
               console.log('Pitch page polling timeout reached')
               setIsAnalyzing(false)
@@ -311,25 +328,25 @@ export default function PitchPage() {
             const resultResponse = await fetch(`/api/analyze-site?id=${data.analysisId}`)
             if (resultResponse.ok) {
               const resultData = await resultResponse.json()
-              
+
               console.log('=== PITCH PAGE POLLING DEBUG ===')
               console.log('Result data:', resultData)
               console.log('Result data status:', resultData.status)
               console.log('Analysis status:', resultData.analysis?.status)
               console.log('===============================')
-              
+
               if (resultData.success && resultData.analysis && resultData.analysis.status === 'completed') {
                 console.log('=== ANALYSIS DATA DEBUG ===')
                 console.log('Full analysis data:', resultData.analysis)
                 console.log('Target personas:', resultData.analysis.target_personas)
                 console.log('Target personas length:', resultData.analysis.target_personas?.length)
                 console.log('==========================')
-                
+
                 setICPAnalysis(resultData.analysis)
                 setWebsiteAnalysis(resultData.analysis) // ✅ FIX: Set websiteAnalysis for saving
                 setOfferingDescription(resultData.analysis.core_offer || '')
                 setShowAnalysisSection(true)
-                
+
                 console.log('✅ [ANALYSIS COMPLETE] Website analysis data set:', {
                   hasICPAnalysis: !!resultData.analysis,
                   hasWebsiteAnalysis: !!resultData.analysis,
@@ -337,12 +354,12 @@ export default function PitchPage() {
                   coreOffer: resultData.analysis?.core_offer,
                   targetPersonasCount: resultData.analysis?.target_personas?.length || 0
                 })
-                
+
                 // Extract pain points and proof points from personas
                 if (resultData.analysis.target_personas && resultData.analysis.target_personas.length > 0) {
                   const allPainPoints: PainPoint[] = []
                   const allProofPoints: ProofPoint[] = []
-                  
+
                   resultData.analysis.target_personas.forEach((persona: any, personaIndex: number) => {
                     if (persona.pain_points) {
                       persona.pain_points.forEach((point: string, index: number) => {
@@ -353,7 +370,7 @@ export default function PitchPage() {
                         })
                       })
                     }
-                    
+
                     if (persona.desired_outcomes) {
                       persona.desired_outcomes.forEach((outcome: string, index: number) => {
                         allProofPoints.push({
@@ -364,18 +381,18 @@ export default function PitchPage() {
                       })
                     }
                   })
-                  
+
                   console.log('Extracted pain points:', allPainPoints)
                   console.log('Extracted proof points:', allProofPoints)
                   setPainPoints(allPainPoints)
                   setProofPoints(allProofPoints)
                 } else {
                   console.log('No target_personas found or empty. Checking for alternative data structures...')
-                  
+
                   // Check if there are pain points in other fields
                   const alternativePainPoints: PainPoint[] = []
                   const alternativeProofPoints: ProofPoint[] = []
-                  
+
                   // Check case studies for proof points
                   if (resultData.analysis.case_studies && Array.isArray(resultData.analysis.case_studies)) {
                     resultData.analysis.case_studies.forEach((caseStudy: any, index: number) => {
@@ -390,8 +407,8 @@ export default function PitchPage() {
                       }
                     })
                   }
-                  
-                  // Check competitive advantages for proof points  
+
+                  // Check competitive advantages for proof points
                   if (resultData.analysis.competitive_advantages && Array.isArray(resultData.analysis.competitive_advantages)) {
                     resultData.analysis.competitive_advantages.forEach((advantage: string, index: number) => {
                       alternativeProofPoints.push({
@@ -401,7 +418,7 @@ export default function PitchPage() {
                       })
                     })
                   }
-                  
+
                   // Check social proof testimonials for proof points
                   if (resultData.analysis.social_proof?.testimonials && Array.isArray(resultData.analysis.social_proof.testimonials)) {
                     resultData.analysis.social_proof.testimonials.forEach((testimonial: any, index: number) => {
@@ -412,10 +429,10 @@ export default function PitchPage() {
                       })
                     })
                   }
-                  
+
                   console.log('Alternative pain points found:', alternativePainPoints.length)
                   console.log('Alternative proof points found:', alternativeProofPoints.length)
-                  
+
                   if (alternativeProofPoints.length > 0) {
                     setProofPoints(alternativeProofPoints)
                   }
@@ -423,12 +440,12 @@ export default function PitchPage() {
                     setPainPoints(alternativePainPoints)
                   }
                 }
-                
+
                 customToast.success({
                   title: 'Analysis Complete!',
                   description: 'Your website has been analyzed and insights generated.',
                 })
-                
+
                 setIsAnalyzing(false)
               } else if (resultData.analysis && resultData.analysis.status === 'failed') {
                 throw new Error('Analysis failed')
@@ -448,10 +465,10 @@ export default function PitchPage() {
             })
           }
         }
-        
+
         // Start polling
         setTimeout(pollForResults, 1000)
-        
+
         customToast.info({
           title: 'Analysis Started',
           description: 'Analyzing your website... This may take up to 2 minutes.',
@@ -547,19 +564,6 @@ export default function PitchPage() {
 
   const saveDraftToBackend = async (step: string) => {
     try {
-      console.log('🚀 [PITCH SAVE] Starting saveDraftToBackend with step:', step)
-      console.log('📊 [PITCH SAVE] Current state variables:', {
-        websiteUrl: websiteUrl,
-        hasWebsiteAnalysis: !!websiteAnalysis,
-        websiteAnalysisType: typeof websiteAnalysis,
-        websiteAnalysisValue: websiteAnalysis,
-        offeringDescription: offeringDescription?.substring(0, 50) + '...',
-        painPointsCount: painPoints?.length || 0,
-        proofPointsCount: proofPoints?.length || 0,
-        coachingPointsCount: coachingPoints?.length || 0,
-        emailCoachingPointsCount: emailCoachingPoints?.length || 0
-      })
-      
       const draftBody = {
         campaignName: 'Untitled Campaign',
         websiteUrl,
@@ -572,29 +576,12 @@ export default function PitchPage() {
         step
       }
 
-      console.log('📦 [PITCH SAVE] Draft body prepared:', {
-        campaignName: draftBody.campaignName,
-        websiteUrl: draftBody.websiteUrl,
-        hasWebsiteAnalysis: !!draftBody.websiteAnalysis,
-        websiteAnalysisKeys: draftBody.websiteAnalysis ? Object.keys(draftBody.websiteAnalysis) : 'null',
-        offeringDescriptionLength: draftBody.offeringDescription?.length || 0,
-        painPointsCount: draftBody.painPoints?.length || 0,
-        proofPointsCount: draftBody.proofPoints?.length || 0,
-        step: draftBody.step
-      })
-
       const response = await fetch('/api/campaigns/save-draft', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(draftBody)
-      })
-
-      console.log('📡 [PITCH SAVE] Save response:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
       })
 
       if (!response.ok) {
@@ -613,18 +600,6 @@ export default function PitchPage() {
   }
 
   const handleContinueToOutreach = async () => {
-    console.log('🎯 [PITCH NAVIGATE] Starting handleContinueToOutreach')
-    console.log('📊 [PITCH NAVIGATE] Current state before saving:', {
-      websiteUrl: websiteUrl,
-      hasWebsiteAnalysis: !!websiteAnalysis,
-      websiteAnalysisValue: websiteAnalysis,
-      offeringDescription: offeringDescription?.substring(0, 50) + '...',
-      painPointsCount: painPoints?.length || 0,
-      proofPointsCount: proofPoints?.length || 0,
-      coachingPointsCount: coachingPoints?.length || 0,
-      emailCoachingPointsCount: emailCoachingPoints?.length || 0
-    })
-    
     const pitchData = {
       websiteUrl,
       websiteAnalysis,
@@ -647,8 +622,7 @@ export default function PitchPage() {
       emailCoachingPointsCount: pitchData.emailCoachingPoints?.length || 0
     })
 
-    localStorage.setItem('campaignPitchData', JSON.stringify(pitchData))
-    console.log('✅ [PITCH NAVIGATE] Saved to localStorage')
+    savePitchDataToLocalStorage(pitchData)
 
     try {
       await saveDraftToBackend('pitch')
@@ -681,7 +655,7 @@ export default function PitchPage() {
       emailCoachingPoints
     }
 
-    localStorage.setItem('campaignPitchData', JSON.stringify(pitchData))
+    savePitchDataToLocalStorage(pitchData)
 
     try {
       await saveDraftToBackend('pitch')
@@ -701,9 +675,38 @@ export default function PitchPage() {
     router.push('/campaigns/new/targeting/b2b-filters')
   }
 
+  // Debugging hooks
+  useEffect(() => {
+    console.log("Updated websiteUrl:", websiteUrl);
+  }, [websiteUrl]);
+
+  useEffect(() => {
+    console.log("Updated websiteAnalysis:", websiteAnalysis);
+  }, [websiteAnalysis]);
+
+  useEffect(() => {
+    console.log("Updated offeringDescription:", offeringDescription);
+  }, [offeringDescription]);
+
+  useEffect(() => {
+    console.log("Updated painPoints:", painPoints);
+  }, [painPoints]);
+
+  useEffect(() => {
+    console.log("Updated proofPoints:", proofPoints);
+  }, [proofPoints]);
+
+  useEffect(() => {
+    console.log("Updated coachingPoints:", coachingPoints);
+  }, [coachingPoints]);
+
+  useEffect(() => {
+    console.log("Updated emailCoachingPoints:", emailCoachingPoints);
+  }, [emailCoachingPoints]);
+
   if (isLoadingProfile) {
     return (
-      <Box 
+      <Box
         minH="100vh"
         bg={gradientBg}
         display="flex"
@@ -719,7 +722,7 @@ export default function PitchPage() {
   }
 
   return (
-    <Box 
+    <Box
       minH="100vh"
       bg={gradientBg}
       position="relative"
@@ -758,9 +761,9 @@ export default function PitchPage() {
 
           {/* Page Title */}
           <Box textAlign="center" mb={8}>
-            <Heading 
-              as="h1" 
-              size="2xl" 
+            <Heading
+              as="h1"
+              size="2xl"
               mb={4}
               bgGradient="linear(to-r, white, purple.100)"
               bgClip="text"
@@ -770,8 +773,8 @@ export default function PitchPage() {
             >
               🎨 Create Your Pitch
             </Heading>
-            <Text 
-              fontSize="xl" 
+            <Text
+              fontSize="xl"
               color="whiteAlpha.900"
               fontWeight="500"
               maxW="2xl"
@@ -782,7 +785,7 @@ export default function PitchPage() {
           </Box>
 
           {/* Website Analysis Section */}
-          <Card 
+          <Card
             bg={cardBg}
             backdropFilter="blur(10px)"
             border="1px solid"
@@ -794,7 +797,7 @@ export default function PitchPage() {
           >
             <CardHeader pb={3}>
               <HStack>
-                <Badge 
+                <Badge
                   colorScheme="blue"
                   px={3}
                   py={1}
@@ -842,7 +845,7 @@ export default function PitchPage() {
                 </HStack>
 
                 {isAnalyzing && (
-                  <Card 
+                  <Card
                     bg={blueBg}
                     border="1px solid"
                     borderColor={blueBorderColor}
@@ -861,10 +864,10 @@ export default function PitchPage() {
                     </CardBody>
                   </Card>
                 )}
-                
+
                 <Collapse in={showAnalysisSection} animateOpacity>
                   {icpAnalysis && (
-                    <Card 
+                    <Card
                       bg={cardBg}
                       backdropFilter="blur(10px)"
                       border="1px solid"
@@ -884,7 +887,7 @@ export default function PitchPage() {
           </Card>
 
           {/* Offering Description */}
-          <Card 
+          <Card
             bg={cardBg}
             backdropFilter="blur(10px)"
             border="1px solid"
@@ -922,7 +925,7 @@ export default function PitchPage() {
           </Card>
 
           {/* Pain Points Section */}
-          <Card 
+          <Card
             bg={cardBg}
             backdropFilter="blur(10px)"
             border="1px solid"
@@ -958,7 +961,7 @@ export default function PitchPage() {
             <CardBody pt={0}>
               <VStack spacing={2} align="stretch">
                 {painPoints.map((point, index) => (
-                  <HStack 
+                  <HStack
                     key={point.id}
                     p={3}
                     bg={glassBg}
@@ -966,15 +969,15 @@ export default function PitchPage() {
                     borderColor={borderColor}
                     borderRadius="md"
                     spacing={3}
-                    _hover={{ 
+                    _hover={{
                       borderColor: 'red.300',
-                      shadow: 'sm' 
+                      shadow: 'sm'
                     }}
                     transition="all 0.2s ease"
                   >
-                    <Text 
-                      fontSize="xs" 
-                      fontWeight="bold" 
+                    <Text
+                      fontSize="xs"
+                      fontWeight="bold"
                       color="red.600"
                       minW="16px"
                       textAlign="center"
@@ -1004,12 +1007,12 @@ export default function PitchPage() {
                     />
                   </HStack>
                 ))}
-                
+
                 {painPoints.length === 0 && (
-                  <Box 
-                    p={4} 
+                  <Box
+                    p={4}
                     textAlign="center"
-                    border="2px dashed" 
+                    border="2px dashed"
                     borderColor="gray.300"
                     borderRadius="md"
                     bg="gray.50"
@@ -1024,7 +1027,7 @@ export default function PitchPage() {
           </Card>
 
           {/* Proof Points Section */}
-          <Card 
+          <Card
             bg={cardBg}
             backdropFilter="blur(10px)"
             border="1px solid"
@@ -1060,7 +1063,7 @@ export default function PitchPage() {
             <CardBody pt={0}>
               <VStack spacing={2} align="stretch">
                 {proofPoints.map((point, index) => (
-                  <HStack 
+                  <HStack
                     key={point.id}
                     p={3}
                     bg={glassBg}
@@ -1068,15 +1071,15 @@ export default function PitchPage() {
                     borderColor={borderColor}
                     borderRadius="md"
                     spacing={3}
-                    _hover={{ 
+                    _hover={{
                       borderColor: 'green.300',
-                      shadow: 'sm' 
+                      shadow: 'sm'
                     }}
                     transition="all 0.2s ease"
                   >
-                    <Text 
-                      fontSize="xs" 
-                      fontWeight="bold" 
+                    <Text
+                      fontSize="xs"
+                      fontWeight="bold"
                       color="green.600"
                       minW="16px"
                       textAlign="center"
@@ -1106,12 +1109,12 @@ export default function PitchPage() {
                     />
                   </HStack>
                 ))}
-                
+
                 {proofPoints.length === 0 && (
-                  <Box 
-                    p={4} 
+                  <Box
+                    p={4}
                     textAlign="center"
-                    border="2px dashed" 
+                    border="2px dashed"
                     borderColor="gray.300"
                     borderRadius="md"
                     bg="gray.50"
@@ -1161,7 +1164,7 @@ export default function PitchPage() {
                 borderColor="gray.300"
                 borderWidth="2px"
                 variant="outline"
-                _hover={{ 
+                _hover={{
                   bg: 'gray.50',
                   borderColor: 'gray.400'
                 }}
@@ -1173,7 +1176,7 @@ export default function PitchPage() {
               >
                 💾 Save Draft
               </Button>
-              
+
               <GradientButton
                 onClick={handleContinueToOutreach}
                 rightIcon={<Text>→</Text>}
@@ -1193,4 +1196,4 @@ export default function PitchPage() {
       </Container>
     </Box>
   )
-} 
+}
