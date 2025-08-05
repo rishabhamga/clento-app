@@ -127,55 +127,44 @@ export default function OutreachPage() {
 
   // Load pitch data from localStorage OR backend
   useEffect(() => {
-    console.log('🔍 [OUTREACH] Loading pitch data...')
+    const savedOutreachDataRaw = localStorage.getItem('campaignOutreachData')
+    if (savedOutreachDataRaw) {
+      try {
+        const savedOutreachData = JSON.parse(savedOutreachDataRaw)
+        if (savedOutreachData.campaignLanguage) setCampaignLanguage(savedOutreachData.campaignLanguage)
+        if (savedOutreachData.signOffs) setSignOffs(savedOutreachData.signOffs)
+        if (savedOutreachData.toneOfVoice) setToneOfVoice(savedOutreachData.toneOfVoice)
+        if (savedOutreachData.callsToAction) setCallsToAction(savedOutreachData.callsToAction)
+        if (typeof savedOutreachData.messagePersonalization === 'boolean') setMessagePersonalization(savedOutreachData.messagePersonalization)
+        if (typeof savedOutreachData.maxResourceAge === 'number') setMaxResourceAge(savedOutreachData.maxResourceAge)
+        if (Array.isArray(savedOutreachData.personalizationSources)) setPersonalizationSources(savedOutreachData.personalizationSources)
+      } catch (err) {
+        console.error('❌ [OUTREACH] Error parsing outreach data:', err)
+        localStorage.removeItem('campaignOutreachData')
+      }
+    }
     const savedPitchData = localStorage.getItem('campaignPitchData')
 
     if (savedPitchData) {
-      console.log('✅ [OUTREACH] Found pitch data in localStorage')
       try {
         const parsed = JSON.parse(savedPitchData)
         setPitchData(parsed)
-        console.log('✅ [OUTREACH] Pitch data loaded:', {
-          hasWebsiteAnalysis: !!parsed.websiteAnalysis,
-          websiteUrl: parsed.websiteUrl,
-          painPointsCount: parsed.painPoints?.length || 0,
-          proofPointsCount: parsed.proofPoints?.length || 0,
-          websiteAnalysisKeys: parsed.websiteAnalysis ? Object.keys(parsed.websiteAnalysis) : 'null',
-          websiteAnalysisStructure: parsed.websiteAnalysis ? {
-            hasCoreOffer: !!parsed.websiteAnalysis.core_offer,
-            hasTargetPersonas: !!parsed.websiteAnalysis.target_personas,
-            targetPersonasCount: parsed.websiteAnalysis.target_personas?.length || 0,
-            hasCompetitiveAdvantages: !!parsed.websiteAnalysis.competitive_advantages
-          } : 'null'
-        })
       } catch (error) {
         console.error('❌ [OUTREACH] Error parsing localStorage pitch data:', error)
         localStorage.removeItem('campaignPitchData') // Clear corrupted data
       }
     } else {
-      console.log('🔍 [OUTREACH] No localStorage data, fetching from backend...')
       // Fetch from backend draft API
       const fetchDraft = async () => {
         try {
           const res = await fetch('/api/campaigns/save-draft')
-          console.log('📡 [OUTREACH] Backend response status:', res.status)
 
           if (res.ok) {
             const data = await res.json()
-            console.log('📋 [OUTREACH] Backend response:', {
-              success: data.success,
-              hasDrafts: !!data.drafts,
-              draftsType: Array.isArray(data.drafts) ? 'array' : typeof data.drafts
-            })
 
             if (data.success && data.drafts) {
               // If multiple drafts, take the most recent
               const draft = Array.isArray(data.drafts) ? data.drafts[0] : data.drafts
-              console.log('📄 [OUTREACH] Processing draft:', {
-                hasDraft: !!draft,
-                hasWebsiteAnalysis: !!draft?.website_analysis,
-                websiteUrl: draft?.website_url
-              })
 
               if (draft && draft.website_analysis) {
                 const pd: PitchData = {
@@ -190,7 +179,6 @@ export default function OutreachPage() {
                 setPitchData(pd)
                 // Cache locally for subsequent steps
                 localStorage.setItem('campaignPitchData', JSON.stringify(pd))
-                console.log('✅ [OUTREACH] Pitch data loaded from backend')
               } else {
                 console.log('⚠️ [OUTREACH] Draft found but missing website analysis')
               }
@@ -252,15 +240,7 @@ export default function OutreachPage() {
   }
 
   const generateSampleMessage = async () => {
-    console.log('🚀 [SAMPLE GEN] Starting sample message generation...')
-    console.log('📋 [SAMPLE GEN] Pitch data check:', {
-      hasPitchData: !!pitchData,
-      hasWebsiteAnalysis: !!(pitchData as any)?.websiteAnalysis,
-      websiteUrl: (pitchData as any)?.websiteUrl
-    })
-
     if (!pitchData) {
-      console.error('❌ [SAMPLE GEN] No pitch data available')
       customToast.warning({
         title: 'Missing Pitch Data',
         description: 'Please complete the pitch step first to generate sample messages.',
@@ -269,7 +249,6 @@ export default function OutreachPage() {
     }
 
     if (!(pitchData as any).websiteAnalysis) {
-      console.error('❌ [SAMPLE GEN] No website analysis data available')
       customToast.warning({
         title: 'Missing Website Analysis',
         description: 'Website analysis is required to generate personalized messages. Please complete the pitch step.',
@@ -286,8 +265,6 @@ export default function OutreachPage() {
         callsToAction,
         messagePersonalization
       }
-
-      console.log('📤 [SAMPLE GEN] Sending generation request with outreach data:', outreachData)
 
       const result = await generateSampleMessages((pitchData as any).websiteAnalysis, 3, outreachData)
 
@@ -314,7 +291,6 @@ export default function OutreachPage() {
           timestamp: 'Just now'
         }))
         setCarouselData({ linkedin: linked, email: emails })
-        console.log('✅ [SAMPLE GEN] Messages generated and transformed successfully')
       } else {
         throw new Error(result.error || 'Generation failed')
       }

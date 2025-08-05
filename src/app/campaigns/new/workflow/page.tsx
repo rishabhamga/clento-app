@@ -855,7 +855,12 @@ export default function WorkflowPage() {
             {selectedStep && (
               <VStack spacing={4} align="stretch">
                 {/* Step editing form would go here */}
-                <Text>Step editing functionality coming soon...</Text>
+                <Text color="gray.600">
+                  Advanced step editing is available in our Pro plan.
+                  <Text as="span" color="blue.500" cursor="pointer" textDecoration="underline">
+                    Upgrade to unlock
+                  </Text>
+                </Text>
               </VStack>
             )}
           </ModalBody>

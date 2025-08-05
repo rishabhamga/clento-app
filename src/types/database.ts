@@ -9,6 +9,8 @@ export interface Database {
           full_name: string | null;
           company_name: string | null;
           website_url: string | null;
+          smartlead_org_id: string | null;
+          smartlead_org_name: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -19,6 +21,8 @@ export interface Database {
           full_name?: string | null;
           company_name?: string | null;
           website_url?: string | null;
+          smartlead_org_id?: string | null;
+          smartlead_org_name?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -29,6 +33,8 @@ export interface Database {
           full_name?: string | null;
           company_name?: string | null;
           website_url?: string | null;
+          smartlead_org_id?: string | null;
+          smartlead_org_name?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -80,6 +86,9 @@ export interface Database {
           status: 'new' | 'contacted' | 'replied' | 'positive' | 'neutral' | 'negative' | 'unsubscribed';
           source: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor';
           enrichment_data: Record<string, unknown>;
+          smartlead_campaign_id: string | null;
+          last_email_event: string | null;
+          last_event_timestamp: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -97,6 +106,9 @@ export interface Database {
           status?: 'new' | 'contacted' | 'replied' | 'positive' | 'neutral' | 'negative' | 'unsubscribed';
           source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor';
           enrichment_data?: Record<string, unknown>;
+          smartlead_campaign_id?: string | null;
+          last_email_event?: string | null;
+          last_event_timestamp?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -114,6 +126,9 @@ export interface Database {
           status?: 'new' | 'contacted' | 'replied' | 'positive' | 'neutral' | 'negative' | 'unsubscribed';
           source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor';
           enrichment_data?: Record<string, unknown>;
+          smartlead_campaign_id?: string | null;
+          last_email_event?: string | null;
+          last_event_timestamp?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -258,11 +273,55 @@ export interface Database {
           added_at?: string;
         };
       };
+      email_events: {
+        Row: {
+          id: string;
+          user_id: string;
+          campaign_id: string;
+          message_id: string;
+          event_type: 'email_opened' | 'email_clicked' | 'email_replied' | 'email_bounced' | 'email_delivered' | 'email_sent' | 'email_unsubscribed' | 'email_spam_reported' | 'email_follow_up_opened' | 'email_follow_up_clicked' | 'email_follow_up_replied';
+          email: string;
+          lead_id: string | null;
+          smartlead_org_id: string | null;
+          event_data: Record<string, unknown>;
+          timestamp: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          campaign_id: string;
+          message_id: string;
+          event_type: 'email_opened' | 'email_clicked' | 'email_replied' | 'email_bounced' | 'email_delivered' | 'email_sent' | 'email_unsubscribed' | 'email_spam_reported' | 'email_follow_up_opened' | 'email_follow_up_clicked' | 'email_follow_up_replied';
+          email: string;
+          lead_id?: string | null;
+          smartlead_org_id?: string | null;
+          event_data?: Record<string, unknown>;
+          timestamp?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          campaign_id?: string;
+          message_id?: string;
+          event_type?: 'email_opened' | 'email_clicked' | 'email_replied' | 'email_bounced' | 'email_delivered' | 'email_sent' | 'email_unsubscribed' | 'email_spam_reported' | 'email_follow_up_opened' | 'email_follow_up_clicked' | 'email_follow_up_replied';
+          email?: string;
+          lead_id?: string | null;
+          smartlead_org_id?: string | null;
+          event_data?: Record<string, unknown>;
+          timestamp?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       integration_credentials: {
         Row: {
           id: string;
           user_id: string;
-          provider: 'gmail' | 'outlook' | 'linkedin' | 'phantombuster' | 'zoominfo' | 'apollo';
+          provider: 'gmail' | 'outlook' | 'linkedin' | 'phantombuster' | 'zoominfo' | 'apollo' | 'smartlead';
           credentials: Record<string, unknown>;
           is_active: boolean;
           created_at: string;
@@ -271,7 +330,7 @@ export interface Database {
         Insert: {
           id?: string;
           user_id: string;
-          provider: 'gmail' | 'outlook' | 'linkedin' | 'phantombuster' | 'zoominfo' | 'apollo';
+          provider: 'gmail' | 'outlook' | 'linkedin' | 'phantombuster' | 'zoominfo' | 'apollo' | 'smartlead';
           credentials: Record<string, unknown>;
           is_active?: boolean;
           created_at?: string;
@@ -280,7 +339,7 @@ export interface Database {
         Update: {
           id?: string;
           user_id?: string;
-          provider?: 'gmail' | 'outlook' | 'linkedin' | 'phantombuster' | 'zoominfo' | 'apollo';
+          provider?: 'gmail' | 'outlook' | 'linkedin' | 'phantombuster' | 'zoominfo' | 'apollo' | 'smartlead';
           credentials?: Record<string, unknown>;
           is_active?: boolean;
           created_at?: string;
@@ -457,4 +516,76 @@ export interface EmailVerification {
   smtp_check_passed?: boolean
   disposable_email: boolean
   cost: number
+} 
+
+// Smartlead Integration Types
+export interface SmartleadEmailEvent {
+  id: string
+  user_id: string
+  campaign_id: string
+  message_id: string
+  event_type: 'email_opened' | 'email_clicked' | 'email_replied' | 'email_bounced' | 'email_delivered' | 'email_sent' | 'email_unsubscribed' | 'email_spam_reported' | 'email_follow_up_opened' | 'email_follow_up_clicked' | 'email_follow_up_replied'
+  email: string
+  lead_id?: string
+  smartlead_org_id?: string
+  event_data: Record<string, any>
+  timestamp: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SmartleadWebhookPayload {
+  event: string
+  email: string
+  timestamp: string
+  campaign_id: string
+  message_id: string
+  org_id: string
+  additional_data?: Record<string, any>
+}
+
+export interface SmartleadCampaignStats {
+  campaign_id: string
+  opens: number
+  clicks: number
+  replies: number
+  bounces: number
+  delivered: number
+  sent: number
+  unsubscribed: number
+  spam_reports: number
+  open_rate: number
+  click_rate: number
+  reply_rate: number
+  bounce_rate: number
+  last_updated: string
+}
+
+export interface SmartleadInboxMessage {
+  message_id: string
+  campaign_id: string
+  email: string
+  sender: string
+  subject: string
+  body: string
+  timestamp: string
+  reply_status: 'pending' | 'replied' | 'no_reply_needed'
+  thread_id?: string
+  lead_id?: string
+}
+
+export interface SmartleadOrganization {
+  id: string
+  name: string
+  created_at: string
+  status: 'active' | 'inactive'
+  user_id: string
+}
+
+export interface LeadWithSmartleadData extends Lead {
+  smartlead_campaign_id?: string
+  last_email_event?: string
+  last_event_timestamp?: string
+  email_events?: SmartleadEmailEvent[]
+  campaign_stats?: SmartleadCampaignStats
 } 
