@@ -24,7 +24,7 @@ export async function GET(
 
         const { data: campaignData, error: campaignError } = await supabase
             .from('campaigns')
-            .select('*')
+            .select('id, name')
             .eq('organization_id', orgId)
 
         if (orgError || !orgData) {
