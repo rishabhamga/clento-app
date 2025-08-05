@@ -25,6 +25,9 @@ import {
     Input,
     Th,
     Select,
+    Spacer,
+    Divider,
+    SimpleGrid,
 } from '@chakra-ui/react'
 import { createCustomToast } from '@/lib/utils/custom-toast'
 import { useUser } from '@clerk/nextjs'
@@ -32,6 +35,208 @@ import { Organization } from '../page'
 import Papa from 'papaparse';
 import { DbCampaign } from '../../dashboard/page'
 import { title } from 'process'
+
+export interface CampaignData {
+    id: string;
+    user_id: string;
+    name: string;
+    description: string;
+    status: string;
+    sequence_template: string;
+    settings: CampaignSettings;
+    created_at: Date;
+    updated_at: Date;
+    organization_id: string;
+}
+
+export interface CampaignSettings {
+    pitch: PitchSettings;
+    country: string;
+    industry: string | null;
+    language: string;
+    timezone: string;
+    outreach: OutreachSettings;
+    workflow: WorkflowSettings;
+    autopilot: boolean;
+    startDate: Date;
+    startedAt: Date | null;
+    targeting: TargetingSettings;
+    dailyLimit: number;
+    campaignType: string;
+    doNotContact: string[];
+    reviewRequired: boolean;
+    trackingEnabled: boolean;
+}
+
+export interface PitchSettings {
+    painPoints: PainPoint[];
+    proofPoints: ProofPoint[];
+    coachingPoints: CoachingPoint[];
+    emailCoachingPoints: CoachingPoint[];
+    offeringDescription: string;
+    websiteUrl: string;
+    websiteAnalysis: WebsiteAnalysis;
+}
+
+export interface PainPoint {
+    id: string;
+    title: string;
+    description: string;
+}
+
+export interface ProofPoint {
+    id: string;
+    title: string;
+    description: string;
+}
+
+export interface CoachingPoint {
+    id: string;
+    editable: boolean;
+    instruction: string;
+}
+
+export interface WebsiteAnalysis {
+    id: string;
+    status: string;
+    industry: string;
+    core_offer: string;
+    started_at: string;
+    completed_at: string;
+    website_url: string;
+    tech_stack: string[];
+    icp_summary: string;
+    business_model: string;
+    pages_analyzed: number;
+    total_pages_found: number;
+    confidence_score: number;
+    competitive_advantages: string[];
+    lead_magnets: LeadMagnet[];
+    social_proof: SocialProof;
+    case_studies: CaseStudy[];
+    target_personas: TargetPersona[];
+    analysis_duration_seconds: number;
+}
+
+export interface LeadMagnet {
+    url: string;
+    type: string;
+    title: string;
+    description: string;
+    call_to_action: string;
+    target_audience: string;
+}
+
+export interface SocialProof {
+    metrics: {
+        value: string;
+        metric: string;
+    }[];
+    client_logos: string[];
+    testimonials: Testimonial[];
+}
+
+export interface Testimonial {
+    quote: string;
+    author: string;
+    company: string;
+    position: string;
+}
+
+export interface CaseStudy {
+    title: string;
+    metrics: string;
+    results: string[];
+    industry: string;
+    solution: string;
+    challenge: string;
+    client_info: string;
+}
+
+export interface TargetPersona {
+    title: string;
+    industry: string;
+    challenges: string[];
+    pain_points: string[];
+    company_size: string;
+    demographics: {
+        department: string;
+        seniority_level: string;
+        decision_making_authority: string;
+    };
+    desired_outcomes: string[];
+}
+
+export interface OutreachSettings {
+    signOffs: string[];
+    toneOfVoice: string;
+    callsToAction: string[];
+    maxResourceAge: number;
+    campaignLanguage: string;
+    messagePersonalization: boolean;
+    personalizationSources: string[];
+}
+
+export interface WorkflowSettings {
+    isCustom: boolean;
+    templateId: string;
+    customSteps: CustomStep[];
+}
+
+export interface CustomStep {
+    id: string;
+    delay: number;
+    channel: string;
+    template: string;
+    subject?: string;
+    actionType: string;
+    completed?: boolean;
+    isActive?: boolean;
+    conditions?: string[];
+}
+
+export interface TargetingSettings {
+    filters: TargetingFilters;
+    hasResults: boolean;
+    searchType: string;
+    resultsCount: number;
+}
+
+export interface TargetingFilters {
+    page: number;
+    perPage: number;
+    hasEmail: boolean | null;
+    keywords: string[];
+    jobTitles: string[];
+    industries: string[];
+    newsEvents: string | null;
+    revenueMax: number | null;
+    revenueMin: number | null;
+    webTraffic: number | null;
+    jobPostings: number | null;
+    seniorities: string[];
+    intentTopics: string[];
+    technologies: string[];
+    fundingStages: string[];
+    companyDomains: string[];
+    foundedYearMax: number | null;
+    foundedYearMin: number | null;
+    technologyUids: string[];
+    personLocations: string[];
+    companyHeadcount: number[];
+    fundingAmountMax: number | null;
+    fundingAmountMin: number | null;
+    excludeTechnologyUids: string[];
+    organizationJobTitles: string[];
+    organizationLocations: string[];
+    excludePersonLocations: string[];
+    organizationNumJobsMax: number | null;
+    organizationNumJobsMin: number | null;
+    organizationJobLocations: string[];
+    organizationJobPostedAtMax: string | null;
+    organizationJobPostedAtMin: string | null;
+    excludeOrganizationLocations: string[];
+}
 
 function OrgDetailPage() {
     const { user } = useUser()
@@ -45,8 +250,9 @@ function OrgDetailPage() {
     const [headers, setHeaders] = useState<string[]>();
     const [csvData, setCsvData] = useState<string[][]>([]);
     const [listName, setListName] = useState<string>();
-    const [campaignsData, setCampaignsData] = useState<DbCampaign[]>();
+    const [campaignsMeta, setCampaignsMeta] = useState<{ id: string, name: string }[]>();
     const [selectedCampaign, setSelectedCampaign] = useState<string>();
+    const [selectedCampaignData, setSelectedCampaignData] = useState<CampaignData | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -57,7 +263,7 @@ function OrgDetailPage() {
                 if (response.ok) {
                     const data = await response.json()
                     setOrganization(data?.orgData);
-                    setCampaignsData(data?.campaignData);
+                    setCampaignsMeta(data?.campaignData);
                 }
             } catch (err) {
                 console.log(err)
@@ -67,6 +273,28 @@ function OrgDetailPage() {
         }
         fetchData()
     }, [])
+
+    useEffect(() => {
+        const handleFetchCampaignData = async () => {
+            setLoading(true);
+            try {
+                const response = await fetch(`/api/console/campaigns/${selectedCampaign}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(data?.campaignData, "this is here");
+
+                    setSelectedCampaignData(data?.campaignData);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        if (selectedCampaign) {
+            handleFetchCampaignData();
+        }
+    }, [selectedCampaign])
 
     function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0];
@@ -126,6 +354,216 @@ function OrgDetailPage() {
             customToast.error({ title: 'An error occured' })
         }
     }
+
+    // Render campaign details
+    const renderCampaignDetails = () => {
+        if (!selectedCampaignData) return null;
+
+        return (
+            <Card bg="white" p={8} mt={8} boxShadow="md" borderRadius="lg">
+                <Heading size="lg" mb={2} color="teal.700">{selectedCampaignData.name}</Heading>
+                <Text fontSize="md" color="gray.700" mb={4}>{selectedCampaignData.description}</Text>
+                <HStack mb={4} spacing={8}>
+                    <VStack align="start" spacing={1}>
+                        <Text fontWeight="bold">Status:</Text>
+                        <Text fontWeight="bold">Created At:</Text>
+                        <Text fontWeight="bold">Updated At:</Text>
+                        <Text fontWeight="bold">Start Date:</Text>
+                        <Text fontWeight="bold">Daily Limit:</Text>
+                        <Text fontWeight="bold">Campaign Type:</Text>
+                        <Text fontWeight="bold">Review Required:</Text>
+                        <Text fontWeight="bold">Tracking Enabled:</Text>
+                    </VStack>
+                    <VStack align="start" spacing={1}>
+                        <Text>{selectedCampaignData.status}</Text>
+                        <Text>{selectedCampaignData.created_at ? selectedCampaignData.created_at.toLocaleString() : '-'}</Text>
+                        <Text>{selectedCampaignData.updated_at ? selectedCampaignData.updated_at.toLocaleString() : '-'}</Text>
+                        <Text>{selectedCampaignData.settings?.startDate ? selectedCampaignData.settings.startDate.toLocaleString() : '-'}</Text>
+                        <Text>{selectedCampaignData.settings?.dailyLimit}</Text>
+                        <Text>{selectedCampaignData.settings?.campaignType}</Text>
+                        <Text>{selectedCampaignData.settings?.reviewRequired ? 'Yes' : 'No'}</Text>
+                        <Text>{selectedCampaignData.settings?.trackingEnabled ? 'Yes' : 'No'}</Text>
+                    </VStack>
+                </HStack>
+
+                <Divider my={6} />
+
+                <Heading size="md" mb={2} color="teal.600">Settings</Heading>
+                <SimpleGrid columns={[1, 2, 3]} spacing={4} mb={4}>
+                    <Box>
+                        <Text fontWeight="bold">Country:</Text>
+                        <Text>{selectedCampaignData.settings?.country}</Text>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Industry:</Text>
+                        <Text>{selectedCampaignData.settings?.industry}</Text>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Language:</Text>
+                        <Text>{selectedCampaignData.settings?.language}</Text>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Timezone:</Text>
+                        <Text>{selectedCampaignData.settings?.timezone}</Text>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Autopilot:</Text>
+                        <Text>{selectedCampaignData.settings?.autopilot ? 'Yes' : 'No'}</Text>
+                    </Box>
+                </SimpleGrid>
+
+                <Divider my={6} />
+                <TableContainer mb={4}>
+                    <Table variant="striped" colorScheme="gray">
+                        <Thead>
+                            <Tr>
+                                <Th>Step</Th>
+                                <Th>Channel</Th>
+                                <Th>Template</Th>
+                                <Th>Action Type</Th>
+                                <Th>Delay (days)</Th>
+                                <Th>Conditions</Th>
+                                <Th>Subject</Th>
+                                <Th>Completed</Th>
+                                <Th>Active</Th>
+                            </Tr>
+                        </Thead>
+                        <Tbody>
+                            {selectedCampaignData.settings?.workflow?.customSteps?.map((step, index) => (
+                                <Tr key={index}>
+                                    <Td>{index + 1}</Td>
+                                    <Td>{step.channel}</Td>
+                                    <Td>{step.template}</Td>
+                                    <Td>{step.actionType}</Td>
+                                    <Td>{step.delay}</Td>
+                                    <Td>{step.conditions?.join(', ') || '-'}</Td>
+                                    <Td>{step.subject || '-'}</Td>
+                                    <Td>{step.completed ? 'Yes' : 'No'}</Td>
+                                    <Td>{step.isActive ? 'Yes' : 'No'}</Td>
+                                </Tr>
+                            ))}
+                        </Tbody>
+                    </Table>
+                </TableContainer>
+                <Divider my={6} />
+
+                <Heading size="md" mb={2} color="teal.600">Targeting</Heading>
+                <SimpleGrid columns={[1, 2]} spacing={4} mb={4}>
+                    <Box>
+                        <Text fontWeight="bold">Search Type:</Text>
+                        <Text>{selectedCampaignData.settings?.targeting?.searchType}</Text>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Results Count:</Text>
+                        <Text>{selectedCampaignData.settings?.targeting?.resultsCount}</Text>
+                    </Box>
+                </SimpleGrid>
+
+                <Divider my={6} />
+
+                <Heading size="md" mb={2} color="teal.600">Pitch Data</Heading>
+                <SimpleGrid columns={[1, 2]} spacing={4} mb={4}>
+                    <Box>
+                        <Text fontWeight="bold">Website URL:</Text>
+                        <Text>{selectedCampaignData.settings?.pitch?.websiteUrl}</Text>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Offering Description:</Text>
+                        <Text>{selectedCampaignData.settings?.pitch?.offeringDescription}</Text>
+                    </Box>
+                </SimpleGrid>
+
+                <Heading size="sm" mt={4} mb={2} color="teal.500">Pain Points</Heading>
+                <VStack align="start" spacing={2} mb={4}>
+                    {selectedCampaignData.settings?.pitch?.painPoints?.map((point, index) => (
+                        <Box key={index} p={2} bg="gray.50" borderRadius="md" w="100%">
+                            <Text fontWeight="bold">{point.title}</Text>
+                            <Text fontSize="sm">{point.description}</Text>
+                        </Box>
+                    ))}
+                </VStack>
+
+                <Heading size="sm" mt={4} mb={2} color="teal.500">Proof Points</Heading>
+                <VStack align="start" spacing={2} mb={4}>
+                    {selectedCampaignData.settings?.pitch?.proofPoints?.map((point, index) => (
+                        <Box key={index} p={2} bg="gray.50" borderRadius="md" w="100%">
+                            <Text fontWeight="bold">{point.title}</Text>
+                            <Text fontSize="sm">{point.description}</Text>
+                        </Box>
+                    ))}
+                </VStack>
+
+                <Heading size="sm" mt={4} mb={2} color="teal.500">Coaching Points</Heading>
+                <VStack align="start" spacing={2} mb={4}>
+                    {selectedCampaignData.settings?.pitch?.coachingPoints?.map((cp, idx) => (
+                        <Box key={idx} p={2} bg="gray.50" borderRadius="md" w="100%">
+                            <Text fontWeight="bold">{cp.instruction}</Text>
+                            <Text fontSize="sm">Editable: {cp.editable ? 'Yes' : 'No'}</Text>
+                        </Box>
+                    ))}
+                </VStack>
+
+                <Heading size="sm" mt={4} mb={2} color="teal.500">Email Coaching Points</Heading>
+                <VStack align="start" spacing={2} mb={4}>
+                    {selectedCampaignData.settings?.pitch?.emailCoachingPoints?.map((ecp, idx) => (
+                        <Box key={idx} p={2} bg="gray.50" borderRadius="md" w="100%">
+                            <Text fontWeight="bold">{ecp.instruction}</Text>
+                            <Text fontSize="sm">Editable: {ecp.editable ? 'Yes' : 'No'}</Text>
+                        </Box>
+                    ))}
+                </VStack>
+
+                <Divider my={6} />
+
+                <Heading size="md" mb={2} color="teal.600">Outreach Data</Heading>
+                <SimpleGrid columns={[1, 2, 3]} spacing={4} mb={4}>
+                    <Box>
+                        <Text fontWeight="bold">Tone of Voice:</Text>
+                        <Text>{selectedCampaignData.settings?.outreach?.toneOfVoice}</Text>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Campaign Language:</Text>
+                        <Text>{selectedCampaignData.settings?.outreach?.campaignLanguage}</Text>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Sign Offs:</Text>
+                        <Text>{selectedCampaignData.settings?.outreach?.signOffs?.join(', ')}</Text>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Calls To Action:</Text>
+                        <VStack align="start" spacing={1}>
+                            {selectedCampaignData.settings?.outreach?.callsToAction?.map((cta, index) => (
+                                <Text key={index}>{cta}</Text>
+                            ))}
+                        </VStack>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Max Resource Age:</Text>
+                        <Text>{selectedCampaignData.settings?.outreach?.maxResourceAge}</Text>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Message Personalization:</Text>
+                        <Text>{selectedCampaignData.settings?.outreach?.messagePersonalization ? 'Yes' : 'No'}</Text>
+                    </Box>
+                    <Box>
+                        <Text fontWeight="bold">Personalization Sources:</Text>
+                        <Text>{selectedCampaignData.settings?.outreach?.personalizationSources?.join(', ')}</Text>
+                    </Box>
+                </SimpleGrid>
+
+                <Divider my={6} />
+
+                <Heading size="md" mb={2} color="teal.600">Do Not Contact</Heading>
+                <Box p={2} bg="gray.50" borderRadius="md">
+                    {selectedCampaignData.settings?.doNotContact && selectedCampaignData.settings.doNotContact.length > 0 ? (
+                        <Text fontSize="sm">{selectedCampaignData.settings.doNotContact.join(', ')}</Text>
+                    ) : (
+                        <Text fontSize="sm">None</Text>
+                    )}
+                </Box>
+            </Card>
+        );
+    };
 
     if (loading) {
         return (
@@ -216,11 +654,27 @@ function OrgDetailPage() {
                             </HStack>
                         </Card>
                     </Card>
+                    <Spacer height={20} />
+                    <Card style={{ background: "white" }} p={8}>
+                        <VStack gap={5} alignItems={'start'}>
+                            <Text fontWeight={600} fontSize={18} color={"GrayText"}>View Campaigns</Text>
+                            <Select placeholder="Select Campaign" onChange={(e) => setSelectedCampaign(e.target.value)} value={selectedCampaign}>
+                                {campaignsMeta && campaignsMeta.map((campaign) => (
+                                    <option key={campaign.id} value={campaign.id}>
+                                        {campaign.name}
+                                    </option>
+                                ))}
+                            </Select>
+                        </VStack>
+
+                    </Card>
+
+                    {/* csv view */}
                     {headers && (
                         <HStack justifyContent={'space-between'}>
                             <Input placeholder='File Input' value={listName} w={'500px'} onChange={(e) => setListName(e.target.value)} />
                             <Select placeholder="Select Campaign" onChange={(e) => setSelectedCampaign(e.target.value)} value={selectedCampaign}>
-                                {campaignsData && campaignsData.map((campaign) => (
+                                {campaignsMeta && campaignsMeta.map((campaign) => (
                                     <option key={campaign.id} value={campaign.id}>
                                         {campaign.name}
                                     </option>
@@ -256,6 +710,7 @@ function OrgDetailPage() {
                             </Table>
                         </TableContainer>
                     )}
+                    {renderCampaignDetails()}
                 </VStack>
             </Container>
         </Box>
