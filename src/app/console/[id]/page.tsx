@@ -412,6 +412,8 @@ function OrgDetailPage() {
                     </Box>
                 </SimpleGrid>
 
+
+
                 <Divider my={6} />
                 <TableContainer mb={4}>
                     <Table variant="striped" colorScheme="gray">
@@ -448,15 +450,33 @@ function OrgDetailPage() {
                 <Divider my={6} />
 
                 <Heading size="md" mb={2} color="teal.600">Targeting</Heading>
+                <Spacer height={20}/>
                 <SimpleGrid columns={[1, 2]} spacing={4} mb={4}>
-                    <Box>
-                        <Text fontWeight="bold">Search Type:</Text>
-                        <Text>{selectedCampaignData.settings?.targeting?.searchType}</Text>
-                    </Box>
-                    <Box>
-                        <Text fontWeight="bold">Results Count:</Text>
-                        <Text>{selectedCampaignData.settings?.targeting?.resultsCount}</Text>
-                    </Box>
+                    {Object.entries(selectedCampaignData.settings?.targeting?.filters || {}).map(([key, value]) => {
+                        if (key === 'page' || key === 'perPage') return null;
+                        if (Array.isArray(value)) {
+                            if (value.length === 0) return null;
+                            return (
+                                <HStack key={key}>
+                                    <Text fontWeight="bold">{key}:</Text>
+                                    <Text>{value.join(', ')}</Text>
+                                </HStack>
+                            );
+                        } else if (
+                            value !== null &&
+                            value !== undefined &&
+                            value !== '' &&
+                            !(typeof value === 'object' && Object.keys(value).length === 0)
+                        ) {
+                            return (
+                                <HStack key={key}>
+                                    <Text fontWeight="bold">{key}:</Text>
+                                    <Text>{value.toString()}</Text>
+                                </HStack>
+                            );
+                        }
+                        return null;
+                    })}
                 </SimpleGrid>
 
                 <Divider my={6} />
