@@ -283,8 +283,12 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
     setShowSampleMessages(false)
     // Focus the input field after setting the message
     setTimeout(() => {
-      inputRef.current?.focus()
-    }, 100)
+      if (inputRef.current) {
+        inputRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        inputRef.current.style.height = 'auto'
+        inputRef.current.style.height = inputRef.current.scrollHeight + 'px'
+      }
+    }, 50)
   }
 
   const handleSendMessage = async () => {
