@@ -457,7 +457,7 @@ function OrgDetailPage() {
                         if (Array.isArray(value)) {
                             if (value.length === 0) return null;
                             return (
-                                <HStack key={key}>
+                                <HStack key={key} style={{alignItems: "start", border: "1px solid", borderRadius: "8px", padding: "12px"}}>
                                     <Text fontWeight="bold">{key}:</Text>
                                     <Text>{value.join(', ')}</Text>
                                 </HStack>
@@ -469,7 +469,7 @@ function OrgDetailPage() {
                             !(typeof value === 'object' && Object.keys(value).length === 0)
                         ) {
                             return (
-                                <HStack key={key}>
+                                <HStack key={key} style={{alignItems: "start", border: "1px solid", borderRadius: "8px", padding: "12px"}}>
                                     <Text fontWeight="bold">{key}:</Text>
                                     <Text>{value.toString()}</Text>
                                 </HStack>
