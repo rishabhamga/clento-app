@@ -17,21 +17,18 @@ interface CampaignCardProps {
     current: number
     total: number
   }
-  country: string
-  flag: string
-  isPrivate: boolean
-  onTogglePrivate: () => void
+  createdAt: string
   onClick?: () => void
+  onMenuClick?: () => void
 }
 
 export default function CampaignCard({
   name,
   type,
   leads,
-  flag,
-  isPrivate,
-  onTogglePrivate,
-  onClick
+  createdAt,
+  onClick,
+  onMenuClick
 }: CampaignCardProps) {
   const bgColor = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.700')
@@ -80,26 +77,27 @@ export default function CampaignCard({
       <VStack spacing={4} align="stretch">
         {/* Header */}
         <HStack justify="space-between" align="start">
-          <HStack spacing={2}>
-            <Text fontSize="2xl">{flag}</Text>
-            <Badge 
-              colorScheme={getTypeColor(type)} 
-              variant="subtle"
-              fontSize="xs"
-              px={2}
-              py={1}
-              borderRadius="md"
-            >
-              {TypeIcon && <Icon as={TypeIcon} boxSize={3} mr={1} />}
-              {type}
-            </Badge>
-          </HStack>
+          <Badge 
+            colorScheme={getTypeColor(type)} 
+            variant="subtle"
+            fontSize="xs"
+            px={2}
+            py={1}
+            borderRadius="md"
+          >
+            {TypeIcon && <Icon as={TypeIcon} boxSize={3} mr={1} />}
+            {type}
+          </Badge>
           <Icon 
             as={MoreHorizontal} 
             boxSize={5} 
             color="gray.400"
             cursor="pointer"
             _hover={{ color: "gray.600" }}
+            onClick={(e) => {
+              e.stopPropagation()
+              onMenuClick?.()
+            }}
           />
         </HStack>
 
@@ -121,17 +119,14 @@ export default function CampaignCard({
           </Text>
         </HStack>
 
-        {/* Privacy Toggle */}
+        {/* Creation Date */}
         <HStack justify="space-between" align="center">
           <Text fontSize="sm" color={textColor}>
-            Private
+            Created
           </Text>
-          <Switch 
-            size="sm"
-            colorScheme="purple"
-            isChecked={isPrivate}
-            onChange={onTogglePrivate}
-          />
+          <Text fontSize="sm" color={textColor}>
+            {new Date(createdAt).toLocaleDateString()}
+          </Text>
         </HStack>
       </VStack>
     </Box>
