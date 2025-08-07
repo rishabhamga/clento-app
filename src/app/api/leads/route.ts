@@ -19,11 +19,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Parse query parameters
+    // Parse query parameters
     const { searchParams } = new URL(request.url)
+    const params = parseLeadSearchParams(searchParams)
     const params = parseLeadSearchParams(searchParams)
 
     // Get user's ID from the users table
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('clerk_id', userId)
@@ -79,6 +81,7 @@ export async function GET(request: NextRequest) {
     baseQuery = baseQuery.range(offset, offset + limit - 1)
 
     const { data: leads, error: leadsError } = await baseQuery
+    const { data: leads, error: leadsError } = await baseQuery
 
     if (leadsError) {
       console.error('Error fetching leads:', leadsError)
@@ -105,7 +108,21 @@ export async function GET(request: NextRequest) {
 
     // Transform leads data to include computed fields
     const transformedLeads = leads?.map(transformLeadData) || []
+    // Transform leads data to include computed fields
+    const transformedLeads = leads?.map(transformLeadData) || []
 
+    const response: LeadListResponse = {
+      leads: transformedLeads,
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit)
+      },
+      filters: params.filters || {}
+    }
+
+    return NextResponse.json({ success: true, data: response })
     const response: LeadListResponse = {
       leads: transformedLeads,
       pagination: {
