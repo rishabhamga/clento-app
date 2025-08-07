@@ -180,23 +180,43 @@ async function getCampaignStats(userId: string, orgDbId: string | null = null) {
 
     const campaignIds = campaigns.map(c => c.id)
 
-    // Get total messages for these campaigns
-    const { data: messagesData, error: messagesError } = await supabase
-      .from('messages')
-      .select('id, direction, status')
-      .in('campaign_id', campaignIds)
+    // Get leads and their steps for these campaigns
+    const { data: leadsData, error: leadsError } = await supabase
+      .from('leads')
+      .select('id, steps, linkedin_connection_status, campaign_info')
+      .not('steps', 'eq', '[]')
 
-    if (messagesError) {
-      console.error('Error fetching messages stats:', messagesError)
+    if (leadsError) {
+      console.error('Error fetching leads stats:', leadsError)
       return {
         totalMessages: 0,
         responseRate: 0
       }
     }
 
-    // Calculate response rate
-    const totalOutbound = messagesData?.filter(m => m.direction === 'outbound').length || 0
-    const totalInbound = messagesData?.filter(m => m.direction === 'inbound').length || 0
+    // Calculate messages and response rate from steps
+    let totalOutbound = 0
+    let totalInbound = 0
+
+    leadsData?.forEach(lead => {
+      const steps = Array.isArray(lead.steps) ? lead.steps : []
+      
+      steps.forEach((step: any) => {
+        if (step.stepType && (step.stepType.includes('message') || step.stepType.includes('connect'))) {
+          if (step.stepType.includes('send') || step.stepType.includes('invite')) {
+            totalOutbound++
+          } else if (step.stepType.includes('reply') || step.stepType.includes('received')) {
+            totalInbound++
+          }
+        }
+      })
+
+      // Also count connection status as indicators
+      if (lead.linkedin_connection_status === 'replied') {
+        totalInbound++
+      }
+    })
+
     const responseRate = totalOutbound > 0 ? Math.round((totalInbound / totalOutbound) * 100) : 0
 
     return {

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   Box,
@@ -207,51 +207,51 @@ export default function CampaignDetailPage() {
                     <Text fontSize="sm" color="gray.600">Your targeting configuration</Text>
                   </VStack>
                 </HStack>
-              <Button 
-                size="sm" 
-                leftIcon={<Lock size={16} />} 
-                onClick={handleEditAttempt}
-                variant="outline"
+                <Button 
+                  size="sm" 
+                  leftIcon={<Lock size={16} />} 
+                  onClick={handleEditAttempt}
+                  variant="outline"
                   borderColor="purple.200"
                   _hover={{ borderColor: 'purple.400' }}
-              >
-                Edit
-              </Button>
-            </HStack>
+                >
+                  Edit
+                </Button>
+              </HStack>
             </CardHeader>
             <CardBody pt={0}>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Job Titles</Text>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Job Titles</Text>
                   <Text fontSize="sm" color="gray.800">
                     {filters.jobTitles?.length > 0 
                       ? filters.jobTitles.join(', ') 
                       : targeting.jobTitles || 'Head of Sales, CTO, VP Engineering'}
                   </Text>
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Industries</Text>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Industries</Text>
                   <Text fontSize="sm" color="gray.800">
                     {filters.industries?.length > 0 
                       ? filters.industries.join(', ') 
                       : targeting.industries || 'Technology, SaaS, Software'}
                   </Text>
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Company Size</Text>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Company Size</Text>
                   <Text fontSize="sm" color="gray.800">
                     {filters.companySize || targeting.companySize || '100-500 employees'}
                   </Text>
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Location</Text>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Location</Text>
                   <Text fontSize="sm" color="gray.800">
                     {filters.locations?.length > 0 
                       ? filters.locations.join(', ') 
                       : targeting.location || 'United States'}
                   </Text>
-              </Box>
-            </SimpleGrid>
+                </Box>
+              </SimpleGrid>
             </CardBody>
           </Card>
         </VStack>
@@ -331,8 +331,8 @@ export default function CampaignDetailPage() {
               <Text fontSize="md" color="gray.800" lineHeight="1.6">
                 {offering.description || pitch.coreOffering || campaign?.description || 'Clento provides an all-in-one AI-powered sales development platform that automates the entire outreach process, enhancing SDR performance and reducing costs.'}
               </Text>
-        </CardBody>
-      </Card>
+            </CardBody>
+          </Card>
 
           {/* Customer Pain Points */}
           <Card
@@ -364,19 +364,19 @@ export default function CampaignDetailPage() {
                   <VStack align="start" spacing={0}>
                     <Heading size="md" color="gray.800">Customer Pain Points</Heading>
                     <Text fontSize="sm" color="gray.600">Problems your solution addresses</Text>
-    </VStack>
+                  </VStack>
                 </HStack>
-              <Button 
-                size="sm" 
-                leftIcon={<Lock size={16} />} 
-                onClick={handleEditAttempt}
-                variant="outline"
+                <Button 
+                  size="sm" 
+                  leftIcon={<Lock size={16} />} 
+                  onClick={handleEditAttempt}
+                  variant="outline"
                   borderColor="purple.200"
                   _hover={{ borderColor: 'purple.400' }}
-              >
-                Edit
-              </Button>
-            </HStack>
+                >
+                  Edit
+                </Button>
+              </HStack>
             </CardHeader>
             <CardBody pt={0}>
               <VStack spacing={3} align="stretch">
@@ -398,7 +398,7 @@ export default function CampaignDetailPage() {
                       <Text fontWeight="bold" color="red.500">{index + 1}</Text>
                       <Text fontSize="sm" color="gray.800">{point}</Text>
                     </HStack>
-            </Box>
+                  </Box>
                 ))}
               </VStack>
             </CardBody>
@@ -430,7 +430,7 @@ export default function CampaignDetailPage() {
                     boxShadow="0 8px 20px rgba(79, 172, 254, 0.4)"
                   >
                     <Text fontSize="lg">🏆</Text>
-            </Box>
+                  </Box>
                   <VStack align="start" spacing={0}>
                     <Heading size="md" color="gray.800">Success Stories & Proof</Heading>
                     <Text fontSize="sm" color="gray.600">Evidence of your solution's effectiveness</Text>
@@ -468,12 +468,12 @@ export default function CampaignDetailPage() {
                       <Text fontWeight="bold" color="green.500">{index + 1}</Text>
                       <Text fontSize="sm" color="gray.800">{point}</Text>
                     </HStack>
-            </Box>
+                  </Box>
                 ))}
-          </VStack>
-        </CardBody>
-      </Card>
-    </VStack>
+              </VStack>
+            </CardBody>
+          </Card>
+        </VStack>
       </Container>
     )
   }
@@ -534,17 +534,17 @@ export default function CampaignDetailPage() {
                     <Text fontSize="sm" color="gray.600">Choose your preferred communication language</Text>
                   </VStack>
                 </HStack>
-              <Button 
-                size="sm" 
-                leftIcon={<Lock size={16} />} 
-                onClick={handleEditAttempt}
-                variant="outline"
+                <Button 
+                  size="sm" 
+                  leftIcon={<Lock size={16} />} 
+                  onClick={handleEditAttempt}
+                  variant="outline"
                   borderColor="purple.200"
                   _hover={{ borderColor: 'purple.400' }}
-              >
-                Edit
-              </Button>
-            </HStack>
+                >
+                  Edit
+                </Button>
+              </HStack>
             </CardHeader>
             <CardBody pt={0}>
               <Box
@@ -588,7 +588,7 @@ export default function CampaignDetailPage() {
                     boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
                   >
                     <Edit3 size="20" />
-              </Box>
+                  </Box>
                   <VStack align="start" spacing={0}>
                     <Heading size="md" color="gray.800">Message Sign Offs In {language.split(' ')[0]}</Heading>
                     <Text fontSize="sm" color="gray.600">Customize your message endings</Text>
@@ -656,7 +656,7 @@ export default function CampaignDetailPage() {
                     boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
                   >
                     <PenTool size="20" />
-              </Box>
+                  </Box>
                   <VStack align="start" spacing={0}>
                     <Heading size="md" color="gray.800">Tone of Voice</Heading>
                     <Text fontSize="sm" color="gray.600">Define your communication style</Text>
@@ -687,9 +687,9 @@ export default function CampaignDetailPage() {
               >
                 {campaign?.settings?.tone_of_voice || 'Urgent'}
               </Box>
-        </CardBody>
-      </Card>
-    </VStack>
+            </CardBody>
+          </Card>
+        </VStack>
       </Container>
     )
   }
@@ -748,48 +748,48 @@ export default function CampaignDetailPage() {
                     <Text fontSize="sm" color="gray.600">Your automation workflow configuration</Text>
                   </VStack>
                 </HStack>
-              <Button 
-                size="sm" 
-                leftIcon={<Lock size={16} />} 
-                onClick={handleEditAttempt}
-                variant="outline"
+                <Button 
+                  size="sm" 
+                  leftIcon={<Lock size={16} />} 
+                  onClick={handleEditAttempt}
+                  variant="outline"
                   borderColor="purple.200"
                   _hover={{ borderColor: 'purple.400' }}
-              >
-                Edit
-              </Button>
-            </HStack>
+                >
+                  Edit
+                </Button>
+              </HStack>
             </CardHeader>
             <CardBody pt={0}>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Sequence Type</Text>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Sequence Type</Text>
                   <Text fontSize="md" color="gray.800">
                     {campaign?.sequence_template || workflow.sequenceType || 'aggressive-multi'}
                   </Text>
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Total Steps</Text>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Total Steps</Text>
                   <Text fontSize="md" color="gray.800">
                     {sequence.steps?.length ? `${sequence.steps.length} touchpoints` : workflow.totalSteps || '4 touchpoints'}
                   </Text>
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Duration</Text>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Duration</Text>
                   <Text fontSize="md" color="gray.800">
                     {workflow.duration || sequence.duration || '6 days'}
                   </Text>
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Channels</Text>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Channels</Text>
                   <Text fontSize="md" color="gray.800">
                     {workflow.channels?.join(' + ') || sequence.channels?.join(' + ') || 'LinkedIn + Email'}
                   </Text>
-              </Box>
-            </SimpleGrid>
-        </CardBody>
-      </Card>
-    </VStack>
+                </Box>
+              </SimpleGrid>
+            </CardBody>
+          </Card>
+        </VStack>
       </Container>
     )
   }
@@ -848,22 +848,22 @@ export default function CampaignDetailPage() {
                     <Text fontSize="sm" color="gray.600">Current launch configuration</Text>
                   </VStack>
                 </HStack>
-              <Button 
-                size="sm" 
-                leftIcon={<Lock size={16} />} 
-                onClick={handleEditAttempt}
-                variant="outline"
+                <Button 
+                  size="sm" 
+                  leftIcon={<Lock size={16} />} 
+                  onClick={handleEditAttempt}
+                  variant="outline"
                   borderColor="purple.200"
                   _hover={{ borderColor: 'purple.400' }}
-              >
-                Edit
-              </Button>
-            </HStack>
+                >
+                  Edit
+                </Button>
+              </HStack>
             </CardHeader>
             <CardBody pt={0}>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Status</Text>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Status</Text>
                   <Badge 
                     colorScheme={campaign?.status === 'active' ? 'green' : 'yellow'}
                     variant="subtle"
@@ -873,36 +873,36 @@ export default function CampaignDetailPage() {
                     borderRadius="lg"
                   >
                     {campaign?.status?.toUpperCase() || 'DRAFT'}
-                </Badge>
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Start Date</Text>
+                  </Badge>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Start Date</Text>
                   <Text fontSize="md" color="gray.800">
                     {launch.startDate 
                       ? new Date(launch.startDate).toLocaleDateString() 
                       : campaign?.created_at 
                         ? new Date(campaign.created_at).toLocaleDateString() 
                         : 'Not set'}
-                </Text>
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Total Leads</Text>
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Total Leads</Text>
                   <Text fontSize="md" color="gray.800">
                     {stats.totalLeads || campaign?.settings?.totalLeads || campaign?.settings?.leadCount || '0'}
                   </Text>
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Template</Text>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Template</Text>
                   <Text fontSize="md" color="gray.800">
                     {campaign?.sequence_template || launch.template || 'aggressive-multi'}
                   </Text>
-              </Box>
-            </SimpleGrid>
-        </CardBody>
-      </Card>
-    </VStack>
+                </Box>
+              </SimpleGrid>
+            </CardBody>
+          </Card>
+        </VStack>
       </Container>
-  )
+    )
   }
 
   const renderStepContent = () => {
@@ -965,199 +965,84 @@ export default function CampaignDetailPage() {
         />
 
         <Container maxW="7xl" py={6} position="relative" zIndex="1">
-        <VStack spacing={8} align="stretch">
+          <VStack spacing={8} align="stretch">
             {/* Header with Back Button */}
-          <HStack spacing={4}>
-            <Button
-              leftIcon={<ArrowLeft size={16} />}
-              variant="ghost"
+            <HStack spacing={4}>
+              <Button
+                leftIcon={<ArrowLeft size={16} />}
+                variant="ghost"
                 color="white"
                 _hover={{ bg: 'rgba(255, 255, 255, 0.1)' }}
-              onClick={() => router.back()}
-            >
-              Back
-            </Button>
-            <VStack spacing={1} align="start" flex={1}>
-              <Heading 
-                size="xl" 
-                  color="white"
-                fontWeight="bold"
+                onClick={() => router.back()}
               >
-                {campaign.name}
-              </Heading>
+                Back
+              </Button>
+              <VStack spacing={1} align="start" flex={1}>
+                <Heading 
+                  size="xl" 
+                  color="white"
+                  fontWeight="bold"
+                >
+                  {campaign.name}
+                </Heading>
                 <Text color="whiteAlpha.800" fontSize="lg">
-                Campaign Overview
-              </Text>
-            </VStack>
-            <Badge 
-              colorScheme={campaign.status === 'active' ? 'green' : 'yellow'}
+                  Campaign Overview
+                </Text>
+              </VStack>
+              <Badge 
+                colorScheme={campaign.status === 'active' ? 'green' : 'yellow'}
                 variant="solid"
-              fontSize="sm"
-              px={3}
-              py={1}
+                fontSize="sm"
+                px={3}
+                py={1}
+              >
+                {campaign.status.toUpperCase()}
+              </Badge>
+            </HStack>
+
+            {/* Progress Stepper - exactly like campaign creation */}
+            <Card
+              bg="rgba(255, 255, 255, 0.95)"
+              backdropFilter="blur(20px)"
+              borderRadius="2xl"
+              border="1px solid"
+              borderColor="rgba(255, 255, 255, 0.3)"
+              boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+              p={6}
             >
-              {campaign.status.toUpperCase()}
-            </Badge>
-          </HStack>
+              <CampaignStepper currentStep={currentStep + 1} />
+            </Card>
 
-                         {/* Progress Stepper - exactly like campaign creation */}
-             <Box
-               bg="rgba(255, 255, 255, 0.95)"
-               backdropFilter="blur(20px)"
-               borderRadius="2xl"
-               border="1px solid"
-               borderColor="rgba(255, 255, 255, 0.3)"
-               boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
-               p={6}
-               w="full"
-             >
-               {/* Custom stepper without extra wrapper */}
-               <VStack spacing={4} align="stretch">
-                 <Flex justify="space-between" align="center" mb={2}>
-                   <Text fontSize="sm" fontWeight="medium" color="gray.600">
-                     Progress
-                   </Text>
-                   <Text fontSize="sm" fontWeight="bold" color="purple.600">
-                     {Math.round(((currentStep + 1) / 5) * 100)}%
-                   </Text>
-                 </Flex>
-                 <Box
-                   h="3px"
-                   bg="gray.200"
-                   borderRadius="full"
-                   overflow="hidden"
-                   position="relative"
-                   mb={4}
-                 >
-                   <Box
-                     h="full"
-                     bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                     borderRadius="full"
-                     width={`${((currentStep + 1) / 5) * 100}%`}
-                     transition="width 0.3s ease"
-                   />
-                 </Box>
-                 
-                 {/* Manual stepper to avoid text overlap */}
-                 <HStack spacing={0} justify="space-between" align="center">
-                   {steps.map((step, index) => {
-                     const isCompleted = index < currentStep
-                     const isActive = index === currentStep
-                     
-                     return (
-                       <React.Fragment key={index}>
-                         <VStack spacing={2} align="center" flex={1}>
-                           <Box
-                             w={10}
-                             h={10}
-                             borderRadius="full"
-                             bg={
-                               isCompleted ? "linear-gradient(135deg, #48bb78 0%, #38a169 100%)" :
-                               isActive ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" :
-                               "gray.200"
-                             }
-                             color="white"
-                             display="flex"
-                             alignItems="center"
-                             justifyContent="center"
-                             fontWeight="bold"
-                             fontSize="sm"
-                             border="2px solid"
-                             borderColor={
-                               isCompleted ? "green.300" :
-                               isActive ? "purple.300" :
-                               "gray.300"
-                             }
-                             boxShadow={
-                               isActive ? "0 0 20px rgba(102, 126, 234, 0.4)" :
-                               isCompleted ? "0 0 15px rgba(72, 187, 120, 0.3)" :
-                               "0 2px 8px rgba(0, 0, 0, 0.1)"
-                             }
-                           >
-                             {isCompleted ? "✓" : index + 1}
-                           </Box>
-                           <VStack spacing={0} align="center" minH="45px" justify="start">
-                             <Text 
-                               fontSize="sm" 
-                               fontWeight="bold" 
-                               color={
-                                 isCompleted ? "green.600" :
-                                 isActive ? "purple.600" :
-                                 "gray.500"
-                               }
-                               textAlign="center"
-                               lineHeight="tight"
-                               noOfLines={1}
-                      >
-                        {step.title}
-                             </Text>
-                             <Text 
-                               fontSize="xs" 
-                               color="gray.600" 
-                               textAlign="center"
-                               lineHeight="tight"
-                               noOfLines={2}
-                               px={1}
-                             >
-                               {step.description}
-                             </Text>
-                           </VStack>
-                         </VStack>
-                         {index < steps.length - 1 && (
-                           <Box
-                             flex="0 0 auto"
-                             h="2px"
-                             w="8"
-                             bg={index < currentStep ? "linear-gradient(90deg, #48bb78, #38a169)" : "gray.200"}
-                             mx={2}
-                             borderRadius="full"
-                           />
-                         )}
-                       </React.Fragment>
-                     )
-                   })}
-                 </HStack>
-               </VStack>
-                    </Box>
-
-          {/* Step Content */}
-             <Box
-               bg="rgba(255, 255, 255, 0.95)"
-               backdropFilter="blur(20px)"
-               borderRadius="2xl"
-               border="1px solid"
-               borderColor="rgba(255, 255, 255, 0.3)"
-               boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
-               overflow="hidden"
-             >
-            {renderStepContent()}
-          </Box>
+            {/* Step Content */}
+            <Box>
+              {renderStepContent()}
+            </Box>
 
             {/* Navigation - exactly like campaign creation */}
             <HStack justify="space-between" pt={4}>
-            <Button
-              variant="outline"
+              <Button
+                variant="outline"
                 size="lg"
                 color="white"
                 borderColor="whiteAlpha.300"
                 _hover={{ borderColor: 'white', bg: 'rgba(255, 255, 255, 0.1)' }}
-              onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-              isDisabled={currentStep === 0}
-            >
-              Previous
-            </Button>
-            <Button
+                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                isDisabled={currentStep === 0}
+              >
+                Previous
+              </Button>
+              <Button
                 size="lg"
                 bg="white"
                 color="purple.600"
                 _hover={{ bg: 'whiteAlpha.900' }}
-              onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
-              isDisabled={currentStep === steps.length - 1}
-            >
-              Next
-            </Button>
-          </HStack>
-        </VStack>
+                onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+                isDisabled={currentStep === steps.length - 1}
+              >
+                Next
+              </Button>
+            </HStack>
+          </VStack>
         </Container>
 
         {/* Edit Attempt Modal */}

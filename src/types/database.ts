@@ -84,11 +84,17 @@ export interface Database {
           location: string | null;
           phone: string | null;
           status: 'new' | 'contacted' | 'replied' | 'positive' | 'neutral' | 'negative' | 'unsubscribed';
-          source: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor';
+          source: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor' | 'syndie';
           enrichment_data: Record<string, unknown>;
           smartlead_campaign_id: string | null;
           last_email_event: string | null;
           last_event_timestamp: string | null;
+          // Syndie integration fields
+          syndie_lead_id: string | null;
+          linkedin_connection_status: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
+          steps: Record<string, unknown>[];
+          campaign_info: Record<string, unknown>;
+          seat_info: Record<string, unknown>;
           created_at: string;
           updated_at: string;
         };
@@ -104,11 +110,17 @@ export interface Database {
           location?: string | null;
           phone?: string | null;
           status?: 'new' | 'contacted' | 'replied' | 'positive' | 'neutral' | 'negative' | 'unsubscribed';
-          source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor';
+          source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor' | 'syndie';
           enrichment_data?: Record<string, unknown>;
           smartlead_campaign_id?: string | null;
           last_email_event?: string | null;
           last_event_timestamp?: string | null;
+          // Syndie integration fields
+          syndie_lead_id?: string | null;
+          linkedin_connection_status?: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
+          steps?: Record<string, unknown>[];
+          campaign_info?: Record<string, unknown>;
+          seat_info?: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
         };
@@ -124,11 +136,17 @@ export interface Database {
           location?: string | null;
           phone?: string | null;
           status?: 'new' | 'contacted' | 'replied' | 'positive' | 'neutral' | 'negative' | 'unsubscribed';
-          source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor';
+          source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor' | 'syndie';
           enrichment_data?: Record<string, unknown>;
           smartlead_campaign_id?: string | null;
           last_email_event?: string | null;
           last_event_timestamp?: string | null;
+          // Syndie integration fields
+          syndie_lead_id?: string | null;
+          linkedin_connection_status?: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
+          steps?: Record<string, unknown>[];
+          campaign_info?: Record<string, unknown>;
+          seat_info?: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
         };
