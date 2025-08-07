@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { supabaseAdmin } from '@/lib/supabase'
-import { 
-  LeadFilters, 
-  LeadSearchParams, 
+import { supabase, supabaseAdmin } from '@/lib/supabase'
+import {
+  LeadFilters,
+  LeadSearchParams,
   LeadListResponse,
   LeadStats,
-  LinkedInConnectionStatus 
+  LinkedInConnectionStatus
 } from '@/types/syndie'
 import { Database } from '@/types/database'
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    
+    const { userId, orgId } = await auth()
+
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Parse query parameters
     // Parse query parameters
     const { searchParams } = new URL(request.url)
     const params = parseLeadSearchParams(searchParams)
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     // Get user's ID from the users table
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
-      .select('id')
+      .select('*')
       .eq('clerk_id', userId)
       .single()
 
@@ -39,17 +40,30 @@ export async function GET(request: NextRequest) {
 
     const userDbId = userData.id
 
+    // Note: Showing all leads regardless of user, organization, or campaign
+
+    const { data: organizationData, error: orgError } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('clerk_org_id', orgId)
+      .maybeSingle();
+
     // Check if this is a stats request
     if (searchParams.get('stats') === 'true') {
-      const stats = await getLeadStats(userDbId)
+      if (!organizationData) {
+        return NextResponse.json(
+          { error: 'Organization not found' },
+          { status: 404 }
+        )
+      }
+      const stats = await getLeadStats(organizationData)
       return NextResponse.json({ success: true, data: stats })
     }
 
-    // Build the main leads query with Syndie fields
-    // Note: Showing all leads regardless of user, organization, or campaign
     let baseQuery = supabaseAdmin
       .from('leads')
       .select('*')
+      .eq('organization_id', organizationData?.id)
 
     // Apply filters
     baseQuery = applyLeadFilters(baseQuery, params.filters)
@@ -76,9 +90,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count for pagination
-    let countQuery = supabaseAdmin
+    // Count only filtered leads for pagination
+    let countQuery = supabase
       .from('leads')
       .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationData?.id)
 
     countQuery = applyLeadFilters(countQuery, params.filters)
 
@@ -88,6 +104,7 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching leads count:', countError)
     }
 
+    // Transform leads data to include computed fields
     // Transform leads data to include computed fields
     const transformedLeads = leads?.map(transformLeadData) || []
 
@@ -117,7 +134,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const { userId } = await auth()
-    
+
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -179,8 +196,8 @@ export async function PUT(request: NextRequest) {
 
     const transformedLead = transformLeadData(updatedLead)
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: transformedLead,
       message: 'Lead updated successfully'
     })
@@ -294,11 +311,11 @@ function applyLeadFilters(query: any, filters?: LeadFilters) {
 function transformLeadData(lead: any) {
   const steps = Array.isArray(lead.steps) ? lead.steps : []
   const lastStep = steps.length > 0 ? steps[steps.length - 1] : null
-  
+
   // Calculate connection progress based on steps
-  const connectionProgress = steps.length > 0 ? 
+  const connectionProgress = steps.length > 0 ?
     Math.round((steps.filter((s: any) => s.success).length / steps.length) * 100) : 0
-  
+
   return {
     ...lead,
     lastStepAt: lastStep?.timestamp || null,
@@ -312,42 +329,48 @@ function transformLeadData(lead: any) {
   }
 }
 
-async function getLeadStats(userId: string): Promise<LeadStats> {
+async function getLeadStats(organizationData: {id: string}): Promise<LeadStats> {
   try {
     // Get total leads count (all leads, not filtered by user)
     const { count: totalCount } = await supabaseAdmin
       .from('leads')
       .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationData?.id)
 
     // Get leads by connection status (all leads, not filtered by user)
     const { data: connectionStatusData } = await supabaseAdmin
       .from('leads')
       .select('linkedin_connection_status')
+      .eq('organization_id', organizationData?.id)
 
     // Get leads by source (all leads, not filtered by user)
     const { data: sourceData } = await supabaseAdmin
       .from('leads')
       .select('source')
+      .eq('organization_id', organizationData?.id)
 
     // Get recent activity count (last 7 days)
     const weekAgo = new Date()
     weekAgo.setDate(weekAgo.getDate() - 7)
-    
+
     const { count: recentActivityCount } = await supabaseAdmin
       .from('leads')
       .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationData?.id)
       .gte('updated_at', weekAgo.toISOString())
 
     // Get active automations (leads with steps)
     const { count: activeAutomationsCount } = await supabaseAdmin
       .from('leads')
       .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationData?.id)
       .not('steps', 'eq', '[]')
 
     // Get new leads this week
     const { count: newThisWeekCount } = await supabaseAdmin
       .from('leads')
       .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationData?.id)
       .gte('created_at', weekAgo.toISOString())
 
     // Get replied this week
@@ -355,6 +378,7 @@ async function getLeadStats(userId: string): Promise<LeadStats> {
       .from('leads')
       .select('id', { count: 'exact', head: true })
       .eq('linkedin_connection_status', 'replied')
+      .eq('organization_id', organizationData?.id)
       .gte('updated_at', weekAgo.toISOString())
 
     // Process connection status counts
@@ -395,4 +419,4 @@ async function getLeadStats(userId: string): Promise<LeadStats> {
     console.error('Error getting lead stats:', error)
     throw error
   }
-} 
+}

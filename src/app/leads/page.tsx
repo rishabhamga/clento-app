@@ -45,15 +45,15 @@ import {
 } from '@chakra-ui/react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
-import { 
-    Search, 
-    Filter, 
-    Download, 
-    Plus, 
-    CheckCircle, 
-    Mail, 
-    Linkedin, 
-    Clock, 
+import {
+    Search,
+    Filter,
+    Download,
+    Plus,
+    CheckCircle,
+    Mail,
+    Linkedin,
+    Clock,
     TrendingUp,
     Users,
     Activity,
@@ -67,13 +67,13 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-    LeadWithSyndieData, 
-    LeadListResponse, 
-    LeadStats, 
-    LeadFilters, 
+import {
+    LeadWithSyndieData,
+    LeadListResponse,
+    LeadStats,
+    LeadFilters,
     LinkedInConnectionStatus,
-    LeadActivityTimeline 
+    LeadActivityTimeline
 } from '@/types/syndie'
 
 // Helper functions
@@ -111,7 +111,7 @@ export default function LeadsPage() {
     const borderColor = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
     const { isOpen, onOpen, onClose } = useDisclosure()
     const toast = useToast()
-    
+
     // State management
     const [leads, setLeads] = useState<LeadWithSyndieData[]>([])
     const [stats, setStats] = useState<LeadStats | null>(null)
@@ -121,7 +121,7 @@ export default function LeadsPage() {
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
     const [totalLeads, setTotalLeads] = useState(0)
-    
+
     // Filter state
     const [filters, setFilters] = useState<LeadFilters>({})
     const [searchTerm, setSearchTerm] = useState('')
@@ -142,7 +142,7 @@ export default function LeadsPage() {
 
             const response = await fetch(`/api/leads?${params}`)
             if (!response.ok) throw new Error('Failed to fetch leads')
-            
+
             const result = await response.json()
             if (result.success) {
                 setLeads(result.data.leads)
@@ -168,7 +168,7 @@ export default function LeadsPage() {
         try {
             const response = await fetch('/api/leads?stats=true')
             if (!response.ok) throw new Error('Failed to fetch stats')
-            
+
             const result = await response.json()
             if (result.success) {
                 setStats(result.data)
@@ -184,7 +184,7 @@ export default function LeadsPage() {
         try {
             const response = await fetch(`/api/leads/${lead.id}`)
             if (!response.ok) throw new Error('Failed to fetch lead details')
-            
+
             const result = await response.json()
             if (result.success) {
                 setSelectedLeadTimeline(result.data.timeline)
@@ -224,8 +224,8 @@ export default function LeadsPage() {
                     <Box>
                         <HStack justify="space-between" align="center" mb={6}>
                             <VStack spacing={1} align="start">
-                                <Heading 
-                                    size="xl" 
+                                <Heading
+                                    size="xl"
                                     bgGradient="linear(to-r, purple.400, blue.400)"
                                     bgClip="text"
                                     fontWeight="bold"
@@ -237,15 +237,15 @@ export default function LeadsPage() {
                                 </Text>
                             </VStack>
                             <HStack spacing={3}>
-                                <GradientButton 
-                                    leftIcon={<Download size={16} />} 
+                                <GradientButton
+                                    leftIcon={<Download size={16} />}
                                     variant="tertiary"
                                     size="sm"
                                 >
                                     Export
                                 </GradientButton>
-                                <GradientButton 
-                                    leftIcon={<Plus size={16} />} 
+                                <GradientButton
+                                    leftIcon={<Plus size={16} />}
                                     variant="primary"
                                     size="sm"
                                     onClick={() => router.push('/campaigns/new')}
@@ -259,9 +259,9 @@ export default function LeadsPage() {
                     {/* Stats Overview */}
                     {stats && (
                         <SimpleGrid columns={{ base: 2, md: 6 }} spacing={6}>
-                            <Card 
-                                bg={cardBg} 
-                                border="1px solid" 
+                            <Card
+                                bg={cardBg}
+                                border="1px solid"
                                 borderColor={borderColor}
                                 borderRadius="xl"
                                 p={4}
@@ -277,9 +277,9 @@ export default function LeadsPage() {
                                 </VStack>
                             </Card>
 
-                            <Card 
-                                bg={cardBg} 
-                                border="1px solid" 
+                            <Card
+                                bg={cardBg}
+                                border="1px solid"
                                 borderColor={borderColor}
                                 borderRadius="xl"
                                 p={4}
@@ -295,9 +295,9 @@ export default function LeadsPage() {
                                 </VStack>
                             </Card>
 
-                            <Card 
-                                bg={cardBg} 
-                                border="1px solid" 
+                            <Card
+                                bg={cardBg}
+                                border="1px solid"
                                 borderColor={borderColor}
                                 borderRadius="xl"
                                 p={4}
@@ -313,9 +313,9 @@ export default function LeadsPage() {
                                 </VStack>
                             </Card>
 
-                            <Card 
-                                bg={cardBg} 
-                                border="1px solid" 
+                            <Card
+                                bg={cardBg}
+                                border="1px solid"
                                 borderColor={borderColor}
                                 borderRadius="xl"
                                 p={4}
@@ -331,9 +331,9 @@ export default function LeadsPage() {
                                 </VStack>
                             </Card>
 
-                            <Card 
-                                bg={cardBg} 
-                                border="1px solid" 
+                            <Card
+                                bg={cardBg}
+                                border="1px solid"
                                 borderColor={borderColor}
                                 borderRadius="xl"
                                 p={4}
@@ -349,9 +349,9 @@ export default function LeadsPage() {
                                 </VStack>
                             </Card>
 
-                            <Card 
-                                bg={cardBg} 
-                                border="1px solid" 
+                            <Card
+                                bg={cardBg}
+                                border="1px solid"
                                 borderColor={borderColor}
                                 borderRadius="xl"
                                 p={4}
@@ -370,10 +370,10 @@ export default function LeadsPage() {
                     )}
 
                     {/* Filters and Search */}
-                    <Card 
-                        bg={cardBg} 
+                    <Card
+                        bg={cardBg}
                         backdropFilter="blur(10px)"
-                        border="1px solid" 
+                        border="1px solid"
                         borderColor={borderColor}
                         borderRadius="xl"
                         shadow="lg"
@@ -399,8 +399,8 @@ export default function LeadsPage() {
                                         borderRadius="lg"
                                         fontSize="md"
                                         _hover={{ borderColor: 'purple.300' }}
-                                        _focus={{ 
-                                            borderColor: 'purple.400', 
+                                        _focus={{
+                                            borderColor: 'purple.400',
                                             boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)',
                                             bg: 'white'
                                         }}
@@ -424,7 +424,7 @@ export default function LeadsPage() {
                                         Advanced Filters
                                     </Button>
                                 </HStack>
-                                
+
                                 <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
                                     <VStack align="stretch" spacing={2}>
                                         <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
@@ -438,12 +438,12 @@ export default function LeadsPage() {
                                             borderColor={borderColor}
                                             borderRadius="lg"
                                             _hover={{ borderColor: 'purple.300' }}
-                                            _focus={{ 
-                                                borderColor: 'purple.400', 
-                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' 
+                                            _focus={{
+                                                borderColor: 'purple.400',
+                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)'
                                             }}
-                                            onChange={(e) => handleFilterChange({ 
-                                                connectionStatus: e.target.value ? [e.target.value as LinkedInConnectionStatus] : undefined 
+                                            onChange={(e) => handleFilterChange({
+                                                connectionStatus: e.target.value ? [e.target.value as LinkedInConnectionStatus] : undefined
                                             })}
                                         >
                                             <option value="not_connected">Not Connected</option>
@@ -467,12 +467,12 @@ export default function LeadsPage() {
                                             borderColor={borderColor}
                                             borderRadius="lg"
                                             _hover={{ borderColor: 'purple.300' }}
-                                            _focus={{ 
-                                                borderColor: 'purple.400', 
-                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' 
+                                            _focus={{
+                                                borderColor: 'purple.400',
+                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)'
                                             }}
-                                            onChange={(e) => handleFilterChange({ 
-                                                account: e.target.value || undefined 
+                                            onChange={(e) => handleFilterChange({
+                                                account: e.target.value || undefined
                                             })}
                                         >
                                             <option value="account1">Account 1</option>
@@ -493,12 +493,12 @@ export default function LeadsPage() {
                                             borderColor={borderColor}
                                             borderRadius="lg"
                                             _hover={{ borderColor: 'purple.300' }}
-                                            _focus={{ 
-                                                borderColor: 'purple.400', 
-                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' 
+                                            _focus={{
+                                                borderColor: 'purple.400',
+                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)'
                                             }}
-                                            onChange={(e) => handleFilterChange({ 
-                                                campaign: e.target.value || undefined 
+                                            onChange={(e) => handleFilterChange({
+                                                campaign: e.target.value || undefined
                                             })}
                                         >
                                             <option value="campaign1">Campaign 1</option>
@@ -522,7 +522,7 @@ export default function LeadsPage() {
                                         <Heading size="lg">{selectedLead?.full_name}</Heading>
                                         <Text color="gray.600">{selectedLead?.title}</Text>
                                         <HStack spacing={2}>
-                                            <Badge 
+                                            <Badge
                                                 colorScheme={getConnectionStatusColor(selectedLead?.linkedin_connection_status || 'not_connected')}
                                                 variant="subtle"
                                             >
@@ -552,8 +552,8 @@ export default function LeadsPage() {
                                                         </HStack>
                                                         <HStack>
                                                             <Icon as={Linkedin} boxSize={4} color="blue.500" />
-                                                            <Text 
-                                                                as="a" 
+                                                            <Text
+                                                                as="a"
                                                                 href={selectedLead.linkedin_url || '#'}
                                                                 target="_blank"
                                                                 color="blue.500"
@@ -583,9 +583,9 @@ export default function LeadsPage() {
                                                                 {selectedLead.connectionProgress || 0}%
                                             </Text>
                                                     </HStack>
-                                                        <Progress 
-                                                            value={selectedLead.connectionProgress || 0} 
-                                                            colorScheme="purple" 
+                                                        <Progress
+                                                            value={selectedLead.connectionProgress || 0}
+                                                            colorScheme="purple"
                                                             borderRadius="md"
                                                         />
                                                         <SimpleGrid columns={3} spacing={4}>
@@ -620,9 +620,9 @@ export default function LeadsPage() {
                                                 <VStack spacing={3} align="stretch" maxH="300px" overflow="auto">
                                                     {selectedLeadTimeline.steps.map((step, index) => (
                                                         <HStack key={index} spacing={3} p={3} bg={glassBg} borderRadius="md">
-                                                            <Icon 
-                                                                as={step.success ? CheckCircle : AlertCircle} 
-                                                                color={step.success ? 'green.500' : 'red.500'} 
+                                                            <Icon
+                                                                as={step.success ? CheckCircle : AlertCircle}
+                                                                color={step.success ? 'green.500' : 'red.500'}
                                                                 boxSize={4}
                                                             />
                                                             <VStack align="start" spacing={1} flex={1}>
@@ -652,9 +652,9 @@ export default function LeadsPage() {
 
                     {/* Empty State */}
                     {!loading && leads.length === 0 && (
-                        <Card 
-                            bg={cardBg} 
-                            border="1px solid" 
+                        <Card
+                            bg={cardBg}
+                            border="1px solid"
                             borderColor={borderColor}
                             borderRadius="xl"
                             py={16}
@@ -666,7 +666,7 @@ export default function LeadsPage() {
                                     Start a campaign to begin collecting leads, or adjust your<br />
                                     filters to see more results.
                                         </Text>
-                                        <GradientButton 
+                                        <GradientButton
                                     leftIcon={<Plus size={16} />}
                                             onClick={() => router.push('/campaigns/new')}
                                         >
@@ -703,9 +703,9 @@ export default function LeadsPage() {
                                         </Thead>
                                         <Tbody>
                                             {leads.map((lead) => (
-                                                <Tr 
+                                                <Tr
                                                     key={lead.id}
-                                                    _hover={{ 
+                                                    _hover={{
                                                         bg: glassBg,
                                                         transform: 'scale(1.01)',
                                                         cursor: 'pointer'
@@ -715,8 +715,8 @@ export default function LeadsPage() {
                                                 >
                                                     <Td py={4}>
                                                         <HStack spacing={3}>
-                                                            <Avatar 
-                                                                size="sm" 
+                                                            <Avatar
+                                                                size="sm"
                                                                 name={lead.full_name}
                                                                 border="2px solid"
                                                                 borderColor={borderColor}
@@ -742,7 +742,7 @@ export default function LeadsPage() {
                                                         </VStack>
                                                     </Td>
                                                     <Td>
-                                                        <Badge 
+                                                        <Badge
                                                             colorScheme={getStatusColor(lead.status)}
                                                             variant="subtle"
                                                             fontSize="xs"
@@ -766,7 +766,7 @@ export default function LeadsPage() {
                                                                 <Text fontSize="xs" color="gray.600">
                                                                     {lead.completedSteps}/{lead.totalSteps} steps
                                                                 </Text>
-                                                                <Progress 
+                                                                <Progress
                                                                     value={((lead.completedSteps || 0) / (lead.totalSteps || 1)) * 100}
                                                                     colorScheme="purple"
                                                                     size="sm"
@@ -866,7 +866,7 @@ export default function LeadsPage() {
                                                 borderColor={borderColor}
                                                 aria-label="Previous page"
                                             />
-                                            
+
                                             {/* Simple pagination showing current page */}
                                             <Button
                                                 size="sm"
@@ -876,7 +876,7 @@ export default function LeadsPage() {
                                             >
                                                 {page}
                                             </Button>
-                                            
+
                                             <IconButton
                                                 icon={<ChevronRight size={16} />}
                                                 size="sm"
