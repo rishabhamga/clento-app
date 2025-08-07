@@ -43,52 +43,37 @@ export async function GET(
     }
 }
 
-export async function POST(
-    request: Request
-) {
-    try {
-        const formData = await request.formData()
-        const orgId = formData.get('orgId')
-        const listName = formData.get('listName')
-        const campaignId = formData.get('campaignId')
-        const csv = formData.get('csv')
-        const s3Bucket = "mc-contact-lists"
+function streamToBuffer(stream: any): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const chunks: any[] = []
+        stream.on('data', (chunk: any) => chunks.push(chunk))
+        stream.on('end', () => resolve(Buffer.concat(chunks)))
+        stream.on('error', reject)
+    })
+}
 
-        if (!orgId) {
-            return NextResponse.json(
-                { error: 'No Org Id Provided' },
-                { status: 500 }
-            )
-        }
-        if (!listName) {
-            return NextResponse.json(
-                { error: 'No List Name Provided' },
-                { status: 500 }
-            )
-        }
-        if (!campaignId) {
-            return NextResponse.json(
-                { error: 'No Campaign Id Provided' },
-                { status: 500 }
-            )
-        }
-        if (!csv) {
-            return NextResponse.json(
-                { error: 'No File Provided' },
-                { status: 500 }
-            )
+export async function POST(request: Request) {
+    try {
+        const formData = await request.formData();
+        const orgId = formData.get('orgId')?.toString();
+        const listName = formData.get('listName')?.toString();
+        const campaignId = formData.get('campaignId')?.toString();
+        const csv = formData.get('csv');
+        const s3Bucket = 'mc-contact-lists';
+
+        if (!orgId || !listName || !campaignId || !csv) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
         const id = randomUUID();
 
-        const { data: inActiveLeads, error: inActiveLeadsError } = await supabase
+        // Deactivate previous leads for this campaign
+        await supabase
             .from('leads_files')
-            .update(
-                [{ active: 0 }]
-            )
-            .eq('campaign_id', campaignId)
+            .update({ active: 0 })
+            .eq('campaign_id', campaignId);
 
-        //upload to the leads table
+        // Insert new lead file record
         const { data: lead, error: leadError } = await supabase
             .from('leads_files')
             .insert([{
@@ -102,22 +87,37 @@ export async function POST(
                 active: 1
             }])
             .select()
-            .single()
+            .single();
 
-        const arrayBuffer = await (csv as File).arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        try {
-            await uploadFileToS3Bucket(s3Bucket as any, id, listName as string, buffer)
-        } catch (err) {
-            console.log(err);
-        }
         if (leadError) {
-            console.log(leadError);
-            return NextResponse.json({ uploaded: false, error: 'error uploading the csv' }, { status: 500 })
+            console.error('Supabase insert error:', leadError);
+            return NextResponse.json({ uploaded: false, error: 'Supabase insert failed' }, { status: 500 });
         }
-        return NextResponse.json({ uploaded: true, lead }, { status: 200 })
+
+        // Convert file to buffer (support Blob, File, or Node.js stream)
+        let buffer: Buffer | undefined = undefined;
+        if (csv && typeof (csv as any).arrayBuffer === 'function') {
+            // Browser/edge runtime Blob or File
+            const arrayBuffer = await (csv as any).arrayBuffer();
+            buffer = Buffer.from(arrayBuffer);
+        } else if (csv && typeof (csv as any).stream === 'function') {
+            // Node.js ReadableStream
+            buffer = await streamToBuffer((csv as any).stream());
+        } else {
+            return NextResponse.json({ uploaded: false, error: 'Invalid file format: must be Blob, File, or ReadableStream' }, { status: 400 });
+        }
+
+        // Upload to S3
+        try {
+            await uploadFileToS3Bucket(s3Bucket as any, id, listName, buffer);
+        } catch (err) {
+            console.error('S3 upload error:', err);
+            return NextResponse.json({ uploaded: false, error: 'S3 upload failed' }, { status: 500 });
+        }
+
+        return NextResponse.json({ uploaded: true, lead }, { status: 200 });
     } catch (err) {
-        console.log(err)
-        return NextResponse.json({ uploaded: false }, { status: 401 })
+        console.error('Server error:', err);
+        return NextResponse.json({ uploaded: false, error: 'Internal server error' }, { status: 500 });
     }
 }

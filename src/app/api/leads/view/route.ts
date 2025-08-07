@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { supabase } from '../../../../lib/supabase'
 import { getFileFromS3 } from '../../../../utils/s3Util'
+import Papa from 'papaparse';
 
 interface ILeadFiles {
     id: string,
@@ -148,8 +149,11 @@ const getRecentActivity = async (orgId: string) => {
         const csvLinesWithoutHeader = csvLines.slice(1);
         const headerLineArray = csvLines[0].split(",")
 
+
         csvLinesWithoutHeader.forEach((line, index) => {
-            const row = parseCsvLine(line);
+            let row = parseCsvLine(line);
+            // Replace null/empty values with 'Not Found'
+            row = row.map(val => (val === null || val === undefined || val.trim() === "") ? "Not Found" : val);
             const contactName = row[headerLineArray.indexOf("full_name")];
             const companyName = row[headerLineArray.indexOf("company_name")];
 
@@ -158,10 +162,10 @@ const getRecentActivity = async (orgId: string) => {
                     const match = col.match(regex);
                     if (match) {
                         let message = row[idx];
-
+                        if (typeof message !== 'string') message = '';
                         headerLineArray.map((header) => {
                             const mess = message.split(`{{${header}}}`);
-                            message = mess.join(row[headerLineArray.indexOf(header)]?.trim() || "");
+                            message = mess.join(row[headerLineArray.indexOf(header)]?.trim() || "Not Found");
                         })
                         const dateCol = `${col}_date`;
                         const dateIdx = headerLineArray.indexOf(dateCol);
@@ -202,94 +206,128 @@ const getRecentActivity = async (orgId: string) => {
 
 export async function GET(request: NextRequest) {
 
-    const finalLeads: ILeads[] = []
+    const finalLeads: ILeads[] = [];
 
-    const { orgId } = await auth()
+    const { orgId } = await auth();
 
     const { data: orgData, error: orgError } = await supabase
         .from('organizations')
         .select('id')
         .eq('clerk_org_id', orgId)
-        .single()
+        .single();
 
     if (!orgId || !orgData || orgError) {
-        return NextResponse.json({ error: 'An Error Occured' }, { status: 500 })
+        console.error('Auth or organization error:', { orgId, orgData, orgError });
+        return NextResponse.json({ error: 'An Error Occurred' }, { status: 500 });
     }
 
     try {
-        const { searchParams } = new URL(request.url)
-        const campaignId = searchParams.get('campaignId')
-        const limit = parseInt(searchParams.get('limit') || '100')
-        const offset = parseInt(searchParams.get('offset') || '0')
+        const { searchParams } = new URL(request.url);
+        const campaignId = searchParams.get('campaignId');
+        const limit = parseInt(searchParams.get('limit') || '100');
+        const offset = parseInt(searchParams.get('offset') || '0');
 
         if (!campaignId) {
-            const { sortedRecentActivity, campaigns } = await getRecentActivity(orgData.id)
+            const { sortedRecentActivity, campaigns } = await getRecentActivity(orgData.id);
             if (!sortedRecentActivity) {
-                return NextResponse.json({ error: 'No recent activity' }, { status: 500 })
+                console.error('No recent activity found for organization:', orgData.id);
+                return NextResponse.json({ error: 'No recent activity' }, { status: 500 });
             }
-            return NextResponse.json({ recentActivity: sortedRecentActivity, campaigns }, { status: 200 })
+            return NextResponse.json({ recentActivity: sortedRecentActivity, campaigns }, { status: 200 });
         }
 
-        // Get user's ID from the users table
         const { data, error: leadError } = await supabase
             .from('leads_files')
             .select('*')
             .eq('campaign_id', campaignId)
             .eq('active', 1)
-            .single()
-        const leadData = data as ILeadFiles | null
+            .single();
 
+        const leadData = data as ILeadFiles | null;
 
         if (leadError || !leadData) {
-            console.error('Error fetching leads', leadError)
+            console.error('Error fetching leads or no active leads found:', { leadError, leadData });
             return NextResponse.json(
                 { error: 'Leads not found' },
                 { status: 404 }
-            )
+            );
         }
+
         const csvFileBuffer = await getFileFromS3(leadData.s3_key, leadData.s3_bucket);
 
         if (!csvFileBuffer) {
+            console.error('Failed to fetch file from S3:', { s3_key: leadData.s3_key, s3_bucket: leadData.s3_bucket });
             return NextResponse.json({ error: 'Failed to fetch file from S3' }, { status: 500 });
         }
 
-        //file parsing code from MAILCOMPOSE
         const csvFileString = csvFileBuffer.toString().trim();
-        const csvLines = csvFileString.split('\n');
-        const csvLinesWithoutHeader = csvLines.slice(1);
-        const headerLineArray = csvLines[0].split(",");
+        const parsedCsv = Papa.parse<string[]>(csvFileString, {
+            delimiter: ',',
+            skipEmptyLines: true,
+        });
 
-        csvLinesWithoutHeader.map((line) => {
-            const row = parseCsvLine(line);
+        if (parsedCsv.errors.length > 0) {
+            console.error('Error parsing CSV:', parsedCsv.errors);
+            return NextResponse.json({ error: 'Error parsing CSV file' }, { status: 500 });
+        }
+
+        const [headerLineArray, ...csvRows] = parsedCsv.data;
+
+        const normalizedHeaderLineArray = headerLineArray.map(h => h.trim().toLowerCase());
+
+        csvRows.forEach((row, rowIndex) => {
+            const updatedRow = row.map((val, idx) => {
+                const columnName = headerLineArray[idx]?.trim().toLowerCase();
+                if (columnName === 'pending_approval' && (val === null || val === undefined || val.trim() === "")) {
+                    return ""; // Use an empty string for `pending_approval` to maintain type consistency
+                }
+                return (val === null || val === undefined || val.trim() === "") ? "Not Found" : val;
+            });
+
             const getValue = (field: string) => {
-                return row[headerLineArray.indexOf(field)]?.trim() || ""
+                let idx = normalizedHeaderLineArray.indexOf(field.trim().toLowerCase());
+                if (idx === -1) idx = headerLineArray.indexOf(field);
+                return updatedRow[idx]?.trim() || "Not Found";
             };
+
+            const requiredFields = ["id", "full_name", "email", "company_name"];
+            const hasAllRequired = requiredFields.every(f => {
+                const idx = headerLineArray.indexOf(f);
+                return idx !== -1 && updatedRow[idx] && updatedRow[idx] !== "Not Found";
+            });
+
+            if (!hasAllRequired) {
+                console.warn('Row skipped due to missing required fields:', { rowIndex, updatedRow, hasAllRequired });
+                return;
+            }
 
             const linkedInMessages: ILeads["linkedInMessages"] = [];
             const emailMessages: ILeads["emailMessages"] = [];
             let lastContactDate = new Date(0);
 
             headerLineArray.forEach((col, i) => {
-                let value = row[i]?.trim();
-
-                headerLineArray.map((header) => {
-                    const line = value.split(`{{${header}}}`)
-                    value = line.join(getValue(header));
-                })
+                const normalizedCol = col.trim().toLowerCase();
+                let value = updatedRow[i]?.trim();
+                if (typeof value !== 'string') value = '';
+                headerLineArray.forEach((header, headerIdx) => {
+                    const line = value.split(`{{${header.trim().toLowerCase()}}}`);
+                    value = line.join(updatedRow[headerIdx] || "Not Found");
+                });
                 if (!value) return;
 
-                const match = col.match(/^(linkedin_message|reply_linkedin_message|email_message|reply_email_message)_(\d+)$/);
+                const match = normalizedCol.match(/^(linkedin_message|reply_linkedin_message|email_message|reply_email_message)_(\d+)$/);
                 if (!match) return;
 
                 const [, type, num] = match;
                 const dateField = `${type}_${num}_date`;
-                const dateStr = getValue(dateField);
+                const dateIdx = headerLineArray.findIndex(h => h.trim().toLowerCase() === dateField);
+                const dateStr = dateIdx !== -1 ? updatedRow[dateIdx]?.trim() : '';
                 if (!dateStr) return;
 
                 const date = new Date(dateStr);
                 if (isNaN(date.getTime())) {
-                    return
-                };
+                    return;
+                }
 
                 if (date > lastContactDate) lastContactDate = date;
 
@@ -298,15 +336,16 @@ export async function GET(request: NextRequest) {
 
                 if (type.includes("linkedin")) {
                     linkedInMessages.push(messageObj);
-                }
-                else {
+                } else {
                     emailMessages.push(messageObj);
                 }
             });
+
             const leadLinkedInMessages = linkedInMessages.filter((msg) => msg.from === 'lead').length;
             const leadEmailMessages = emailMessages.filter((msg) => msg.from === 'lead').length;
             const totalLeadMessages = leadLinkedInMessages + leadEmailMessages;
             const meetingsBooked = getValue("meetings_booked") || "0";
+
             finalLeads.push({
                 id: getValue("id"),
                 contactName: getValue("full_name"),
@@ -319,8 +358,8 @@ export async function GET(request: NextRequest) {
                 companyDescription: getValue("company_description"),
                 companyWebsite: getValue("company_website"),
                 companySize: getValue("company_size"),
-                pendingApproval: getValue("pending_approval\r") || getValue("pending_approval"),
-                companyLocation: getValue("company_location\r") || getValue("company_location"), // edge case fix
+                pendingApproval: updatedRow[headerLineArray.indexOf("pending_approval")],
+                companyLocation: getValue("company_location\r") || getValue("company_location"),
                 clientNeedAnalysis: getValue("client_need_analysis").split("#").filter(Boolean),
                 recommendedApproach: getValue("recommended_approach").split("#").filter(Boolean),
                 talkingPoints: getValue("talking_points").split("#").filter(Boolean),
@@ -329,15 +368,15 @@ export async function GET(request: NextRequest) {
                 emailMessages,
                 meetingsBooked: meetingsBooked
             });
-        })
+        });
+
 
         const paginatedLeads = finalLeads.slice(offset, offset + limit);
 
-
-        return NextResponse.json({ leads: paginatedLeads }, { status: 200 })
+        return NextResponse.json({ leads: paginatedLeads }, { status: 200 });
 
     } catch (err) {
-        console.log(err)
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+        console.error('Unexpected error:', err);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
