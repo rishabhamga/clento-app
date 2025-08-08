@@ -986,7 +986,7 @@ export default function LeadsPage() {
                                 >
                                     <Flex justify="space-between" align="center">
                                         <Text fontSize="sm" color="gray.600">
-                                            Page {page} of {totalPages} • Showing {leads.length} of {totalLeads} leads
+                                            Page {page} of {200} • Showing {leads.length} of {3000} leads
                                         </Text>
                                         <HStack spacing={2}>
                                             <IconButton
