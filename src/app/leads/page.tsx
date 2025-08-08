@@ -453,7 +453,7 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={Users} boxSize={5} color="purple.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        {/* {stats.total} */}3000
+                                        {stats.total}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">Total Leads</Text>
                                 </VStack>
@@ -471,8 +471,7 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={Linkedin} boxSize={5} color="green.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        643
-                                        {/* {stats.byConnectionStatus.connected + stats.byConnectionStatus.replied} */}
+                                        {stats.byConnectionStatus.connected + stats.byConnectionStatus.replied}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">Connected</Text>
                                 </VStack>
@@ -490,8 +489,7 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={MessageCircle} boxSize={5} color="blue.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        {/* {stats.byConnectionStatus.replied} */}
-                                        85
+                                        {stats.byConnectionStatus.replied}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">Replied</Text>
                                 </VStack>
@@ -509,8 +507,7 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={Activity} boxSize={5} color="orange.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        438
-                                        {/* {stats.activeAutomations} */}
+                                        {stats.activeAutomations}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">Active</Text>
                                 </VStack>
@@ -528,8 +525,7 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={TrendingUp} boxSize={5} color="purple.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        710
-                                        {/* {stats.newThisWeek} */}
+                                        {stats.newThisWeek}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">This Week</Text>
                                 </VStack>
