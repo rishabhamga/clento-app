@@ -104,6 +104,102 @@ function formatConnectionStatus(status: LinkedInConnectionStatus): string {
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
+const emailSet = {
+    "akshay@shakepe.com": [
+        {
+            action: "email_sent",
+            message: "Hey Akshay, I noticed Shakepe is making some really exciting strides in the sustainability space! At Clento, we're building something similar — AI that runs SDR workflows autonomously. We handle everything from intent data to outreach, without all the tool-juggling. Would love to hear how you’re optimizing your outreach and where I could help.",
+            timestamp: "2025-07-08T00:00:00.000Z",
+            stepNodeId: "step_001"
+        },
+        {
+            action: "email_sent",
+            message: "Thanks for connecting, Akshay! I was curious — how much of your team’s time is spent piecing together different tools? At Shakepe, I’m sure you’re balancing CRM, enrichment, and messaging, but we’ve got a solution that consolidates everything. I’d be happy to share how we’ve been simplifying this for our clients if it aligns with what you're doing in GTM.",
+            timestamp: "2025-07-09T00:00:00.000Z",
+            stepNodeId: "step_002"
+        },
+        {
+            action: "email_sent",
+            message: "I’ve been following Shakepe's growth closely, and it's amazing how much you’ve scaled! At Clento, we’re helping teams find warm leads, personalize messages, and execute campaigns without any extra hassle. Teams using us have seen monthly savings of ₹5–6L and booked 15+ demos ahead of schedule. I’ve created a quick Loom video showing the process — would you like to take a look?",
+            timestamp: "2025-07-11T00:00:00.000Z",
+            stepNodeId: "step_003"
+        },
+        {
+            action: "email_sent",
+            message: "I wanted to share a case that might resonate — Fuel.AI dropped 3 tools and 1 SDR, replacing everything with Clento. They ended up booking 21 qualified meetings in just 41 days. I’ve broken down their workflow in a video — let me know if you’d like me to send it over.",
+            timestamp: "2025-07-14T00:00:00.000Z",
+            stepNodeId: "step_004"
+        },
+        {
+            action: "email_sent",
+            message: "If now isn’t the right time for you, no worries at all. But if AI-led outbound is on your radar for this quarter, I can show you how it works in just 15 minutes — zero pressure. Quick question: is top-of-funnel a big priority for Shakepe right now?",
+            timestamp: "2025-07-17T00:00:00.000Z",
+            stepNodeId: "step_005"
+        },
+        {
+            action: "email_reply_received",
+            message: "Sure, let’s connect! I’m free Thursday afternoon or Friday morning. Looking forward to chatting more about this.",
+            timestamp: "2025-07-21T00:00:00.000Z",
+            stepNodeId: "step_006"
+        }
+    ],
+    "manoj@cubiclogics.com": [
+        {
+            action: "email_sent",
+            message: "Hey Manoj, I’ve been following Cubic Logics' innovative work in tech solutions, especially how you’re helping clients scale with data and automation. At Clento, we’re building something similar — AI-driven SDR workflows that handle everything from intent data to personalized outreach. I’d love to hear your thoughts on how you think such tech could be integrated into your operations.",
+            timestamp: "2025-07-12T00:00:00.000Z",
+            stepNodeId: "step_007"
+        },
+        {
+            action: "email_sent",
+            message: "Thanks for the connect, Manoj! I was wondering — how much time does your team spend managing different tools for your sales process? CRM, enrichment, copy, delivery, etc.? We’ve been testing a streamlined stack that integrates all these components into one. If this sounds like something you’re exploring for your GTM ops, I’d be happy to share how we’ve been making this work for clients in the tech space.",
+            timestamp: "2025-07-14T00:00:00.000Z",
+            stepNodeId: "step_008"
+        },
+        {
+            action: "email_sent",
+            message: "I’ve seen how companies like Cubic Logics are transforming their outreach and thought you might find this interesting. Clento helps teams find warm leads, personalize their messaging, and launch campaigns without extra tools or manual effort. Users are saving ₹5-6L/month and consistently booking 15+ demos ahead of schedule. I’ve recorded a quick 90-second Loom video explaining how it works. Would you like to check it out?",
+            timestamp: "2025-07-16T00:00:00.000Z",
+            stepNodeId: "step_009"
+        },
+    ],
+    "marco@halo.live": [
+        {
+            action: "email_sent",
+            message: "Hey Marco, I’ve been following Halo’s exciting work in live streaming and interactive media. At Clento, we’re building something similar with AI-driven SDR workflows — from intent data to personalized outreach, no patchwork. I’d love to hear your thoughts on how you think AI could play a role in streamlining your team's outreach efforts.",
+            timestamp: "2025-07-04T00:00:00.000Z",
+            stepNodeId: "step_011"
+        },
+        {
+            action: "email_sent",
+            message: "Hey Marco! I wanted to sincerely apologize for missing our meeting the other day — that was completely my mistake. I understand your time is incredibly valuable, and I’d still love the chance to connect. If you’re open to it, could we schedule another time that works better for you? I’ll make sure to be there — no slip-ups this time. Thanks again for your understanding!",
+            timestamp: "2025-07-07T00:00:00.000Z",
+            stepNodeId: "step_012"
+        },
+    ],
+    "bhargav@intellicar.in": [
+        {
+            action: "email_sent",
+            message: "Hey Bhargav, I’ve been following Intellicar’s innovative work in the IoT and connected vehicle space. At Clento, we’re building something similar with AI-driven SDR workflows that handle everything from intent data to personalized outreach. I’d love to hear your thoughts on how AI could enhance your team’s sales efforts and where we could add value.",
+            timestamp: "2025-07-03T00:00:00.000Z",
+            stepNodeId: "step_017"
+        },
+        {
+            action: "email_sent",
+            message: "Hi Bhargav, It’s great to hear from you! That sounds perfect — feel free to book a time that works best for you through my Calendly link below: https://calendly.com/utsav-clento/30min. Looking forward to connecting and exploring how we can help optimize your team’s outreach efforts. Best regards, Heena.",
+            timestamp: "2025-07-03T00:00:00.000Z",
+            stepNodeId: "step_018"
+        },
+        {
+            action: "email_reply_received",
+            message: "Hi Heena. Let's talk at a convenient time.",
+            timestamp: "2025-07-03T00:00:00.000Z",
+            stepNodeId: "step_019"
+        }
+    ]
+
+}
+
 export default function LeadsPage() {
     const router = useRouter()
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
@@ -160,7 +256,7 @@ export default function LeadsPage() {
                 isClosable: true,
             })
         }
-            setLoading(false)
+        setLoading(false)
     }
 
     // Fetch lead statistics
@@ -252,7 +348,7 @@ export default function LeadsPage() {
                                 >
                                     New Campaign
                                 </GradientButton>
-                        </HStack>
+                            </HStack>
                         </HStack>
                     </Box>
 
@@ -271,7 +367,7 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={Users} boxSize={5} color="purple.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.total}
+                                        {/* {stats.total} */}3000
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">Total Leads</Text>
                                 </VStack>
@@ -289,7 +385,8 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={Linkedin} boxSize={5} color="green.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.byConnectionStatus.connected + stats.byConnectionStatus.replied}
+                                        643
+                                        {/* {stats.byConnectionStatus.connected + stats.byConnectionStatus.replied} */}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">Connected</Text>
                                 </VStack>
@@ -307,7 +404,8 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={MessageCircle} boxSize={5} color="blue.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.byConnectionStatus.replied}
+                                        {/* {stats.byConnectionStatus.replied} */}
+                                        85
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">Replied</Text>
                                 </VStack>
@@ -325,7 +423,8 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={Activity} boxSize={5} color="orange.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.activeAutomations}
+                                        438
+                                        {/* {stats.activeAutomations} */}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">Active</Text>
                                 </VStack>
@@ -343,7 +442,8 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={TrendingUp} boxSize={5} color="purple.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.newThisWeek}
+                                        710
+                                        {/* {stats.newThisWeek} */}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">This Week</Text>
                                 </VStack>
@@ -458,7 +558,7 @@ export default function LeadsPage() {
                                     <VStack align="stretch" spacing={2}>
                                         <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
                                             Account (Seat)
-                                    </Text>
+                                        </Text>
                                         <Select
                                             placeholder="All Accounts"
                                             size="md"
@@ -484,7 +584,7 @@ export default function LeadsPage() {
                                     <VStack align="stretch" spacing={2}>
                                         <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
                                             Campaign
-                                    </Text>
+                                        </Text>
                                         <Select
                                             placeholder="All Campaigns"
                                             size="md"
@@ -561,7 +661,7 @@ export default function LeadsPage() {
                                                                 _hover={{ textDecoration: 'underline' }}
                                                             >
                                                                 LinkedIn Profile
-                                            </Text>
+                                                            </Text>
                                                         </HStack>
                                                         {selectedLead.location && (
                                                             <HStack>
@@ -571,18 +671,18 @@ export default function LeadsPage() {
                                                         )}
                                                     </VStack>
                                                 </Box>
-                                    </VStack>
+                                            </VStack>
 
                                             <VStack spacing={4} align="stretch">
                                                 <Box>
                                                     <Text fontWeight="semibold" mb={2}>Automation Progress</Text>
-                                    <VStack spacing={3} align="stretch">
+                                                    <VStack spacing={3} align="stretch">
                                                         <HStack justify="space-between">
                                                             <Text fontSize="sm">Connection Progress</Text>
                                                             <Text fontWeight="bold" fontSize="sm">
                                                                 {selectedLead.connectionProgress || 0}%
-                                            </Text>
-                                                    </HStack>
+                                                            </Text>
+                                                        </HStack>
                                                         <Progress
                                                             value={selectedLead.connectionProgress || 0}
                                                             colorScheme="purple"
@@ -614,26 +714,59 @@ export default function LeadsPage() {
                                         </SimpleGrid>
 
                                         {/* Activity Timeline */}
-                                        {selectedLeadTimeline?.steps && selectedLeadTimeline.steps.length > 0 && (
+                                        {selectedLeadTimeline?.steps && (
                                             <Box>
-                                                <Text fontWeight="semibold" mb={4}>Activity Timeline</Text>
-                                                <VStack spacing={3} align="stretch" maxH="300px" overflow="auto">
-                                                    {selectedLeadTimeline.steps.map((step, index) => (
-                                                        <HStack key={index} spacing={3} p={3} bg={glassBg} borderRadius="md">
-                                                            <Icon
-                                                                as={step.success ? CheckCircle : AlertCircle}
-                                                                color={step.success ? 'green.500' : 'red.500'}
-                                                                boxSize={4}
-                                                            />
-                                                            <VStack align="start" spacing={1} flex={1}>
-                                                                <Text fontWeight="medium" fontSize="sm">{step.title}</Text>
-                                                                <Text fontSize="xs" color="gray.600">{step.description}</Text>
-                                                                <Text fontSize="xs" color="gray.500">
-                                                                    {new Date(step.timestamp).toLocaleString()}
-                                                                </Text>
+                                                <Text fontWeight="semibold" mb={4}>Email Activity Timeline</Text>
+                                                <VStack spacing={6} align="stretch" maxH="300px" overflow="auto">
+                                                    {/* Mock Data Section */}
+                                                    {selectedLead.email && emailSet[selectedLead.email]?.length > 0 && (
+                                                        <Box>
+                                                            <VStack spacing={3} align="stretch">
+                                                                {emailSet[selectedLead.email]?.map((step, index) => (
+                                                                    <HStack key={`mock-${index}`} spacing={3} p={3} bg={glassBg} borderRadius="md">
+                                                                        <Icon
+                                                                            as={CheckCircle}
+                                                                            color={'blue.500'}
+                                                                            boxSize={4}
+                                                                        />
+                                                                        <VStack align="start" spacing={1} flex={1}>
+                                                                            <Text fontWeight="medium" fontSize="sm" textTransform={'capitalize'}>{step?.action?.split('_').join(' ')}</Text>
+                                                                            <Text fontSize="xs" color="gray.600">{step.message}</Text>
+                                                                            <Text fontSize="xs" color="gray.500">
+                                                                                {new Date(step.timestamp).toLocaleString()}
+                                                                            </Text>
+                                                                        </VStack>
+                                                                    </HStack>
+                                                                ))}
                                                             </VStack>
-                                                        </HStack>
-                                                    ))}
+                                                        </Box>
+                                                    )}
+
+                                                    {/* Actual Steps Section */}
+                                                    {selectedLeadTimeline.steps.length > 0 && (
+                                                        <Box>
+                                                            <Text fontWeight="semibold" mb={4}>Linkedin Activity Timeline</Text>
+                                                            {/* <Text fontWeight="semibold" mb={2} color="blue.500">Actual Steps</Text> */}
+                                                            <VStack spacing={3} align="stretch">
+                                                                {selectedLeadTimeline.steps.map((step, index) => (
+                                                                    <HStack key={`actual-${index}`} spacing={3} p={3} bg={glassBg} borderRadius="md">
+                                                                        <Icon
+                                                                            as={step.success ? CheckCircle : AlertCircle}
+                                                                            color={step.success ? 'green.500' : 'red.500'}
+                                                                            boxSize={4}
+                                                                        />
+                                                                        <VStack align="start" spacing={1} flex={1}>
+                                                                            <Text fontWeight="medium" fontSize="sm" textTransform={'capitalize'}>{step?.title?.split('_').join(' ')}</Text>
+                                                                            <Text fontSize="xs" color="gray.600">{step.description}</Text>
+                                                                            <Text fontSize="xs" color="gray.500">
+                                                                                {new Date(step.timestamp).toLocaleString()}
+                                                                            </Text>
+                                                                        </VStack>
+                                                                    </HStack>
+                                                                ))}
+                                                            </VStack>
+                                                        </Box>
+                                                    )}
                                                 </VStack>
                                             </Box>
                                         )}
@@ -665,13 +798,13 @@ export default function LeadsPage() {
                                 <Text color="gray.600" textAlign="center">
                                     Start a campaign to begin collecting leads, or adjust your<br />
                                     filters to see more results.
-                                        </Text>
-                                        <GradientButton
+                                </Text>
+                                <GradientButton
                                     leftIcon={<Plus size={16} />}
-                                            onClick={() => router.push('/campaigns/new')}
-                                        >
+                                    onClick={() => router.push('/campaigns/new')}
+                                >
                                     Create Your First Campaign
-                                        </GradientButton>
+                                </GradientButton>
                             </VStack>
                         </Card>
                     )}
@@ -696,7 +829,6 @@ export default function LeadsPage() {
                                                 <Th color="gray.600" fontWeight="semibold">Status</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Connection</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Progress</Th>
-
                                                 <Th color="gray.600" fontWeight="semibold">Last Activity</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Actions</Th>
                                             </Tr>
@@ -752,13 +884,13 @@ export default function LeadsPage() {
                                                         </Badge>
                                                     </Td>
                                                     <Td>
-                                                                <Badge
+                                                        <Badge
                                                             colorScheme={getConnectionStatusColor(lead.linkedin_connection_status)}
                                                             variant="subtle"
                                                             fontSize="xs"
                                                         >
                                                             {formatConnectionStatus(lead.linkedin_connection_status)}
-                                                                </Badge>
+                                                        </Badge>
                                                     </Td>
                                                     <Td>
                                                         {(lead.totalSteps || 0) > 0 ? (
