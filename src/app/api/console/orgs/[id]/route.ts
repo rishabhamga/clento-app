@@ -65,13 +65,41 @@ enum possibleFields {
     COMPANY = 'Company',
     LOCATION = 'Location',
     LINKEDIN_URL = 'Linkedin url',
-    COMPANY_WEBSITE = 'Company website',
-    CITY = 'City',
-    COUNTRY = 'Country',
     EMAIL = 'Email',
-    MOBILE_PHONE = 'Mobile Phone'
+    MOBILE_PHONE = 'Mobile Phone',
+    LINKEDIN_MESSAGE_1 = 'Linkedin Message 1',
+    LINKEDIN_MESSAGE_DATE_1 = 'Linkedin Message Date 1',
+    LINKEDIN_MESSAGE_2 = 'linkedin message 2',
+    LINKEDIN_MESSAGE_DATE_2 = 'linkedin message 2 date',
+    LINKEDIN_MESSAGE_3 = 'linkedin message 3',
+    LINKEDIN_MESSAGE_DATE_3 = 'linkedin message 3 date',
+    LINKEDIN_MESSAGE_4 = 'linkedin message 4',
+    LINKEDIN_MESSAGE_DATE_4 = 'linkedin message 4 date',
+    LINKEDIN_MESSAGE_5 = 'linkedin message 5',
+    LINKEDIN_MESSAGE_DATE_5 = 'linkedin message 5 date',
+    LINKEDIN_MESSAGE_6 = 'linkedin message 6',
+    LINKEDIN_MESSAGE_DATE_6 = 'linkedin message 6 date',
+    REPLY_LINKEDIN_MESSAGE_1 = 'reply linkedin message 1',
+    REPLY_LINKEDIN_MESSAGE_DATE_1 = 'reply linkedin message 1 date',
+    REPLY_LINKEDIN_MESSAGE_2 = 'reply linkedin message 2',
+    REPLY_LINKEDIN_MESSAGE_DATE_2 = 'reply linkedin message 2 date',
+    REPLY_LINKEDIN_MESSAGE_3 = 'reply linkedin message 3',
+    REPLY_LINKEDIN_MESSAGE_DATE_3 = 'reply linkedin message 3 date',
+    REPLY_LINKEDIN_MESSAGE_4 = 'reply linkedin message 4',
+    REPLY_LINKEDIN_MESSAGE_DATE_4 = 'reply linkedin message 4 date',
+    REPLY_LINKEDIN_MESSAGE_5 = 'reply linkedin message 5',
+    REPLY_LINKEDIN_MESSAGE_DATE_5 = 'reply linkedin message 5 date',
+    REPLY_LINKEDIN_MESSAGE_6 = 'reply linkedin message 6',
+    REPLY_LINKEDIN_MESSAGE_DATE_6 = 'reply linkedin message 6 date'
 }
 
+const parseDate = (dateString: string): string | null => {
+    const [day, month, year] = dateString.split('/');
+    if (!day || !month || !year) return null;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+};
+
+// Ensure this function is defined before its usage in the code
 export async function POST(request: Request) {
     try {
         const formData = await request.formData();
@@ -117,12 +145,16 @@ export async function POST(request: Request) {
 
         const normalizedHeaderLineArray = headerLineArray.map(h => h.trim().toLowerCase());
 
-        // Add debug logs to track the flow and data
-        console.debug('Parsed CSV rows:', csvRows);
+        const leadsTableFields = [
+            'First name',
+            'Last name',
+            'Title',
+            'Company',
+            'Linkedin url',
+            'Email',
+        ];
 
         for (const row of csvRows) {
-            console.debug('Processing row:', row);
-
             // Skip row if any required field is missing
             const missingRequired = requiredFields.some(field => {
                 const idx = normalizedHeaderLineArray.indexOf(field.trim().toLowerCase());
@@ -134,7 +166,6 @@ export async function POST(request: Request) {
             }
 
             const updatedRow = row.map((val, idx) => {
-                console.debug(`Transforming value at index ${idx}:`, val);
                 return val;
             });
 
@@ -142,68 +173,102 @@ export async function POST(request: Request) {
                 let idx = normalizedHeaderLineArray.indexOf(field.trim().toLowerCase());
                 if (idx === -1) idx = headerLineArray.indexOf(field);
                 const value = updatedRow[idx]?.trim() || null;
-                console.debug(`Extracted value for field '${field}':`, value);
                 return value;
             };
 
-            const lead: Record<string, string | null> = {
+            const lead: Record<string, any> = {
                 organization_id: orgId,
-                campaign_id: campaignId,
-                list_name: listName,
+                clento_campaign_id: campaignId,
+                steps: [] // Initialize steps as an array
             };
 
-            Object.values(possibleFields).forEach((field) => {
+            leadsTableFields.forEach((field) => {
                 const key = field.replace(/\s+/g, '_').toLowerCase();
                 lead[key] = getValue(field);
-                console.debug(`Mapped field '${field}' to lead key '${key}':`, lead[key]);
             });
 
-            const user = await currentUser();
-            if (!user || !user.id) {
-                console.warn('Skipping row due to missing user information:', row);
-                continue; // skip if user is not available
+            const steps: Array<Record<string, any>> = [];
+            let hasMessages = false;
+
+            for (let i = 1; i <= 6; i++) {
+                const message = getValue(possibleFields[`LINKEDIN_MESSAGE_${i}` as keyof typeof possibleFields]);
+                const messageDate = getValue(possibleFields[`LINKEDIN_MESSAGE_DATE_${i}` as keyof typeof possibleFields]);
+
+                if (message && messageDate) {
+                    const parsedDate = parseDate(messageDate);
+                    if (!parsedDate) {
+                        console.warn(`Invalid date format for message ${i}:`, messageDate);
+                        continue;
+                    }
+
+                    steps.push({
+                        details: {
+                            action: `linkedin_follow_up_${i}`,
+                            message
+                        },
+                        success: true,
+                        response: `Follow-up message ${i} sent`,
+                        stepType: 'linkedin_message',
+                        timestamp: new Date(parsedDate).toISOString(),
+                        stepNodeId: `step_${String(i).padStart(3, '0')}`
+                    });
+                    hasMessages = true;
+                }
             }
 
+            for (let i = 1; i <= 6; i++) {
+                const replyMessage = getValue(possibleFields[`REPLY_LINKEDIN_MESSAGE_${i}` as keyof typeof possibleFields]);
+                const replyMessageDate = getValue(possibleFields[`REPLY_LINKEDIN_MESSAGE_DATE_${i}` as keyof typeof possibleFields]);
+
+                if (replyMessage && replyMessageDate) {
+                    const parsedDate = parseDate(replyMessageDate);
+                    if (!parsedDate) {
+                        console.warn(`Invalid date format for reply message ${i}:`, replyMessageDate);
+                        continue;
+                    }
+
+                    steps.push({
+                        details: {
+                            action: `linkedin_reply_received`,
+                            message: replyMessage
+                        },
+                        success: true,
+                        response: `Reply received from lead`,
+                        stepType: 'linkedin_reply',
+                        timestamp: new Date(parsedDate).toISOString(),
+                        stepNodeId: `step_${String(i + 6).padStart(3, '0')}`
+                    });
+                    hasMessages = true;
+                }
+            }
+
+            lead.steps = steps;
+
             const fullName = [
-                getValue(possibleFields.FIRST_NAME),
-                getValue(possibleFields.LAST_NAME)
+                getValue('First name'),
+                getValue('Last name')
             ].filter(Boolean).join(' ').trim();
 
             const leadToInsert = {
-                organization_id: orgId,
-                clento_campaign_id: campaignId,
+                ...lead,
                 full_name: fullName || null,
-                first_name: getValue(possibleFields.FIRST_NAME),
-                last_name: getValue(possibleFields.LAST_NAME),
-                email: getValue(possibleFields.EMAIL),
-                phone: getValue(possibleFields.MOBILE_PHONE),
-                title: getValue(possibleFields.TITLE),
-                headline: null,
-                seniority: null,
-                company: getValue(possibleFields.COMPANY),
-                industry: null,
-                location: getValue(possibleFields.LOCATION),
-                linkedin_url: getValue(possibleFields.LINKEDIN_URL),
-                twitter_url: null,
-                status: 'new',
-                source: 'manual',
-                enrichment_data: {},
-                verified: false,
-                confidence: 0,
-                smartlead_campaign_id: campaignId,
-                last_email_event: null,
-                last_event_timestamp: null,
-                syndie_lead_id: null,
-                linkedin_connection_status: 'not_connected',
-                steps: [],
-                campaign_info: {},
-                seat_info: {},
+                status: hasMessages ? 'contacted' : 'new', // Updated to use valid status values
+                linkedin_connection_status: hasMessages ? 'connected' : 'not_connected',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
 
-            const linkedinUrl = getValue(possibleFields.LINKEDIN_URL)?.toLowerCase() || '';
-            const email = getValue(possibleFields.EMAIL)?.toLowerCase() || '';
+            // Define allowed status values based on the database schema
+            const allowedStatusValues = ['new', 'contacted', 'replied', 'positive', 'neutral', 'negative', 'unsubscribed']; // Updated to match the schema
+
+            // Validate the status field before insertion
+            if (!allowedStatusValues.includes(leadToInsert.status)) {
+                console.error(`Invalid status value: ${leadToInsert.status}. Allowed values are: ${allowedStatusValues.join(', ')}`);
+                return NextResponse.json({ error: `Invalid status value: ${leadToInsert.status}` }, { status: 400 });
+            }
+
+            const linkedinUrl = getValue('Linkedin url')?.toLowerCase() || '';
+            const email = getValue('Email')?.toLowerCase() || '';
             if (
                 (linkedinUrl && existingLeadsSet.has(`linkedin_url:${linkedinUrl}`)) ||
                 (email && existingLeadsSet.has(`email:${email}`))
@@ -211,9 +276,9 @@ export async function POST(request: Request) {
                 console.warn('Duplicate lead found, skipping:', { linkedin_url: linkedinUrl, email });
                 continue; // Skip duplicate lead
             }
+
             const { data: leadData, error: leadError } = await supabase.from('leads').insert([leadToInsert]);
 
-            // Log the result of the Supabase insert operation
             if (leadError) {
                 console.error('Error inserting lead into Supabase:', leadError);
             } else {

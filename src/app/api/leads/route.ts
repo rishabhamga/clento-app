@@ -19,11 +19,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Parse query parameters
+    // Parse query parameters
     const { searchParams } = new URL(request.url)
     const params = parseLeadSearchParams(searchParams)
 
     // Get user's ID from the users table
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('clerk_id', userId)
@@ -103,6 +104,7 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching leads count:', countError)
     }
 
+    // Transform leads data to include computed fields
     // Transform leads data to include computed fields
     const transformedLeads = leads?.map(transformLeadData) || []
 
