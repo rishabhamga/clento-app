@@ -716,11 +716,11 @@ export default function LeadsPage() {
                                         {/* Activity Timeline */}
                                         {selectedLeadTimeline?.steps && (
                                             <Box>
-                                                <Text fontWeight="semibold" mb={4}>Email Activity Timeline</Text>
                                                 <VStack spacing={6} align="stretch" maxH="300px" overflow="auto">
                                                     {/* Mock Data Section */}
                                                     {selectedLead.email && emailSet[selectedLead.email]?.length > 0 && (
                                                         <Box>
+                                                            <Text fontWeight="semibold" mb={4}>Email Activity Timeline</Text>
                                                             <VStack spacing={3} align="stretch">
                                                                 {emailSet[selectedLead.email]?.map((step, index) => (
                                                                     <HStack key={`mock-${index}`} spacing={3} p={3} bg={glassBg} borderRadius="md">
