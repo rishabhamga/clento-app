@@ -106,7 +106,7 @@ function formatConnectionStatus(status: LinkedInConnectionStatus): string {
 }
 
 const emailSet = {
-    "akshay@shakepe.com": [
+    "akshay@shakedeal.com": [
         {
             action: "email_sent",
             message: `Subject: Congrats on ShakeDeal’s loyalty feature launch, Akshay
@@ -122,7 +122,7 @@ Would love to connect and swap ideas on AI-led growth strategies. Open to it?
 Best,
 Heena
 `,
-            timestamp: "2025-07-08T00:00:00.000Z",
+            timestamp: "2025-07-08T02:07:00.000Z",
             stepNodeId: "step_001"
         },
         {
@@ -138,7 +138,7 @@ We’ve supported similar launches where AI outreach helped onboard 30% more pil
 Best,
 Heena
 `,
-            timestamp: "2025-07-09T00:00:00.000Z",
+            timestamp: "2025-07-09T13:41:00.000Z",
             stepNodeId: "step_002"
         },
         {
@@ -154,7 +154,7 @@ Mind if we chat for 10 mins to sketch something out?
 Warm regards,
 Heena
 `,
-            timestamp: "2025-07-11T00:00:00.000Z",
+            timestamp: "2025-07-11T05:03:00.000Z",
             stepNodeId: "step_003"
         },
         {
@@ -169,7 +169,7 @@ Best regards,
 Akshay Hegde
 Co-Founder & Managing Director, ShakeDeal
 `,
-            timestamp: "2025-07-14T00:00:00.000Z",
+            timestamp: "2025-07-14T07:34:00.000Z",
             stepNodeId: "step_005"
         }
     ],
@@ -196,11 +196,11 @@ Co-Founder & Managing Director, ShakeDeal
     "marco@halo.live": [
         {
             action: "email_sent",
-            message: `Subject: Congrats on Navocapital’s UK push, Marco
+            message: `Subject: Congrats on Halo's UK push, Marco
 
 Hi Marco,
 
-Congrats on Navocapital expanding into the UK—awesome move! Breaking into new markets is always a big milestone. How have local partners or founders responded so far?
+Congrats on Halo's expanding into the UK—awesome move! Breaking into new markets is always a big milestone. How have local partners or founders responded so far?
 
 At Clento, we’ve built an AI sales development platform that simplifies scaling outreach—automating prospecting, enrichment, and follow-ups to support expansion without adding headcount.
 
@@ -209,7 +209,7 @@ Would love to connect and talk about how AI-powered tools can help you build tha
 Best,
 Heena
 `,
-            timestamp: "2025-07-04T00:00:00.000Z",
+            timestamp: "2025-07-03T06:35:00.000Z",
             stepNodeId: "step_011"
         },
         {
@@ -218,14 +218,14 @@ Heena
 
 Hi Marco,
 
-Just circling back—your UK expansion with Navocapital has really potential. Found anything surprising in the local FinTech space?
+Just circling back—your UK expansion with Halo has really potential. Found anything surprising in the local FinTech space?
 
 We’ve supported finance teams entering new markets with AI-driven SDR that helped them engage 20% more prospects early on. Happy to share examples if you’d like.
 
 Best,
 Heena
 `,
-            timestamp: "2025-07-07T00:00:00.000Z",
+            timestamp: "2025-07-06T08:23:00.000Z",
             stepNodeId: "step_012"
         },
         {
@@ -241,7 +241,7 @@ Let me know!
 Cheers,
 Heena
 `,
-            timestamp: "2025-07-09T00:00:00.000Z",
+            timestamp: "2025-07-08T07:54:00.000Z",
             stepNodeId: "step_012"
         }
     ],
