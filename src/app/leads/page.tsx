@@ -75,6 +75,7 @@ import {
     LinkedInConnectionStatus,
     LeadActivityTimeline
 } from '@/types/syndie'
+import { timeStamp } from 'console'
 
 // Helper functions
 function getConnectionStatusColor(status: LinkedInConnectionStatus): string {
@@ -108,93 +109,178 @@ const emailSet = {
     "akshay@shakepe.com": [
         {
             action: "email_sent",
-            message: "Hey Akshay, I noticed Shakepe is making some really exciting strides in the sustainability space! At Clento, we're building something similar — AI that runs SDR workflows autonomously. We handle everything from intent data to outreach, without all the tool-juggling. Would love to hear how you’re optimizing your outreach and where I could help.",
+            message: `Subject: Congrats on ShakeDeal’s loyalty feature launch, Akshay
+
+Hi Akshay,
+
+Huge congrats on ShakeDeal’s new loyalty rewards feature after your latest funding round! It’s fantastic to see innovation in customer engagement space—how has user uptake been so far?
+
+At Clento, we help scale loyalty and retention efforts through AI-powered SDR that streamlines outreach and enriches prospects—cutting manual effort while improving engagement.
+
+Would love to connect and swap ideas on AI-led growth strategies. Open to it?
+
+Best,
+Heena
+`,
             timestamp: "2025-07-08T00:00:00.000Z",
             stepNodeId: "step_001"
         },
         {
             action: "email_sent",
-            message: "Thanks for connecting, Akshay! I was curious — how much of your team’s time is spent piecing together different tools? At Shakepe, I’m sure you’re balancing CRM, enrichment, and messaging, but we’ve got a solution that consolidates everything. I’d be happy to share how we’ve been simplifying this for our clients if it aligns with what you're doing in GTM.",
+            message: `Subject: Re: ShakeDeal’s loyalty launch
+
+Hi Akshay,
+
+Following up—ShakeDeal’s loyalty feature launch sounds like a game-changer for engagement. Anything surprising in how users are reacting?
+
+We’ve supported similar launches where AI outreach helped onboard 30% more pilot users quickly. Happy to share strategy ideas if it’s helpful.
+
+Best,
+Heena
+`,
             timestamp: "2025-07-09T00:00:00.000Z",
             stepNodeId: "step_002"
         },
         {
             action: "email_sent",
-            message: "I’ve been following Shakepe's growth closely, and it's amazing how much you’ve scaled! At Clento, we’re helping teams find warm leads, personalize messages, and execute campaigns without any extra hassle. Teams using us have seen monthly savings of ₹5–6L and booked 15+ demos ahead of schedule. I’ve created a quick Loom video showing the process — would you like to take a look?",
+            message: `Subject: AI for loyalty rollout?
+
+Hi Akshay,
+
+Hope things are going well! Got me thinking—customers who opt into loyalty schemes often also respond well to personal messages. Clento helps create highly relevant outreach to drive that engagement at scale.
+
+Mind if we chat for 10 mins to sketch something out?
+
+Warm regards,
+Heena
+`,
             timestamp: "2025-07-11T00:00:00.000Z",
             stepNodeId: "step_003"
         },
         {
-            action: "email_sent",
-            message: "I wanted to share a case that might resonate — Fuel.AI dropped 3 tools and 1 SDR, replacing everything with Clento. They ended up booking 21 qualified meetings in just 41 days. I’ve broken down their workflow in a video — let me know if you’d like me to send it over.",
+            action: "reply recieved",
+            message: `Subject: Re: One last thing…
+
+Hi Heena,
+
+Apologies for the silence—I’ve been busy with our new rollout. That campaign mockup sounds interesting! Can you send it over? I’d love to see how your AI messaging could align with what we’re doing at ShakeDeal.
+
+Best regards,
+Akshay Hegde
+Co-Founder & Managing Director, ShakeDeal
+`,
             timestamp: "2025-07-14T00:00:00.000Z",
-            stepNodeId: "step_004"
-        },
-        {
-            action: "email_sent",
-            message: "If now isn’t the right time for you, no worries at all. But if AI-led outbound is on your radar for this quarter, I can show you how it works in just 15 minutes — zero pressure. Quick question: is top-of-funnel a big priority for Shakepe right now?",
-            timestamp: "2025-07-17T00:00:00.000Z",
             stepNodeId: "step_005"
-        },
-        {
-            action: "email_reply_received",
-            message: "Sure, let’s connect! I’m free Thursday afternoon or Friday morning. Looking forward to chatting more about this.",
-            timestamp: "2025-07-21T00:00:00.000Z",
-            stepNodeId: "step_006"
         }
     ],
-    "manoj@cubiclogics.com": [
-        {
-            action: "email_sent",
-            message: "Hey Manoj, I’ve been following Cubic Logics' innovative work in tech solutions, especially how you’re helping clients scale with data and automation. At Clento, we’re building something similar — AI-driven SDR workflows that handle everything from intent data to personalized outreach. I’d love to hear your thoughts on how you think such tech could be integrated into your operations.",
-            timestamp: "2025-07-12T00:00:00.000Z",
-            stepNodeId: "step_007"
-        },
-        {
-            action: "email_sent",
-            message: "Thanks for the connect, Manoj! I was wondering — how much time does your team spend managing different tools for your sales process? CRM, enrichment, copy, delivery, etc.? We’ve been testing a streamlined stack that integrates all these components into one. If this sounds like something you’re exploring for your GTM ops, I’d be happy to share how we’ve been making this work for clients in the tech space.",
-            timestamp: "2025-07-14T00:00:00.000Z",
-            stepNodeId: "step_008"
-        },
-        {
-            action: "email_sent",
-            message: "I’ve seen how companies like Cubic Logics are transforming their outreach and thought you might find this interesting. Clento helps teams find warm leads, personalize their messaging, and launch campaigns without extra tools or manual effort. Users are saving ₹5-6L/month and consistently booking 15+ demos ahead of schedule. I’ve recorded a quick 90-second Loom video explaining how it works. Would you like to check it out?",
-            timestamp: "2025-07-16T00:00:00.000Z",
-            stepNodeId: "step_009"
-        },
-    ],
+    // "manoj@cubiclogics.com": [
+    //     {
+    //         action: "email_sent",
+    //         message: "Hey Manoj, I’ve been following Cubic Logics' innovative work in tech solutions, especially how you’re helping clients scale with data and automation. At Clento, we’re building something similar — AI-driven SDR workflows that handle everything from intent data to personalized outreach. I’d love to hear your thoughts on how you think such tech could be integrated into your operations.",
+    //         timestamp: "2025-07-12T00:00:00.000Z",
+    //         stepNodeId: "step_007"
+    //     },
+    //     {
+    //         action: "email_sent",
+    //         message: "Thanks for the connect, Manoj! I was wondering — how much time does your team spend managing different tools for your sales process? CRM, enrichment, copy, delivery, etc.? We’ve been testing a streamlined stack that integrates all these components into one. If this sounds like something you’re exploring for your GTM ops, I’d be happy to share how we’ve been making this work for clients in the tech space.",
+    //         timestamp: "2025-07-14T00:00:00.000Z",
+    //         stepNodeId: "step_008"
+    //     },
+    //     {
+    //         action: "email_sent",
+    //         message: "I’ve seen how companies like Cubic Logics are transforming their outreach and thought you might find this interesting. Clento helps teams find warm leads, personalize their messaging, and launch campaigns without extra tools or manual effort. Users are saving ₹5-6L/month and consistently booking 15+ demos ahead of schedule. I’ve recorded a quick 90-second Loom video explaining how it works. Would you like to check it out?",
+    //         timestamp: "2025-07-16T00:00:00.000Z",
+    //         stepNodeId: "step_009"
+    //     },
+    // ],
     "marco@halo.live": [
         {
             action: "email_sent",
-            message: "Hey Marco, I’ve been following Halo’s exciting work in live streaming and interactive media. At Clento, we’re building something similar with AI-driven SDR workflows — from intent data to personalized outreach, no patchwork. I’d love to hear your thoughts on how you think AI could play a role in streamlining your team's outreach efforts.",
+            message: `Subject: Congrats on Navocapital’s UK push, Marco
+
+Hi Marco,
+
+Congrats on Navocapital expanding into the UK—awesome move! Breaking into new markets is always a big milestone. How have local partners or founders responded so far?
+
+At Clento, we’ve built an AI sales development platform that simplifies scaling outreach—automating prospecting, enrichment, and follow-ups to support expansion without adding headcount.
+
+Would love to connect and talk about how AI-powered tools can help you build that initial pipeline in new regions.
+
+Best,
+Heena
+`,
             timestamp: "2025-07-04T00:00:00.000Z",
             stepNodeId: "step_011"
         },
         {
             action: "email_sent",
-            message: "Hey Marco! I wanted to sincerely apologize for missing our meeting the other day — that was completely my mistake. I understand your time is incredibly valuable, and I’d still love the chance to connect. If you’re open to it, could we schedule another time that works better for you? I’ll make sure to be there — no slip-ups this time. Thanks again for your understanding!",
+            message: `Subject: Thoughts on UK FinTech prospects?
+
+Hi Marco,
+
+Just circling back—your UK expansion with Navocapital has really potential. Found anything surprising in the local FinTech space?
+
+We’ve supported finance teams entering new markets with AI-driven SDR that helped them engage 20% more prospects early on. Happy to share examples if you’d like.
+
+Best,
+Heena
+`,
             timestamp: "2025-07-07T00:00:00.000Z",
             stepNodeId: "step_012"
         },
+        {
+            action: "email_sent",
+            message: `Subject: Last note—UK outreach help?
+
+Hey Marco,
+
+Not sure if now’s perchance too busy, but wanted to check if I could send over a tailored mock campaign draft—just 10 mins, no strings—showcasing how Clento would approach outreach for your UK launch.
+
+Let me know!
+
+Cheers,
+Heena
+`,
+            timestamp: "2025-07-09T00:00:00.000Z",
+            stepNodeId: "step_012"
+        }
     ],
     "bhargav@intellicar.in": [
         {
             action: "email_sent",
-            message: "Hey Bhargav, I’ve been following Intellicar’s innovative work in the IoT and connected vehicle space. At Clento, we’re building something similar with AI-driven SDR workflows that handle everything from intent data to personalized outreach. I’d love to hear your thoughts on how AI could enhance your team’s sales efforts and where we could add value.",
+            message: `Subject: Congrats on Intellicar’s AI diagnostic module, Bhargav
+Hi Bhargav,
+
+Congratulations on Intellicar’s launch of the new AI vehicle diagnostics feature—super exciting to see that kind of innovation in India’s auto-tech scene! How’s the initial feedback from customers been?
+
+As CBO, I know orchestrating product rollouts and capturing early adoption insights can feel like juggling multiple moving parts. At Clento, we’ve built an AI-powered SDR platform that integrates prospecting, enrichment, and multi-channel outreach into one streamlined workflow—helping teams like yours save time and stay nimble.
+
+Would love to connect and swap ideas on how AI is reshaping operations in mobility. Up for a quick chat?
+
+Best regards,
+Heena Bhardwaj
+Business Development Manager at Clento
+`,
             timestamp: "2025-07-03T00:00:00.000Z",
             stepNodeId: "step_017"
         },
         {
             action: "email_sent",
-            message: "Hi Bhargav, It’s great to hear from you! That sounds perfect — feel free to book a time that works best for you through my Calendly link below: https://calendly.com/utsav-clento/30min. Looking forward to connecting and exploring how we can help optimize your team’s outreach efforts. Best regards, Heena.",
-            timestamp: "2025-07-03T00:00:00.000Z",
+            message: `Subject: Still interested, Bhargav?
+
+Hi Bhargav,
+
+Just wanted to drop one final note on this—your AI diagnostics suite is seriously impressive, and I believe Clento could help you engage more shops/fleets without extra headcount.
+
+If you’d like, I can pull together a quick mock campaign based on Intellicar’s launch—just to visualize the value.
+
+Let me know either way, and thanks for your time!
+
+Cheers,
+Heena
+`,
+            timestamp: "2025-07-06T00:00:00.000Z",
             stepNodeId: "step_018"
-        },
-        {
-            action: "email_reply_received",
-            message: "Hi Heena. Let's talk at a convenient time.",
-            timestamp: "2025-07-03T00:00:00.000Z",
-            stepNodeId: "step_019"
         }
     ]
 
@@ -731,7 +817,7 @@ export default function LeadsPage() {
                                                                         />
                                                                         <VStack align="start" spacing={1} flex={1}>
                                                                             <Text fontWeight="medium" fontSize="sm" textTransform={'capitalize'}>{step?.action?.split('_').join(' ')}</Text>
-                                                                            <Text fontSize="xs" color="gray.600">{step.message}</Text>
+                                                                            <Text fontSize="xs" color="gray.600" whiteSpace="pre-line">{step.message}</Text>
                                                                             <Text fontSize="xs" color="gray.500">
                                                                                 {new Date(step.timestamp).toLocaleString()}
                                                                             </Text>
