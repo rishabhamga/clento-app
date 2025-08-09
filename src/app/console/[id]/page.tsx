@@ -255,6 +255,14 @@ function OrgDetailPage() {
     const [uploadCampaignId, setUploadCampaignId] = useState<string>();
     const [selectedCampaignData, setSelectedCampaignData] = useState<CampaignData | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    
+    // Email personalization state
+    const [emailPersonalizationFile, setEmailPersonalizationFile] = useState<File | null>(null);
+    const [emailPersonalizationJobId, setEmailPersonalizationJobId] = useState<string | null>(null);
+    const [emailPersonalizationStatus, setEmailPersonalizationStatus] = useState<string>('idle');
+    const [emailPersonalizationProgress, setEmailPersonalizationProgress] = useState<number>(0);
+    const [emailPersonalizationErrors, setEmailPersonalizationErrors] = useState<any[]>([]);
+    const emailFileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -313,6 +321,128 @@ function OrgDetailPage() {
             setListName('');
         }
     }
+
+    // Email personalization functions
+    const handleEmailPersonalizationFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            if (!file.name.endsWith('.csv')) {
+                customToast.error({ title: "Invalid File Type", description: "Please upload a CSV file." });
+                return;
+            }
+            setEmailPersonalizationFile(file);
+            customToast.success({ title: "File Selected", description: `${file.name} ready for processing` });
+        }
+    };
+
+    const startEmailPersonalization = async () => {
+        if (!emailPersonalizationFile) {
+            customToast.error({ title: "No File Selected", description: "Please select a CSV file first." });
+            return;
+        }
+        
+        if (!viewCampaignId) {
+            customToast.error({ title: "No Campaign Selected", description: "Please select a campaign first." });
+            return;
+        }
+
+        try {
+            setEmailPersonalizationStatus('processing');
+            setEmailPersonalizationProgress(0);
+            setEmailPersonalizationErrors([]);
+
+            const formData = new FormData();
+            formData.append('file', emailPersonalizationFile);
+            formData.append('campaignId', viewCampaignId);
+
+            const response = await fetch('/api/email-personalization', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to start email personalization');
+            }
+
+            const { jobId, rowCount } = await response.json();
+            setEmailPersonalizationJobId(jobId);
+            
+            customToast.success({ 
+                title: "Processing Started", 
+                description: `Processing ${rowCount} leads. This may take several minutes.` 
+            });
+
+            // Start polling for status
+            pollEmailPersonalizationStatus(jobId);
+
+        } catch (error) {
+            console.error('Email personalization failed:', error);
+            customToast.error({ 
+                title: "Processing Failed", 
+                description: error instanceof Error ? error.message : "Unknown error occurred" 
+            });
+            setEmailPersonalizationStatus('failed');
+        }
+    };
+
+    const pollEmailPersonalizationStatus = async (jobId: string) => {
+        try {
+            const response = await fetch(`/api/email-personalization/${jobId}/status`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to get job status');
+            }
+
+            const statusData = await response.json();
+            setEmailPersonalizationProgress(statusData.progress);
+            
+            if (statusData.recentErrors) {
+                setEmailPersonalizationErrors(statusData.recentErrors);
+            }
+
+            if (statusData.status === 'completed') {
+                setEmailPersonalizationStatus('completed');
+                customToast.success({ 
+                    title: "Processing Complete!", 
+                    description: `Successfully processed ${statusData.results.successCount} leads. Click download to get your results.`
+                });
+            } else if (statusData.status === 'failed') {
+                setEmailPersonalizationStatus('failed');
+                customToast.error({ title: "Processing Failed", description: "Please try again or contact support." });
+            } else if (statusData.status === 'processing') {
+                // Continue polling
+                setTimeout(() => pollEmailPersonalizationStatus(jobId), 3000);
+            }
+
+        } catch (error) {
+            console.error('Status polling failed:', error);
+            setEmailPersonalizationStatus('failed');
+            customToast.error({ title: "Status Check Failed", description: "Please refresh the page and try again." });
+        }
+    };
+
+    const downloadEmailPersonalizationResults = () => {
+        if (emailPersonalizationJobId && emailPersonalizationStatus === 'completed') {
+            const downloadUrl = `/api/email-personalization/${emailPersonalizationJobId}/download`;
+            window.open(downloadUrl, '_blank');
+            
+            customToast.success({ 
+                title: "Download Started", 
+                description: "Your personalized emails are being downloaded." 
+            });
+        }
+    };
+
+    const downloadSampleCSV = () => {
+        const sampleUrl = '/api/email-personalization/sample-csv';
+        window.open(sampleUrl, '_blank');
+        
+        customToast.success({ 
+            title: "Sample Downloaded", 
+            description: "Use this format for your lead uploads." 
+        });
+    };
 
     const handleUpload = async () => {
         if (!listName?.trim()) {
@@ -742,6 +872,151 @@ function OrgDetailPage() {
                         </TableContainer>
                     )}
                     {renderCampaignDetails()}
+
+                    {/* Email Personalization Section */}
+                    {viewCampaignId && selectedCampaignData && (
+                        <Card style={{ background: "white" }} p={8} mt={8}>
+                            <VStack gap={6} alignItems={'start'}>
+                                <HStack justify="space-between" w="100%">
+                                    <VStack alignItems={'start'} spacing={1}>
+                                        <Text fontWeight={600} fontSize={20} color={"GrayText"}>
+                                            Generate Personalized Emails
+                                        </Text>
+                                        <Text fontSize={14} color={"gray.600"}>
+                                            Upload leads CSV to generate AI-powered personalized email sequences using "{selectedCampaignData.name}" campaign context
+                                        </Text>
+                                    </VStack>
+                                    <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={downloadSampleCSV}
+                                        leftIcon={<Text>📥</Text>}
+                                    >
+                                        Download Sample CSV
+                                    </Button>
+                                </HStack>
+
+                                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} w="100%">
+                                    {/* Upload Section */}
+                                    <VStack alignItems={'start'} spacing={4}>
+                                        <Text fontWeight={500} fontSize={16}>1. Upload Leads CSV</Text>
+                                        
+                                        <input
+                                            ref={emailFileInputRef}
+                                            type="file"
+                                            accept=".csv"
+                                            style={{ display: 'none' }}
+                                            onChange={handleEmailPersonalizationFileUpload}
+                                        />
+                                        
+                                        <Button
+                                            onClick={() => emailFileInputRef.current?.click()}
+                                            variant={emailPersonalizationFile ? "solid" : "outline"}
+                                            colorScheme={emailPersonalizationFile ? "green" : "blue"}
+                                            w="100%"
+                                        >
+                                            {emailPersonalizationFile ? 
+                                                `✅ ${emailPersonalizationFile.name}` : 
+                                                "📁 Select CSV File"
+                                            }
+                                        </Button>
+
+                                        <Text fontSize={12} color="gray.500">
+                                            Required fields: First name, Last name, Title, Company, Location, LinkedIn url, Company website
+                                        </Text>
+                                    </VStack>
+
+                                    {/* Process Section */}
+                                    <VStack alignItems={'start'} spacing={4}>
+                                        <Text fontWeight={500} fontSize={16}>2. Generate Email Sequences</Text>
+                                        
+                                        <Button
+                                            onClick={startEmailPersonalization}
+                                            isDisabled={!emailPersonalizationFile || !viewCampaignId || emailPersonalizationStatus === 'processing'}
+                                            isLoading={emailPersonalizationStatus === 'processing'}
+                                            loadingText="Processing..."
+                                            colorScheme="purple"
+                                            w="100%"
+                                        >
+                                            🚀 Generate Personalized Emails
+                                        </Button>
+
+                                        {emailPersonalizationStatus === 'processing' && (
+                                            <VStack w="100%" spacing={2}>
+                                                <HStack justify="space-between" w="100%">
+                                                    <Text fontSize={12}>Progress</Text>
+                                                    <Text fontSize={12} fontWeight="bold">{emailPersonalizationProgress}%</Text>
+                                                </HStack>
+                                                <Box w="100%" bg="gray.200" h="6px" borderRadius="3px">
+                                                    <Box 
+                                                        bg="purple.500" 
+                                                        h="100%" 
+                                                        borderRadius="3px"
+                                                        width={`${emailPersonalizationProgress}%`}
+                                                        transition="width 0.3s ease"
+                                                    />
+                                                </Box>
+                                            </VStack>
+                                        )}
+                                    </VStack>
+                                </SimpleGrid>
+
+                                {/* Results Section */}
+                                {emailPersonalizationStatus === 'completed' && (
+                                    <VStack alignItems={'start'} spacing={4} w="100%" p={4} bg="green.50" borderRadius="md" border="1px solid" borderColor="green.200">
+                                        <HStack>
+                                            <Text fontSize={16} fontWeight={600} color="green.700">✅ Processing Complete!</Text>
+                                        </HStack>
+                                        <Text fontSize={14} color="green.600">
+                                            Your personalized email sequences have been generated successfully. 
+                                            Each lead now has 1 initial email + 4 follow-up emails with campaign context.
+                                        </Text>
+                                        <Button 
+                                            onClick={downloadEmailPersonalizationResults}
+                                            colorScheme="green"
+                                            leftIcon={<Text>⬇️</Text>}
+                                        >
+                                            Download Personalized Emails CSV
+                                        </Button>
+                                    </VStack>
+                                )}
+
+                                {/* Error Section */}
+                                {emailPersonalizationStatus === 'failed' && (
+                                    <VStack alignItems={'start'} spacing={4} w="100%" p={4} bg="red.50" borderRadius="md" border="1px solid" borderColor="red.200">
+                                        <Text fontSize={16} fontWeight={600} color="red.700">❌ Processing Failed</Text>
+                                        <Text fontSize={14} color="red.600">
+                                            There was an error processing your leads. Please check your CSV format and try again.
+                                        </Text>
+                                        <Button 
+                                            onClick={() => {
+                                                setEmailPersonalizationStatus('idle');
+                                                setEmailPersonalizationFile(null);
+                                                setEmailPersonalizationProgress(0);
+                                                setEmailPersonalizationErrors([]);
+                                            }}
+                                            colorScheme="red"
+                                            variant="outline"
+                                        >
+                                            Try Again
+                                        </Button>
+                                    </VStack>
+                                )}
+
+                                {/* Errors Display */}
+                                {emailPersonalizationErrors.length > 0 && (
+                                    <VStack alignItems={'start'} spacing={2} w="100%" p={4} bg="yellow.50" borderRadius="md" border="1px solid" borderColor="yellow.200">
+                                        <Text fontSize={14} fontWeight={600} color="yellow.700">⚠️ Processing Warnings</Text>
+                                        {emailPersonalizationErrors.map((error, index) => (
+                                            <Text key={index} fontSize={12} color="yellow.600">
+                                                Row {error.row}: {error.leadName} - {error.error}
+                                            </Text>
+                                        ))}
+                                    </VStack>
+                                )}
+                            </VStack>
+                        </Card>
+                    )}
                 </VStack>
             </Container>
         </Box>
