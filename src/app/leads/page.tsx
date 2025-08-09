@@ -11,9 +11,6 @@ import {
     Badge,
     HStack,
     Avatar,
-    Input,
-    InputGroup,
-    InputLeftElement,
     Select,
     useColorModeValue,
     Modal,
@@ -46,7 +43,6 @@ import {
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { 
-    Search, 
     Filter, 
     Download, 
     Plus, 
@@ -124,7 +120,6 @@ export default function LeadsPage() {
     
     // Filter state
     const [filters, setFilters] = useState<LeadFilters>({})
-    const [searchTerm, setSearchTerm] = useState('')
 
     // Fetch leads with current filters and pagination
     const fetchLeads = async (newPage = 1, newFilters = filters) => {
@@ -202,13 +197,7 @@ export default function LeadsPage() {
         fetchLeads(1, updatedFilters)
     }
 
-    // Handle search
-    const handleSearch = (search: string) => {
-        setSearchTerm(search)
-        const newFilters = { ...filters, search: search || undefined }
-        setFilters(newFilters)
-        fetchLeads(1, newFilters)
-    }
+
 
     // Initial data fetch
     useEffect(() => {
@@ -258,7 +247,7 @@ export default function LeadsPage() {
 
                     {/* Stats Overview */}
                     {stats && (
-                        <SimpleGrid columns={{ base: 2, md: 6 }} spacing={6}>
+                        <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
                             <Card 
                                 bg={cardBg} 
                                 border="1px solid" 
@@ -323,24 +312,6 @@ export default function LeadsPage() {
                                 transition="all 0.2s ease"
                             >
                                 <VStack spacing={1}>
-                                    <Icon as={Activity} boxSize={5} color="orange.500" />
-                                    <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.activeAutomations}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.600">Active</Text>
-                                </VStack>
-                            </Card>
-
-                            <Card 
-                                bg={cardBg} 
-                                border="1px solid" 
-                                borderColor={borderColor}
-                                borderRadius="xl"
-                                p={4}
-                                _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                                transition="all 0.2s ease"
-                            >
-                                <VStack spacing={1}>
                                     <Icon as={TrendingUp} boxSize={5} color="purple.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
                                         {stats.newThisWeek}
@@ -348,167 +319,163 @@ export default function LeadsPage() {
                                     <Text fontSize="xs" color="gray.600">This Week</Text>
                                 </VStack>
                             </Card>
-
-                            <Card 
-                                bg={cardBg} 
-                                border="1px solid" 
-                                borderColor={borderColor}
-                                borderRadius="xl"
-                                p={4}
-                                _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                                transition="all 0.2s ease"
-                            >
-                                <VStack spacing={1}>
-                                    <Icon as={Clock} boxSize={5} color="gray.500" />
-                                    <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.recentActivity}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.600">Recent</Text>
-                                </VStack>
-                            </Card>
                         </SimpleGrid>
                     )}
 
-                    {/* Filters and Search */}
+                    {/* Compact Filter Bar */}
                     <Card 
                         bg={cardBg} 
-                        backdropFilter="blur(10px)"
+                        backdropFilter="blur(20px)"
                         border="1px solid" 
                         borderColor={borderColor}
                         borderRadius="xl"
                         shadow="lg"
-                        p={6}
+                        px={6}
+                        py={3}
                     >
-                        <VStack spacing={6}>
-                            {/* Search Bar */}
-                            <Box width="100%">
-                                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={3}>
-                                    Search & Filter Leads
+                        <HStack spacing={6} align="end" justify="start">
+                            <Text 
+                                fontSize="sm" 
+                                fontWeight="bold" 
+                                bgGradient="linear(to-r, purple.400, blue.400)"
+                                bgClip="text"
+                                mb={2}
+                            >
+                                Filter Leads
+                            </Text>
+                            
+                            <Box>
+                                <Text 
+                                    fontSize="xs" 
+                                    fontWeight="semibold" 
+                                    color="gray.500" 
+                                    textTransform="uppercase"
+                                    letterSpacing="wider"
+                                    mb={1}
+                                >
+                                    Connection Status
                                 </Text>
-                                <InputGroup size="lg">
-                                    <InputLeftElement pointerEvents="none">
-                                        <Icon as={Search} color="gray.500" boxSize={5} />
-                                    </InputLeftElement>
-                                    <Input
-                                        placeholder="Search leads by name, email, or company..."
-                                        value={searchTerm}
-                                        onChange={(e) => handleSearch(e.target.value)}
-                                        bg={glassBg}
-                                        border="1px solid"
-                                        borderColor={borderColor}
-                                        borderRadius="lg"
-                                        fontSize="md"
-                                        _hover={{ borderColor: 'purple.300' }}
-                                        _focus={{ 
-                                            borderColor: 'purple.400', 
-                                            boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)',
-                                            bg: 'white'
-                                        }}
-                                    />
-                                </InputGroup>
+                                <Select
+                                    placeholder="All Statuses"
+                                    size="sm"
+                                    width="170px"
+                                    height="32px"
+                                    bg={cardBg}
+                                    backdropFilter="blur(10px)"
+                                    border="1px solid"
+                                    borderColor={borderColor}
+                                    borderRadius="lg"
+                                    shadow="sm"
+                                    fontSize="sm"
+                                    _hover={{ 
+                                        borderColor: 'purple.300',
+                                        shadow: 'md'
+                                    }}
+                                    _focus={{ 
+                                        borderColor: 'purple.400', 
+                                        boxShadow: '0 0 0 2px rgba(128, 90, 213, 0.1)',
+                                        bg: 'white'
+                                    }}
+                                    transition="all 0.2s ease"
+                                    onChange={(e) => handleFilterChange({ 
+                                        connectionStatus: e.target.value ? [e.target.value as LinkedInConnectionStatus] : undefined 
+                                    })}
+                                >
+                                    <option value="not_connected">Not Connected</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="connected">Connected</option>
+                                    <option value="replied">Replied</option>
+                                    <option value="bounced">Bounced</option>
+                                    <option value="not_interested">Not Interested</option>
+                                </Select>
                             </Box>
 
-                            {/* Filter Options */}
-                            <Box width="100%">
-                                <HStack justify="space-between" mb={4}>
-                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600">
-                                        Filter Options
-                                    </Text>
-                                    <Button
-                                        leftIcon={<Filter size={16} />}
-                                        variant="ghost"
-                                        size="sm"
-                                        color="purple.500"
-                                        _hover={{ bg: glassBg }}
-                                    >
-                                        Advanced Filters
-                                    </Button>
-                                </HStack>
-                                
-                                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                                    <VStack align="stretch" spacing={2}>
-                                        <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
-                                            Connection Status
-                                        </Text>
-                                        <Select
-                                            placeholder="All Statuses"
-                                            size="md"
-                                            bg={glassBg}
-                                            border="1px solid"
-                                            borderColor={borderColor}
-                                            borderRadius="lg"
-                                            _hover={{ borderColor: 'purple.300' }}
-                                            _focus={{ 
-                                                borderColor: 'purple.400', 
-                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' 
-                                            }}
-                                            onChange={(e) => handleFilterChange({ 
-                                                connectionStatus: e.target.value ? [e.target.value as LinkedInConnectionStatus] : undefined 
-                                            })}
-                                        >
-                                            <option value="not_connected">Not Connected</option>
-                                            <option value="pending">Pending</option>
-                                            <option value="connected">Connected</option>
-                                            <option value="replied">Replied</option>
-                                            <option value="bounced">Bounced</option>
-                                            <option value="not_interested">Not Interested</option>
-                                        </Select>
-                                    </VStack>
-
-                                    <VStack align="stretch" spacing={2}>
-                                        <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
-                                            Account (Seat)
-                                    </Text>
-                                        <Select
-                                            placeholder="All Accounts"
-                                            size="md"
-                                            bg={glassBg}
-                                            border="1px solid"
-                                            borderColor={borderColor}
-                                            borderRadius="lg"
-                                            _hover={{ borderColor: 'purple.300' }}
-                                            _focus={{ 
-                                                borderColor: 'purple.400', 
-                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' 
-                                            }}
-                                            onChange={(e) => handleFilterChange({ 
-                                                account: e.target.value || undefined 
-                                            })}
-                                        >
-                                            <option value="account1">Account 1</option>
-                                            <option value="account2">Account 2</option>
-                                            <option value="account3">Account 3</option>
-                                        </Select>
-                                    </VStack>
-
-                                    <VStack align="stretch" spacing={2}>
-                                        <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
-                                            Campaign
-                                    </Text>
-                                        <Select
-                                            placeholder="All Campaigns"
-                                            size="md"
-                                            bg={glassBg}
-                                            border="1px solid"
-                                            borderColor={borderColor}
-                                            borderRadius="lg"
-                                            _hover={{ borderColor: 'purple.300' }}
-                                            _focus={{ 
-                                                borderColor: 'purple.400', 
-                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)' 
-                                            }}
-                                            onChange={(e) => handleFilterChange({ 
-                                                campaign: e.target.value || undefined 
-                                            })}
-                                        >
-                                            <option value="campaign1">Campaign 1</option>
-                                            <option value="campaign2">Campaign 2</option>
-                                            <option value="campaign3">Campaign 3</option>
-                                        </Select>
-                                    </VStack>
-                                </SimpleGrid>
+                            <Box>
+                                <Text 
+                                    fontSize="xs" 
+                                    fontWeight="semibold" 
+                                    color="gray.500" 
+                                    textTransform="uppercase"
+                                    letterSpacing="wider"
+                                    mb={1}
+                                >
+                                    Account
+                                </Text>
+                                <Select
+                                    placeholder="All Accounts"
+                                    size="sm"
+                                    width="150px"
+                                    height="32px"
+                                    bg={cardBg}
+                                    backdropFilter="blur(10px)"
+                                    border="1px solid"
+                                    borderColor={borderColor}
+                                    borderRadius="lg"
+                                    shadow="sm"
+                                    fontSize="sm"
+                                    _hover={{ 
+                                        borderColor: 'purple.300',
+                                        shadow: 'md'
+                                    }}
+                                    _focus={{ 
+                                        borderColor: 'purple.400', 
+                                        boxShadow: '0 0 0 2px rgba(128, 90, 213, 0.1)',
+                                        bg: 'white'
+                                    }}
+                                    transition="all 0.2s ease"
+                                    onChange={(e) => handleFilterChange({ 
+                                        account: e.target.value || undefined 
+                                    })}
+                                >
+                                    <option value="account1">Account 1</option>
+                                    <option value="account2">Account 2</option>
+                                    <option value="account3">Account 3</option>
+                                </Select>
                             </Box>
-                        </VStack>
+
+                            <Box>
+                                <Text 
+                                    fontSize="xs" 
+                                    fontWeight="semibold" 
+                                    color="gray.500" 
+                                    textTransform="uppercase"
+                                    letterSpacing="wider"
+                                    mb={1}
+                                >
+                                    Campaign
+                                </Text>
+                                <Select
+                                    placeholder="All Campaigns"
+                                    size="sm"
+                                    width="150px"
+                                    height="32px"
+                                    bg={cardBg}
+                                    backdropFilter="blur(10px)"
+                                    border="1px solid"
+                                    borderColor={borderColor}
+                                    borderRadius="lg"
+                                    shadow="sm"
+                                    fontSize="sm"
+                                    _hover={{ 
+                                        borderColor: 'purple.300',
+                                        shadow: 'md'
+                                    }}
+                                    _focus={{ 
+                                        borderColor: 'purple.400', 
+                                        boxShadow: '0 0 0 2px rgba(128, 90, 213, 0.1)',
+                                        bg: 'white'
+                                    }}
+                                    transition="all 0.2s ease"
+                                    onChange={(e) => handleFilterChange({ 
+                                        campaign: e.target.value || undefined 
+                                    })}
+                                >
+                                    <option value="campaign1">Campaign 1</option>
+                                    <option value="campaign2">Campaign 2</option>
+                                    <option value="campaign3">Campaign 3</option>
+                                </Select>
+                            </Box>
+                        </HStack>
                     </Card>
 
                     {/* Lead Detail Modal */}
