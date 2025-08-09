@@ -251,7 +251,8 @@ function OrgDetailPage() {
     const [csvData, setCsvData] = useState<string[][]>([]);
     const [listName, setListName] = useState<string>();
     const [campaignsMeta, setCampaignsMeta] = useState<{ id: string, name: string }[]>();
-    const [selectedCampaign, setSelectedCampaign] = useState<string>();
+    const [viewCampaignId, setViewCampaignId] = useState<string>();
+    const [uploadCampaignId, setUploadCampaignId] = useState<string>();
     const [selectedCampaignData, setSelectedCampaignData] = useState<CampaignData | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -278,11 +279,9 @@ function OrgDetailPage() {
         const handleFetchCampaignData = async () => {
             setLoading(true);
             try {
-                const response = await fetch(`/api/console/campaigns/${selectedCampaign}`);
+                const response = await fetch(`/api/console/campaigns/${viewCampaignId}`);
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(data?.campaignData, "this is here");
-
                     setSelectedCampaignData(data?.campaignData);
                 }
             } catch (err) {
@@ -291,10 +290,10 @@ function OrgDetailPage() {
                 setLoading(false);
             }
         };
-        if (selectedCampaign) {
+        if (viewCampaignId) {
             handleFetchCampaignData();
         }
-    }, [selectedCampaign])
+    }, [viewCampaignId])
 
     function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0];
@@ -316,7 +315,6 @@ function OrgDetailPage() {
     }
 
     const handleUpload = async () => {
-
         if (!listName?.trim()) {
             customToast.error({ title: "List name is required" })
             return
@@ -325,20 +323,29 @@ function OrgDetailPage() {
             customToast.error({ title: "No File Found" })
             return
         }
+        const file = fileInputRef.current.files[0];
+        if (!file) {
+            customToast.error({ title: "No File Found" })
+            return
+        }
+        if (file.type !== 'text/csv' && file.type !== 'application/vnd.ms-excel') {
+            customToast.error({ title: "Invalid File Type", description: "Please upload a valid CSV file." })
+            return
+        }
         if (!params.id) {
             customToast.error({ title: "Org Id not found" })
             return
         }
-        if (!selectedCampaign) {
-            customToast.error({ title: "No Campaign Selected" })
+        if (!uploadCampaignId) {
+            customToast.error({ title: "No Campaign Selected for Upload" })
             return
         }
 
         const data = new FormData();
-        data.append("csv", fileInputRef.current.files?.[0]);
+        data.append("csv", new File([file], file.name, { type: 'text/csv' }), file.name);
         data.append("orgId", Array.isArray(params?.id) ? params.id[0] : params.id ?? '');
         data.append("listName", listName);
-        data.append("campaignId", selectedCampaign);
+        data.append("campaignId", uploadCampaignId);
 
         const response = await fetch(`/api/console/orgs/${params.id}`, {
             method: 'POST',
@@ -351,7 +358,12 @@ function OrgDetailPage() {
             setListName("");
             customToast.success({ title: 'List Uploaded' })
         } else {
-            customToast.error({ title: 'An error occured' })
+            const errorData = await response.json();
+            if (errorData?.error && errorData.error.includes('Invalid file format')) {
+                customToast.error({ title: 'Upload failed', description: 'Invalid file format. Please upload a valid CSV file.' });
+            } else {
+                customToast.error({ title: 'An error occured' })
+            }
         }
     }
 
@@ -678,7 +690,7 @@ function OrgDetailPage() {
                     <Card style={{ background: "white" }} p={8}>
                         <VStack gap={5} alignItems={'start'}>
                             <Text fontWeight={600} fontSize={18} color={"GrayText"}>View Campaigns</Text>
-                            <Select placeholder="Select Campaign" onChange={(e) => setSelectedCampaign(e.target.value)} value={selectedCampaign}>
+                            <Select placeholder="Select Campaign to View" onChange={(e) => setViewCampaignId(e.target.value)} value={viewCampaignId}>
                                 {campaignsMeta && campaignsMeta.map((campaign) => (
                                     <option key={campaign.id} value={campaign.id}>
                                         {campaign.name}
@@ -686,14 +698,13 @@ function OrgDetailPage() {
                                 ))}
                             </Select>
                         </VStack>
-
                     </Card>
 
                     {/* csv view */}
                     {headers && (
                         <HStack justifyContent={'space-between'}>
                             <Input placeholder='File Input' value={listName} w={'500px'} onChange={(e) => setListName(e.target.value)} />
-                            <Select placeholder="Select Campaign" onChange={(e) => setSelectedCampaign(e.target.value)} value={selectedCampaign}>
+                            <Select placeholder="Select Campaign to Upload" onChange={(e) => setUploadCampaignId(e.target.value)} value={uploadCampaignId}>
                                 {campaignsMeta && campaignsMeta.map((campaign) => (
                                     <option key={campaign.id} value={campaign.id}>
                                         {campaign.name}
