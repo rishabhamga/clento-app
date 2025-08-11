@@ -11,9 +11,6 @@ import {
     Badge,
     HStack,
     Avatar,
-    Input,
-    InputGroup,
-    InputLeftElement,
     Select,
     useColorModeValue,
     Modal,
@@ -41,7 +38,10 @@ import {
     Td,
     TableContainer,
     IconButton,
-    Tooltip
+    Tooltip,
+    Input,
+    InputGroup,
+    InputLeftElement
 } from '@chakra-ui/react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
@@ -308,6 +308,14 @@ export default function LeadsPage() {
     const [filters, setFilters] = useState<LeadFilters>({})
     const [searchTerm, setSearchTerm] = useState('')
 
+    // Handle search
+    const handleSearch = (value: string) => {
+        setSearchTerm(value)
+        const updatedFilters = { ...filters, search: value || undefined }
+        setFilters(updatedFilters)
+        fetchLeads(1, updatedFilters)
+    }
+
     // Fetch leads with current filters and pagination
     const fetchLeads = async (newPage = 1, newFilters = filters) => {
         setLoading(true)
@@ -384,13 +392,7 @@ export default function LeadsPage() {
         fetchLeads(1, updatedFilters)
     }
 
-    // Handle search
-    const handleSearch = (search: string) => {
-        setSearchTerm(search)
-        const newFilters = { ...filters, search: search || undefined }
-        setFilters(newFilters)
-        fetchLeads(1, newFilters)
-    }
+
 
     // Initial data fetch
     useEffect(() => {
@@ -559,13 +561,30 @@ export default function LeadsPage() {
                         borderColor={borderColor}
                         borderRadius="xl"
                         shadow="lg"
-                        p={6}
+                        px={6}
+                        py={3}
                     >
-                        <VStack spacing={6}>
-                            {/* Search Bar */}
-                            <Box width="100%">
-                                <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={3}>
-                                    Search & Filter Leads
+                        <HStack spacing={6} align="end" justify="start">
+                            <Text 
+                                fontSize="sm" 
+                                fontWeight="bold" 
+                                bgGradient="linear(to-r, purple.400, blue.400)"
+                                bgClip="text"
+                                mb={2}
+                            >
+                                Filter Leads
+                            </Text>
+                            
+                            <Box>
+                                <Text 
+                                    fontSize="xs" 
+                                    fontWeight="semibold" 
+                                    color="gray.500" 
+                                    textTransform="uppercase"
+                                    letterSpacing="wider"
+                                    mb={1}
+                                >
+                                    Search
                                 </Text>
                                 <InputGroup size="lg">
                                     <InputLeftElement pointerEvents="none">
@@ -690,7 +709,7 @@ export default function LeadsPage() {
                                     </VStack>
                                 </SimpleGrid>
                             </Box>
-                        </VStack>
+                        </HStack>
                     </Card>
 
                     {/* Lead Detail Modal */}

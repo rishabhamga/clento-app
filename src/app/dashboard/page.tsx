@@ -293,6 +293,26 @@ export default function Dashboard() {
                     </GradientButton>
                 </HStack>
 
+                {/* Search Bar */}
+                <InputGroup maxW="400px" mb={6}>
+                    <InputLeftElement>
+                        <Icon as={Search} boxSize={5} color="gray.400" />
+                    </InputLeftElement>
+                    <Input
+                        placeholder="Search campaigns"
+                        value={state.searchQuery}
+                        onChange={(e) => setState((prev) => ({ ...prev, searchQuery: e.target.value }))}
+                        bg={searchBg}
+                        border="1px"
+                        borderColor={searchBorder}
+                        borderRadius="lg"
+                        _focus={{
+                            borderColor: "purple.400",
+                            boxShadow: "0 0 0 1px var(--chakra-colors-purple-400)"
+                        }}
+                    />
+                </InputGroup>
+
                 {/* Dashboard Stats */}
                 <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6} mb={8}>
                     <Card 
@@ -374,26 +394,6 @@ export default function Dashboard() {
 
                 {/* Campaigns Section */}
                 <Box>
-
-                            {/* Search Bar */}
-                            <InputGroup maxW="400px" mb={6}>
-                                <InputLeftElement>
-                                    <Icon as={Search} boxSize={5} color="gray.400" />
-                                </InputLeftElement>
-                                <Input
-                                    placeholder="Search campaigns"
-                                    value={state.searchQuery}
-                                    onChange={(e) => setState((prev) => ({ ...prev, searchQuery: e.target.value }))}
-                                    bg={searchBg}
-                                    border="1px"
-                                    borderColor={searchBorder}
-                                    borderRadius="lg"
-                                    _focus={{
-                                        borderColor: "purple.400",
-                                        boxShadow: "0 0 0 1px var(--chakra-colors-purple-400)"
-                                    }}
-                                />
-                            </InputGroup>
 
                             {/* Campaign Grid */}
                             <Grid

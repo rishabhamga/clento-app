@@ -194,25 +194,26 @@ async function getCampaignStats(userId: string, orgDbId: string | null = null) {
       }
     }
 
-    // Calculate messages and response rate from steps
     let totalOutbound = 0
     let totalInbound = 0
 
     leadsData?.forEach(lead => {
       const steps = Array.isArray(lead.steps) ? lead.steps : []
-      
+      let leadHasInboundResponse = false
+
       steps.forEach((step: any) => {
-        if (step.stepType && (step.stepType.includes('message') || step.stepType.includes('connect'))) {
-          if (step.stepType.includes('send') || step.stepType.includes('invite')) {
+        if (step.stepType) {
+          if (step.stepType === 'message_send' || step.stepType === 'connection_invite') {
             totalOutbound++
-          } else if (step.stepType.includes('reply') || step.stepType.includes('received')) {
+          } else if (step.stepType === 'message_reply' || step.stepType === 'message_received') {
             totalInbound++
+            leadHasInboundResponse = true
           }
         }
       })
 
-      // Also count connection status as indicators
-      if (lead.linkedin_connection_status === 'replied') {
+      // Only count connection status if no inbound steps were already counted
+      if (lead.linkedin_connection_status === 'replied' && !leadHasInboundResponse) {
         totalInbound++
       }
     })
