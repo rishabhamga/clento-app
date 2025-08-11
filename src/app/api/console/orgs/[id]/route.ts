@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
 import { currentUser } from '@clerk/nextjs/server'
 import { supabase } from '../../../../../lib/supabase'
-import { getFileFromS3, uploadFileToS3Bucket } from '../../../../../utils/s3Util'
-import { randomUUID } from 'crypto'
 import Papa from 'papaparse'
+import { startSmartleadCampaign } from '../../../../../lib/smartlead-campaign'
 
 export async function GET(
     request: Request,
@@ -104,12 +103,49 @@ export async function POST(request: Request) {
     try {
         const formData = await request.formData();
         const orgId = formData.get('orgId')?.toString();
-        const listName = formData.get('listName')?.toString();
         const campaignId = formData.get('campaignId')?.toString();
         const csvFile = formData.get('csv') as File | null;
 
-        if (!orgId || !listName || !campaignId || !csvFile) {
+        //Config
+        const timezone = formData.get('timezone')?.toString() || null;
+        const dayOfWeek = formData.get('dayOfWeek') ? JSON.parse(formData.get('dayOfWeek') as string) : null;
+        const startHour = formData.get('startHour')?.toString() || null;
+        const endHour = formData.get('endHour')?.toString() || null;
+        const minTimeBetweenEmails = formData.get('minTimeBetweenEmails') ? parseInt(formData.get('minTimeBetweenEmails') as string, 10) : null;
+        const maxNewLeadsPerDay = formData.get('maxNewLeadsPerDay') ? parseInt(formData.get('maxNewLeadsPerDay') as string, 10) : null;
+        const scheduleStartTime = formData.get('scheduleStartTime')?.toString() || null;
+
+        // Check for missing config fields
+        if (
+            !timezone ||
+            !dayOfWeek ||
+            !startHour ||
+            !endHour ||
+            !minTimeBetweenEmails ||
+            !maxNewLeadsPerDay ||
+            !scheduleStartTime
+        ) {
+            return NextResponse.json({ error: 'Missing campaign configuration fields' }, { status: 400 });
+        }
+
+        if (!orgId || !campaignId || !csvFile) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        // Check if leads for this campaign have already been uploaded
+        const { data: existingCampaignLeads, error: campaignLeadsError } = await supabase
+            .from('leads')
+            .select('id')
+            .eq('clento_campaign_id', campaignId)
+            .limit(1);
+
+        if (campaignLeadsError) {
+            console.error('Error checking existing campaign leads:', campaignLeadsError);
+            return NextResponse.json({ error: 'Error checking campaign leads' }, { status: 500 });
+        }
+
+        if (existingCampaignLeads && existingCampaignLeads.length > 0) {
+            return NextResponse.json({ error: 'Leads for this campaign have already been uploaded' }, { status: 400 });
         }
 
         // Move this block to the start of the POST handler, after validating required fields and before the for-loop:
@@ -153,6 +189,11 @@ export async function POST(request: Request) {
             'Linkedin url',
             'Email',
         ];
+
+        interface ILeads
+        { full_name: string | null; status: string; linkedin_connection_status: string; created_at: string; updated_at: string; }
+
+        let leads: ILeads[] = [];
 
         for (const row of csvRows) {
             // Skip row if any required field is missing
@@ -277,16 +318,33 @@ export async function POST(request: Request) {
                 continue; // Skip duplicate lead
             }
 
-            const { data: leadData, error: leadError } = await supabase.from('leads').insert([leadToInsert]);
+            leads.push(leadToInsert);
+            //uncomment this @yash
+            // const { data: leadData, error: leadError } = await supabase.from('leads').insert([leadToInsert]);
 
-            if (leadError) {
-                console.error('Error inserting lead into Supabase:', leadError);
-            } else {
-                console.debug('Successfully inserted lead into Supabase:', leadData);
-            }
+            // if (leadError) {
+            //     console.error('Error inserting lead into Supabase:', leadError);
+            // } else {
+            //     console.debug('Successfully inserted lead into Supabase:', leadData);
+            // }
         }
 
-        console.info('All rows processed successfully.');
+
+            const campaignData = {
+                campaignId,
+                leads,
+                timezone,
+                dayOfWeek,
+                startHour,
+                endHour,
+                minTimeBetweenEmails,
+                maxNewLeadsPerDay,
+                scheduleStartTime
+            }
+
+            await startSmartleadCampaign(campaignData)
+
+        console.log('All rows processed successfully.');
         return NextResponse.json({ uploaded: true, message: 'Leads Uploaded' }, { status: 200 });
     } catch (err) {
         console.error('Server error:', err);
