@@ -8,7 +8,6 @@ import {
   LeadStats,
   LinkedInConnectionStatus
 } from '@/types/syndie'
-import { Database } from '@/types/database'
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,8 +36,6 @@ export async function GET(request: NextRequest) {
         { status: 404 }
       )
     }
-
-    const userDbId = userData.id
 
     // Note: Showing all leads regardless of user, organization, or campaign
 

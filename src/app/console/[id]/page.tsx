@@ -1,40 +1,38 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { createCustomToast } from '@/lib/utils/custom-toast'
 import {
-    Box,
-    Container,
-    VStack,
-    HStack,
-    Heading,
-    Text,
-    Spinner,
     Alert,
     AlertIcon,
-    useToast,
+    Box,
+    Button,
     Card,
     CardHeader,
-    Button,
+    Container,
+    Divider,
+    FormLabel,
+    HStack,
+    Heading,
+    Input,
+    Select,
+    SimpleGrid,
+    Spacer,
+    Spinner,
+    Table,
     TableContainer,
+    Tbody,
+    Td,
+    Text,
+    Th,
     Thead,
     Tr,
-    Td,
-    Tbody,
-    Table,
-    Input,
-    Th,
-    Select,
-    Spacer,
-    Divider,
-    SimpleGrid,
+    VStack,
+    useToast
 } from '@chakra-ui/react'
-import { createCustomToast } from '@/lib/utils/custom-toast'
-import { useUser } from '@clerk/nextjs'
+import { useParams } from 'next/navigation'
+import Papa from 'papaparse'
+import { useEffect, useRef, useState } from 'react'
 import { Organization } from '../page'
-import Papa from 'papaparse';
-import { DbCampaign } from '../../dashboard/page'
-import { title } from 'process'
 
 export interface CampaignData {
     id: string;
@@ -239,9 +237,7 @@ export interface TargetingFilters {
 }
 
 function OrgDetailPage() {
-    const { user } = useUser()
     const params = useParams()
-    const router = useRouter()
     const toast = useToast()
     const customToast = createCustomToast(toast)
     const [organization, setOrganization] = useState<Organization | null>(null)
@@ -249,12 +245,19 @@ function OrgDetailPage() {
     const [error, setError] = useState<string | null>(null)
     const [headers, setHeaders] = useState<string[]>();
     const [csvData, setCsvData] = useState<string[][]>([]);
-    const [listName, setListName] = useState<string>();
     const [campaignsMeta, setCampaignsMeta] = useState<{ id: string, name: string }[]>();
     const [viewCampaignId, setViewCampaignId] = useState<string>();
     const [uploadCampaignId, setUploadCampaignId] = useState<string>();
     const [selectedCampaignData, setSelectedCampaignData] = useState<CampaignData | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [timezone, setTimezone] = useState<string>('America/Los_Angeles');
+    const [dayOfWeek, setDayOfWeek] = useState<number[]>([1, 2, 3, 4, 5]);
+    const [startHour, setStartHour] = useState<string>('09:00');
+    const [endHour, setEndHour] = useState<string>('17:00');
+    const [minTimeBetweenEmails, setMinTimeBetweenEmails] = useState<number>(10);
+    const [maxNewLeadsPerDay, setMaxNewLeadsPerDay] = useState<number>(20);
+    const [scheduleStartTime, setScheduleStartTime] = useState<string>(new Date().toISOString());
+    const [timezones, setTimezones] = useState<{ value: string; label: string }[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -295,6 +298,20 @@ function OrgDetailPage() {
         }
     }, [viewCampaignId])
 
+    useEffect(() => {
+        const fetchTimezones = async () => {
+            const response = await fetch('/smartlead-timezones.csv');
+            const csvText = await response.text();
+            const parsed = Papa.parse(csvText, { header: true });
+            const options = parsed.data.map((row: any) => ({
+                value: row['Timezone (use this)'],
+                label: row.label,
+            }));
+            setTimezones(options);
+        };
+        fetchTimezones();
+    }, []);
+
     function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0];
         if (file) {
@@ -309,63 +326,44 @@ function OrgDetailPage() {
                     }
                 },
             });
-
-            setListName('');
         }
     }
 
     const handleUpload = async () => {
-        if (!listName?.trim()) {
-            customToast.error({ title: "List name is required" })
-            return
-        }
-        if (!fileInputRef.current?.files) {
-            customToast.error({ title: "No File Found" })
-            return
-        }
-        const file = fileInputRef.current.files[0];
-        if (!file) {
-            customToast.error({ title: "No File Found" })
-            return
-        }
-        if (file.type !== 'text/csv' && file.type !== 'application/vnd.ms-excel') {
-            customToast.error({ title: "Invalid File Type", description: "Please upload a valid CSV file." })
-            return
-        }
-        if (!params.id) {
-            customToast.error({ title: "Org Id not found" })
-            return
-        }
-        if (!uploadCampaignId) {
-            customToast.error({ title: "No Campaign Selected for Upload" })
-            return
+        if (!fileInputRef.current?.files?.[0] || !uploadCampaignId) {
+            customToast.error({ title: 'Error', description: 'Please provide all required fields' });
+            return;
         }
 
-        const data = new FormData();
-        data.append("csv", new File([file], file.name, { type: 'text/csv' }), file.name);
-        data.append("orgId", Array.isArray(params?.id) ? params.id[0] : params.id ?? '');
-        data.append("listName", listName);
-        data.append("campaignId", uploadCampaignId);
+        const formData = new FormData();
+        formData.append('orgId', Array.isArray(params.id) ? params.id[0] : params.id!);
+        formData.append('campaignId', uploadCampaignId);
+        formData.append('csv', fileInputRef.current.files[0]);
+        formData.append('timezone', timezone);
+        formData.append('dayOfWeek', JSON.stringify(dayOfWeek));
+        formData.append('startHour', startHour);
+        formData.append('endHour', endHour);
+        formData.append('minTimeBetweenEmails', minTimeBetweenEmails.toString());
+        formData.append('maxNewLeadsPerDay', maxNewLeadsPerDay.toString());
+        formData.append('scheduleStartTime', scheduleStartTime);
 
-        const response = await fetch(`/api/console/orgs/${params.id}`, {
-            method: 'POST',
-            body: data
-        });
-        if (response.ok) {
-            fileInputRef.current.value = "";
-            setCsvData([]);
-            setHeaders([]);
-            setListName("");
-            customToast.success({ title: 'List Uploaded' })
-        } else {
-            const errorData = await response.json();
-            if (errorData?.error && errorData.error.includes('Invalid file format')) {
-                customToast.error({ title: 'Upload failed', description: 'Invalid file format. Please upload a valid CSV file.' });
+        try {
+            const response = await fetch('/api/console/orgs/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                customToast.success({ title: 'Success', description: 'List uploaded successfully' });
             } else {
-                customToast.error({ title: 'An error occured' })
+                const errorData = await response.json();
+                customToast.error({ title: 'Error', description: errorData.error || 'Failed to upload list' });
             }
+        } catch (error) {
+            console.error('Error uploading list:', error);
+            customToast.error({ title: 'Error', description: 'An unexpected error occurred' });
         }
-    }
+    };
 
     // Render campaign details
     const renderCampaignDetails = () => {
@@ -462,14 +460,14 @@ function OrgDetailPage() {
                 <Divider my={6} />
 
                 <Heading size="md" mb={2} color="teal.600">Targeting</Heading>
-                <Spacer height={20}/>
+                <Spacer height={20} />
                 <SimpleGrid columns={[1, 2]} spacing={4} mb={4}>
                     {Object.entries(selectedCampaignData.settings?.targeting?.filters || {}).map(([key, value]) => {
                         if (key === 'page' || key === 'perPage') return null;
                         if (Array.isArray(value)) {
                             if (value.length === 0) return null;
                             return (
-                                <HStack key={key} style={{alignItems: "start", border: "1px solid", borderRadius: "8px", padding: "12px"}}>
+                                <HStack key={key} style={{ alignItems: "start", border: "1px solid", borderRadius: "8px", padding: "12px" }}>
                                     <Text fontWeight="bold">{key}:</Text>
                                     <Text>{value.join(', ')}</Text>
                                 </HStack>
@@ -481,7 +479,7 @@ function OrgDetailPage() {
                             !(typeof value === 'object' && Object.keys(value).length === 0)
                         ) {
                             return (
-                                <HStack key={key} style={{alignItems: "start", border: "1px solid", borderRadius: "8px", padding: "12px"}}>
+                                <HStack key={key} style={{ alignItems: "start", border: "1px solid", borderRadius: "8px", padding: "12px" }}>
                                     <Text fontWeight="bold">{key}:</Text>
                                     <Text>{value.toString()}</Text>
                                 </HStack>
@@ -702,17 +700,94 @@ function OrgDetailPage() {
 
                     {/* csv view */}
                     {headers && (
-                        <HStack justifyContent={'space-between'}>
-                            <Input placeholder='File Input' value={listName} w={'500px'} onChange={(e) => setListName(e.target.value)} />
-                            <Select placeholder="Select Campaign to Upload" onChange={(e) => setUploadCampaignId(e.target.value)} value={uploadCampaignId}>
-                                {campaignsMeta && campaignsMeta.map((campaign) => (
-                                    <option key={campaign.id} value={campaign.id}>
-                                        {campaign.name}
-                                    </option>
-                                ))}
-                            </Select>
-                            <Button onClick={handleUpload}>Upload</Button>
-                        </HStack>
+                        <>
+                            {/* <HStack justifyContent={'space-between'}>
+                                <Input placeholder='File Input' value={listName} w={'500px'} onChange={(e) => setListName(e.target.value)} />
+                                <Select placeholder="Select Campaign to Upload" onChange={(e) => setUploadCampaignId(e.target.value)} value={uploadCampaignId}>
+                                    {campaignsMeta && campaignsMeta.map((campaign) => (
+                                        <option key={campaign.id} value={campaign.id}>
+                                            {campaign.name}
+                                        </option>
+                                    ))}
+                                </Select>
+                            </HStack> */}
+                            <Card style={{ background: "white" }} p={8} mt={8}>
+                                <Heading size="md" mb={4} color="teal.600">Upload List</Heading>
+                                <VStack spacing={4} align="stretch">
+                                    <Select
+                                        placeholder="Select Campaign"
+                                        value={uploadCampaignId || ''}
+                                        onChange={(e) => setUploadCampaignId(e.target.value)}
+                                    >
+                                        {campaignsMeta?.map((campaign) => (
+                                            <option key={campaign.id} value={campaign.id}>
+                                                {campaign.name}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                    <SimpleGrid columns={2} spacing={4}>
+                                        <Box>
+                                            <FormLabel>Timezone</FormLabel>
+                                            <Select
+                                                placeholder="Select Timezone"
+                                                value={timezone}
+                                                onChange={(e) => setTimezone(e.target.value)}
+                                            >
+                                                {timezones.map((tz, idx) => (
+                                                    <option key={idx} value={tz.value}>
+                                                        {tz.label}
+                                                    </option>
+                                                ))}
+                                            </Select>
+                                        </Box>
+                                        <Box>
+                                            <FormLabel>Start Hour</FormLabel>
+                                            <Input
+                                                placeholder="Start Hour (HH:mm)"
+                                                value={startHour}
+                                                onChange={(e) => setStartHour(e.target.value)}
+                                            />
+                                        </Box>
+                                        <Box>
+                                            <FormLabel>End Hour</FormLabel>
+                                            <Input
+                                                placeholder="End Hour (HH:mm)"
+                                                value={endHour}
+                                                onChange={(e) => setEndHour(e.target.value)}
+                                            />
+                                        </Box>
+                                        <Box>
+                                            <FormLabel>Minimum Time Between Emails</FormLabel>
+                                            <Input
+                                                type="number"
+                                                placeholder="Min Time Between Emails (minutes)"
+                                                value={minTimeBetweenEmails}
+                                                onChange={(e) => setMinTimeBetweenEmails(Number(e.target.value))}
+                                            />
+                                        </Box>
+                                        <Box>
+                                            <FormLabel>Max New Leads Per Day</FormLabel>
+                                            <Input
+                                                type="number"
+                                                placeholder="Max New Leads Per Day"
+                                                value={maxNewLeadsPerDay}
+                                                onChange={(e) => setMaxNewLeadsPerDay(Number(e.target.value))}
+                                            />
+                                        </Box>
+                                        <Box>
+                                            <FormLabel>Schedule start time</FormLabel>
+                                            <Input
+                                                type="datetime-local"
+                                                placeholder="Schedule Start Time"
+                                                value={scheduleStartTime}
+                                                onChange={(e) => setScheduleStartTime(e.target.value)}
+                                            />
+                                        </Box>
+                                    </SimpleGrid>
+                                    <Button colorScheme="blue" onClick={handleUpload}>Upload</Button>
+                                </VStack>
+                            </Card>
+                        </>
                     )}
                     {headers && (
                         <TableContainer border={'1px'} borderColor={'blackAlpha.400'}>
