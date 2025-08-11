@@ -318,7 +318,7 @@ function OrgDetailPage() {
             setTimezones(options);
         };
         fetchTimezones();
-    }, []);
+    }, [])
 
     function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0];
@@ -388,9 +388,7 @@ function OrgDetailPage() {
                 description: `Processing ${rowCount} leads. This may take several minutes.`
             });
 
-            // Start polling for status
             pollEmailPersonalizationStatus(jobId);
-
         } catch (error) {
             console.error('Email personalization failed:', error);
             customToast.error({
@@ -426,10 +424,8 @@ function OrgDetailPage() {
                 setEmailPersonalizationStatus('failed');
                 customToast.error({ title: "Processing Failed", description: "Please try again or contact support." });
             } else if (statusData.status === 'processing') {
-                // Continue polling
                 setTimeout(() => pollEmailPersonalizationStatus(jobId), 3000);
             }
-
         } catch (error) {
             console.error('Status polling failed:', error);
             setEmailPersonalizationStatus('failed');
@@ -590,6 +586,7 @@ function OrgDetailPage() {
                 <Divider my={6} />
 
                 <Heading size="md" mb={2} color="teal.600">Targeting</Heading>
+                <Spacer height={20} />
                 <Spacer height={20} />
                 <SimpleGrid columns={[1, 2]} spacing={4} mb={4}>
                     {Object.entries(selectedCampaignData.settings?.targeting?.filters || {}).map(([key, value]) => {
