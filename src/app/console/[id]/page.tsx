@@ -250,7 +250,7 @@ function OrgDetailPage() {
     const [uploadCampaignId, setUploadCampaignId] = useState<string>();
     const [selectedCampaignData, setSelectedCampaignData] = useState<CampaignData | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-        const [timezone, setTimezone] = useState<string>('America/Los_Angeles');
+    const [timezone, setTimezone] = useState<string>('America/Los_Angeles');
     const [dayOfWeek, setDayOfWeek] = useState<number[]>([1, 2, 3, 4, 5]);
     const [startHour, setStartHour] = useState<string>('09:00');
     const [endHour, setEndHour] = useState<string>('17:00');
@@ -258,6 +258,7 @@ function OrgDetailPage() {
     const [maxNewLeadsPerDay, setMaxNewLeadsPerDay] = useState<number>(20);
     const [scheduleStartTime, setScheduleStartTime] = useState<string>(new Date().toISOString());
     const [timezones, setTimezones] = useState<{ value: string; label: string }[]>([]);
+    const [domainsInput, setDomainsInput] = useState<string>();
 
     // Email personalization state
     const [emailPersonalizationFile, setEmailPersonalizationFile] = useState<File | null>(null);
@@ -266,6 +267,9 @@ function OrgDetailPage() {
     const [emailPersonalizationProgress, setEmailPersonalizationProgress] = useState<number>(0);
     const [emailPersonalizationErrors, setEmailPersonalizationErrors] = useState<any[]>([]);
     const emailFileInputRef = useRef<HTMLInputElement>(null);
+
+    // Campaign domains state
+    const [campaignDomains, setCampaignDomains] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -472,6 +476,8 @@ function OrgDetailPage() {
         formData.append('minTimeBetweenEmails', minTimeBetweenEmails.toString());
         formData.append('maxNewLeadsPerDay', maxNewLeadsPerDay.toString());
         formData.append('scheduleStartTime', scheduleStartTime);
+        formData.append('scheduleStartTime', scheduleStartTime);
+        formData.append('campaignDomains', JSON.stringify(campaignDomains));
 
         try {
             const response = await fetch('/api/console/orgs/upload', {
@@ -481,6 +487,10 @@ function OrgDetailPage() {
 
             if (response.ok) {
                 customToast.success({ title: 'Success', description: 'List uploaded successfully' });
+                setHeaders(undefined);
+                setCsvData([]);
+                setUploadCampaignId(undefined);
+                fileInputRef.current && (fileInputRef.current.value = '');
             } else {
                 const errorData = await response.json();
                 customToast.error({ title: 'Error', description: errorData.error || 'Failed to upload list' });
@@ -722,6 +732,33 @@ function OrgDetailPage() {
         );
     };
 
+    const handleAddDomain = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        const input = event.target as HTMLInputElement;
+        const domain = input.value.trim();
+
+        if (event.key === 'Enter' && domain !== '') {
+            // Validate domain format
+            const domainRegex = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!domainRegex.test(domain)) {
+                customToast.error({ title: "Invalid Domain", description: "Please enter a valid domain." });
+                return;
+            }
+
+            // Check for duplicates
+            if (campaignDomains.includes(domain)) {
+                customToast.error({ title: "Duplicate Domain", description: "This domain is already added." });
+                return;
+            }
+
+            setCampaignDomains(prev => [...prev, domain]);
+            setDomainsInput(''); // Clear the input field
+        }
+    };
+
+    const handleRemoveDomain = (domain: string) => {
+        setCampaignDomains(prev => prev.filter(d => d !== domain));
+    };
+
     if (loading) {
         return (
             <Box p={8} display={'flex'} justifyContent={'flex-start'} flexDirection={'column'}>
@@ -840,6 +877,51 @@ function OrgDetailPage() {
                             </HStack> */}
                             <Card style={{ background: "white" }} p={8} mt={8}>
                                 <Heading size="md" mb={4} color="teal.600">Upload List</Heading>
+                                <Heading size="md" mb={2} color="teal.600">Campaign Domains</Heading>
+                                <VStack align="start" spacing={2} mb={4}>
+                                    <HStack>
+                                        <Input
+                                            placeholder="Enter domain and press Enter"
+                                            value={domainsInput}
+                                            onChange={(e) => setDomainsInput(e.target.value)}
+                                            size="sm"
+                                            onKeyDown={handleAddDomain}
+                                            width="300px"
+                                        />
+                                        <Button
+                                            size="sm"
+                                            onClick={() => {
+                                                if (campaignDomains.length > 0) {
+                                                    customToast.success({
+                                                        title: "Domains Added",
+                                                        description: "Successfully added domains to the campaign."
+                                                    });
+                                                } else {
+                                                    customToast.error({
+                                                        title: "No Domains Found",
+                                                        description: "Please enter domains to add."
+                                                    });
+                                                }
+                                            }}
+                                        >
+                                            Add Domains
+                                        </Button>
+                                    </HStack>
+                                    <VStack align="start" spacing={1} width="100%">
+                                        {campaignDomains.map((domain, index) => (
+                                            <HStack key={index} width="100%" justify="space-between">
+                                                <Text fontSize="sm" color="gray.700">{domain}</Text>
+                                                <Button
+                                                    size="xs"
+                                                    colorScheme="red"
+                                                    onClick={() => handleRemoveDomain(domain)}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </HStack>
+                                        ))}
+                                    </VStack>
+                                </VStack>
                                 <VStack spacing={4} align="stretch">
                                     <Select
                                         placeholder="Select Campaign"

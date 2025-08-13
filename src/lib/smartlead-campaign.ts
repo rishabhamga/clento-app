@@ -1,15 +1,11 @@
 import axios from 'axios';
 import { supabase } from './supabase';
+import { requestFormReset } from 'react-dom';
+import { ILeadsPersonalized } from '../app/api/console/orgs/[id]/route';
 
 interface SmartleadCampaignParams {
     campaignId: string;
-    leads: Array<{
-        full_name: string | null;
-        status: string;
-        linkedin_connection_status: string;
-        created_at: string;
-        updated_at: string;
-    }>;
+    leads: ILeadsPersonalized[];
     timezone?: string;
     dayOfWeek: number[];
     startHour: string;
@@ -17,6 +13,7 @@ interface SmartleadCampaignParams {
     minTimeBetweenEmails: number;
     maxNewLeadsPerDay: number;
     scheduleStartTime?: string;
+    campaignDomains: string[];
 }
 //Just for campaign name
 async function fetchCampaignName(campaignId: string): Promise<string> {
@@ -127,31 +124,40 @@ async function addSequencesToCampaign(createdCampaignId: string, smartLeadApiKey
                 seq_delay_details: {
                     delay_in_days: 1
                 },
-                seq_variants: [
-                    {
-                        subject: 'Subject',
-                        email_body: '<p>Hi<br><br>How are you?<br><br>Hope you\'re doing good</p>',
-                        variant_label: 'A'
-                    },
-                    {
-                        subject: 'Ema a',
-                        email_body: '<p>This is a new game a</p>',
-                        variant_label: 'B'
-                    },
-                    {
-                        subject: 'C emsil',
-                        email_body: '<p>Hiii C</p>',
-                        variant_label: 'C'
-                    }
-                ]
+                subject: '{{initial_email_subject}}',
+                email_body: '{{initial_email}}'
             },
             {
                 seq_number: 2,
                 seq_delay_details: {
-                    delay_in_days: 1
+                    delay_in_days: 3
                 },
-                subject: '', // Blank makes the follow-up in the same thread
-                email_body: '<p>Bump up right!</p>'
+                subject: '{{follow_up_email_1_subject}}',
+                email_body: '{{follow_up_email_1_subject}}'
+            },
+            {
+                seq_number: 3,
+                seq_delay_details: {
+                    delay_in_days: 3
+                },
+                subject: '{{follow_up_email_2_subject}}',
+                email_body: '{{follow_up_email_2}}'
+            },
+            {
+                seq_number: 4,
+                seq_delay_details: {
+                    delay_in_days: 4
+                },
+                subject: '{{follow_up_email_3_subject}}',
+                email_body: '{{follow_up_email_3}}'
+            },
+            {
+                seq_number: 5,
+                seq_delay_details: {
+                    delay_in_days: 5
+                },
+                subject: '{{follow_up_email_4_subject}}',
+                email_body: '{{follow_up_email_4}}'
             }
         ]
     };
@@ -174,13 +180,72 @@ async function addSequencesToCampaign(createdCampaignId: string, smartLeadApiKey
     }
 }
 
-export async function getPersonalisation () {
+// // Function to set email sending accounts for the campaign
+async function setEmailSendingAccounts(campaignId: string, campaignDomains: string[], smartLeadApiKey: string): Promise<void> {
+    try {
+        // Fetch all senders from Smartlead
+        const response = await axios.get(`https://server.smartlead.ai/api/v1/email-accounts/?api_key=${smartLeadApiKey}&offset=0&limit=100`, {
+            headers: {
+                'Authorization': `Bearer ${process.env.SMARTLEAD_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        });
 
+        const allSenders = response.data;
+
+        // Filter senders based on campaignDomains
+        const filteredSenders = allSenders.filter((sender: any) => {
+            const senderDomain = sender.from_email.split('@')[1];
+            return campaignDomains.includes(senderDomain);
+        });
+
+        // Prepare data to add senders to the campaign
+        const addSendersData = {
+            email_account_ids: filteredSenders.map((sender: any) => sender.id),
+        };
+
+        // Add filtered senders to the campaign
+        const addResponse = await axios.post(`https://server.smartlead.ai/api/v1/campaigns/${campaignId}/email-accounts?api_key=${smartLeadApiKey}`, addSendersData, {
+            headers: {
+                'Authorization': `Bearer ${process.env.SMARTLEAD_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        console.log('Email sending accounts successfully added to the campaign:', addResponse.data);
+    } catch (error) {
+        console.error('Error setting email sending accounts for the campaign:', error);
+        if ((error as any).response) {
+            console.error('Smartlead API error response:', (error as any).response.data);
+        }
+        throw new Error('Failed to set email sending accounts for the campaign');
+    }
+}
+
+async function startCampaign(campaignId: string, smartLeadApiKey: string): Promise<void> {
+    try {
+        const response = await axios.post(`https://server.smartlead.ai/api/v1/campaigns/${campaignId}/status?api_key=${smartLeadApiKey}`, {
+            status: "START"
+        }, {
+            headers: {
+                'Authorization': `Bearer ${process.env.SMARTLEAD_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        console.log('Campaign started successfully:', response.data);
+    } catch (error) {
+        console.error('Error starting the campaign:', error);
+        if ((error as any).response) {
+            console.error('Smartlead API error response:', (error as any).response.data);
+        }
+        throw new Error('Failed to start the campaign');
+    }
 }
 
 //Main function
 export async function startSmartleadCampaign(params: SmartleadCampaignParams): Promise<any> {
-    const { campaignId, leads, timezone, dayOfWeek, startHour, endHour, minTimeBetweenEmails, maxNewLeadsPerDay, scheduleStartTime } = params;
+    const { campaignId, leads, timezone, dayOfWeek, startHour, endHour, minTimeBetweenEmails, maxNewLeadsPerDay, scheduleStartTime, campaignDomains } = params;
 
     const smartLeadApiKey = process.env.SMARTLEAD_API_KEY as string;
 
@@ -192,7 +257,17 @@ export async function startSmartleadCampaign(params: SmartleadCampaignParams): P
             email: lead.full_name ? `${lead.full_name.replace(/\s+/g, '.').toLowerCase()}@example.com` : 'unknown@example.com',
             linkedin_profile: lead.linkedin_connection_status === 'connected' ? `https://www.linkedin.com/in/${firstName.toLowerCase()}` : null,
             custom_fields: {
-                Status: lead.status
+                Status: lead.status,
+                initial_email: lead.initial_email,
+                initial_email_subject: lead.initial_email_subject,
+                follow_up_email_1_subject: lead.follow_up_email_1_subject,
+                follow_up_email_1: lead.follow_up_email_1,
+                follow_up_email_2_subject: lead.follow_up_email_2_subject,
+                follow_up_email_2: lead.follow_up_email_2,
+                follow_up_email_3_subject: lead.follow_up_email_3_subject,
+                follow_up_email_3: lead.follow_up_email_3,
+                follow_up_email_4: lead.follow_up_email_4,
+                follow_up_email_4_subject: lead.follow_up_email_4_subject
             }
         };
     });
@@ -214,4 +289,8 @@ export async function startSmartleadCampaign(params: SmartleadCampaignParams): P
     };
 
     await scheduleCampaign(createdCampaign.id, scheduleData, smartLeadApiKey);
+    await setEmailSendingAccounts(createdCampaign.id, campaignDomains, smartLeadApiKey);
+
+    // Start the campaign
+    await startCampaign(createdCampaign.id, smartLeadApiKey);
 }
