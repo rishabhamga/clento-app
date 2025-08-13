@@ -3,14 +3,15 @@ import { parse } from "csv-parse/sync";
 import { v4 as uuidv4 } from "uuid";
 import Papa from "papaparse";
 import { currentUser } from "@clerk/nextjs/server";
-import type { 
-  EmailLeadRow, 
-  EmailPersonalizationJob, 
-  CampaignContext 
+import type {
+  EmailLeadRow,
+  EmailPersonalizationJob,
+  CampaignContext
 } from "@/types/email-personalization";
 import { enhancedScrapingService } from "@/lib/enhanced-scraping-service";
 import { emailGenerationService } from "@/lib/email-generation-service";
 import pLimit from "p-limit";
+import { Blob } from 'buffer';
 
 // Global store for jobs (in production, use Redis or database)
 declare global {
@@ -19,7 +20,7 @@ declare global {
 
 /**
  * POST /api/email-personalization
- * 
+ *
  * Expected multipart/form-data fields:
  *   - file: CSV file upload
  *   - campaignId: Campaign ID for context loading
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     const customContextRaw = formData.get("customContext");
 
     // Validate required fields
-    if (!file || !(file instanceof File)) {
+    if (!file || !(file instanceof Blob)) {
       return NextResponse.json(
         { error: "CSV file is required under 'file' field" },
         { status: 400 }
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
     // Validate CSV headers
     const REQUIRED_HEADERS = [
       "First name",
-      "Last name", 
+      "Last name",
       "Title",
       "Company",
       "Location",
@@ -142,10 +143,10 @@ export async function POST(request: Request) {
         }
       });
 
-    return NextResponse.json({ 
-      jobId, 
+    return NextResponse.json({
+      jobId,
       rowCount: leads.length,
-      estimatedCompletionTime 
+      estimatedCompletionTime
     });
 
   } catch (error: any) {
@@ -164,7 +165,7 @@ export async function POST(request: Request) {
 export async function GET() {
   try {
     const sampleCSV = emailGenerationService.generateSampleCSV();
-    
+
     return new Response(sampleCSV, {
       headers: {
         "Content-Type": "text/csv;charset=utf-8",
@@ -184,7 +185,7 @@ export async function GET() {
  * Load campaign context from database
  */
 async function loadCampaignContext(
-  campaignId: string, 
+  campaignId: string,
   userId: string
 ): Promise<CampaignContext | null> {
   try {
@@ -243,10 +244,10 @@ async function loadCampaignContext(
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
-      
+
       websiteAnalysis = analysisData;
     }
-    
+
     // Transform campaign data to CampaignContext format
     const settings = campaignData.settings || {};
     const context: CampaignContext = {
@@ -412,7 +413,7 @@ async function processEmailPersonalizationJob(
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           console.error(`❌ Failed to process lead ${lead["First name"]} ${lead["Last name"]}:`, errorMessage);
-          
+
           // Add error to job
           job.errors?.push({
             row: index + 1,
