@@ -87,6 +87,9 @@ export interface Database {
           source: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor' | 'syndie';
           enrichment_data: Record<string, unknown>;
           smartlead_campaign_id: string | null;
+          syndie_campaign_id: string | null;
+          organization_id: string | null;
+          clento_campaign_id?: string | null;
           last_email_event: string | null;
           last_event_timestamp: string | null;
           // Syndie integration fields
@@ -113,6 +116,9 @@ export interface Database {
           source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor' | 'syndie';
           enrichment_data?: Record<string, unknown>;
           smartlead_campaign_id?: string | null;
+          syndie_campaign_id?: string | null;
+          clento_campaign_id?: string | null;
+          organization_id: string | null;
           last_email_event?: string | null;
           last_event_timestamp?: string | null;
           // Syndie integration fields
@@ -139,6 +145,9 @@ export interface Database {
           source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor' | 'syndie';
           enrichment_data?: Record<string, unknown>;
           smartlead_campaign_id?: string | null;
+          syndie_campaign_id?: string | null;
+          clento_campaign_id?: string | null;
+          organization_id: string | null;
           last_email_event?: string | null;
           last_event_timestamp?: string | null;
           // Syndie integration fields
@@ -512,7 +521,7 @@ export interface Database {
 export interface Lead {
   id: string
   external_id: string
-  
+
   // Personal information
   first_name?: string
   last_name?: string
@@ -521,25 +530,25 @@ export interface Lead {
   phone?: string
   headline?: string
   photo_url?: string
-  
+
   // Professional information
   title?: string
   seniority?: string
   years_experience?: number
   time_in_current_role?: string
-  
+
   // Professional categorization from Apollo
   departments?: string[]
   subdepartments?: string[]
   functions?: string[]
-  
+
   // Company information
   company: string
   company_id?: string
   industry?: string
   employee_count?: number
   revenue?: number
-  
+
   // Enhanced company details
   company_website?: string
   company_linkedin?: string
@@ -548,37 +557,37 @@ export interface Lead {
   company_phone?: string
   company_alexa_ranking?: number
   company_primary_domain?: string
-  
+
   // Company growth metrics
   company_headcount_six_month_growth?: number
   company_headcount_twelve_month_growth?: number
   company_headcount_twenty_four_month_growth?: number
-  
+
   // Location information
   location?: string
   city?: string
   state?: string
   country?: string
-  
+
   // Social profiles
   linkedin_url?: string
   twitter_url?: string
   facebook_url?: string
   github_url?: string
-  
+
   // Employment history
   employment_history?: EmploymentRecord[]
-  
+
   // Email verification
   email_status?: 'verified' | 'likely' | 'guessed' | 'unavailable'
-  
+
   // Data source information
   source: string
   verified: boolean
   confidence: number
   technologies: string[]
   keywords?: string[]
-  
+
   // Metadata
   created_at: string
   updated_at: string
@@ -658,7 +667,7 @@ export interface EmailVerification {
   smtp_check_passed?: boolean
   disposable_email: boolean
   cost: number
-} 
+}
 
 // Smartlead Integration Types
 export interface SmartleadEmailEvent {
@@ -730,4 +739,4 @@ export interface LeadWithSmartleadData extends Lead {
   last_event_timestamp?: string
   email_events?: SmartleadEmailEvent[]
   campaign_stats?: SmartleadCampaignStats
-} 
+}
