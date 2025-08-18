@@ -1,7 +1,7 @@
 // Syndie Integration TypeScript Types
 // Types for Syndie automation webhook payloads and lead management
 
-export type LinkedInConnectionStatus = 
+export type LinkedInConnectionStatus =
   | 'not_connected'
   | 'pending'
   | 'connected'
@@ -88,13 +88,14 @@ export interface SyndieLead {
   last_event_timestamp: string | null;
   created_at: string;
   updated_at: string;
-  
+
   // Syndie-specific fields
   syndie_lead_id: string | null;
   linkedin_connection_status: LinkedInConnectionStatus;
   steps: SyndieLeadStep[];
   campaign_info: SyndieCampaignInfo;
   seat_info: SyndieSeatInfo;
+  syndie_campaign_id: string | null
 }
 
 // Lead with enhanced Syndie tracking

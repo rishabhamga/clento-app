@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { supabaseAdmin } from '@/lib/supabase'
-import { 
-  SyndieWebhookPayload, 
+import {
+  SyndieWebhookPayload,
   WebhookProcessingResult,
   LinkedInConnectionStatus,
   SyndieLeadStep,
@@ -34,16 +34,16 @@ export async function POST(req: NextRequest) {
 
     // Parse the webhook payload
     const payload: SyndieWebhookPayload = await req.json()
-    console.log('Syndie webhook payload received:', { 
-      id: payload.id, 
+    console.log('Syndie webhook payload received:', {
+      id: payload.id,
       connectionStatus: payload.connectionStatus,
-      stepsCount: payload.steps?.length || 0 
+      stepsCount: payload.steps?.length || 0
     })
 
     // Validate required fields
     if (!payload.id) {
       return NextResponse.json(
-        { 
+        {
           success: false,
           operation: 'error',
           message: 'Missing required field: id',
@@ -57,13 +57,13 @@ export async function POST(req: NextRequest) {
     const result = await processLeadWebhook(payload)
 
     // Return success response
-    return NextResponse.json(result, { 
-      status: result.success ? 200 : 400 
+    return NextResponse.json(result, {
+      status: result.success ? 200 : 400
     })
 
   } catch (error) {
     console.error('Error processing Syndie webhook:', error)
-    
+
     const errorResult: WebhookProcessingResult = {
       success: false,
       operation: 'error',
@@ -89,7 +89,14 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
       throw new Error(`Error querying existing lead: ${queryError.message}`)
     }
 
-    const leadData = mapSyndiePayloadToLead(payload, existingLead)
+    // Find campaign where syndie_campaign_ids array contains the payload.campaign.id
+    const { data: clentoCampaign, error: clentoCampaignError } = await supabaseAdmin
+      .from('campaigns')
+      .select('id, organization_id')
+      .contains('syndie_campaign_ids', [payload.campaign?.id])
+      .single()
+
+    const leadData = mapSyndiePayloadToLead(payload, existingLead, clentoCampaign?.id, clentoCampaign?.organization_id)
 
     let result: WebhookProcessingResult
 
@@ -119,17 +126,17 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
       // Create new lead - we need to find the user_id
       // For now, we'll use a placeholder approach where we try to match by campaign info
       // In production, you might need a different strategy to associate leads with users
-      
+
       // Try to find user by campaign info or implement your user association logic
       const userId = await findUserForLead(payload)
-      
+
       if (!userId) {
         throw new Error('Unable to determine user for lead - no user association strategy implemented')
       }
 
       const newLeadData = {
         ...leadData,
-        user_id: userId,
+        // user_id: userId, //This breaks -- yash
       }
 
       const { data: newLead, error: insertError } = await supabaseAdmin
@@ -166,10 +173,12 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
 }
 
 function mapSyndiePayloadToLead(
-  payload: SyndieWebhookPayload, 
-  existingLead?: any
+  payload: SyndieWebhookPayload,
+  existingLead?: any,
+  clentoCampaignId?: string,
+  clentoOrgId?: string
 ): Partial<Database['public']['Tables']['leads']['Update']> {
-  
+
   // Map Syndie payload to our lead structure
   const leadData: Partial<Database['public']['Tables']['leads']['Update']> = {
     // Basic lead information
@@ -181,7 +190,10 @@ function mapSyndiePayloadToLead(
     location: payload.location || null,
     phone: payload.phone || null,
     source: 'syndie',
-    
+    syndie_campaign_id: payload.campaign?.id || null,
+    clento_campaign_id: clentoCampaignId || null,
+    organization_id: clentoOrgId,
+
     // Syndie-specific fields
     syndie_lead_id: payload.id,
     linkedin_connection_status: payload.connectionStatus,
@@ -200,7 +212,7 @@ function mapSyndiePayloadToLead(
       publicIdentifier: payload.campaign.seat.publicIdentifier,
       accountType: payload.campaign.seat.accountType,
     } : {},
-    
+
     // Metadata
     updated_at: new Date().toISOString(),
   }
@@ -214,16 +226,16 @@ function mapSyndiePayloadToLead(
   if (existingLead && existingLead.steps && Array.isArray(existingLead.steps)) {
     const existingSteps = existingLead.steps as SyndieLeadStep[]
     const newSteps = payload.steps || []
-    
+
     // Combine and deduplicate steps by stepNodeId + timestamp
     const allSteps = [...existingSteps, ...newSteps]
-    const uniqueSteps = allSteps.filter((step, index, self) => 
-      index === self.findIndex(s => 
+    const uniqueSteps = allSteps.filter((step, index, self) =>
+      index === self.findIndex(s =>
         s.stepNodeId === step.stepNodeId && s.timestamp === step.timestamp
       )
     )
-    
-    leadData.steps = uniqueSteps.sort((a, b) => 
+
+    leadData.steps = uniqueSteps.sort((a, b) =>
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     ) as unknown as Record<string, unknown>[]
   }
@@ -239,7 +251,7 @@ async function findUserForLead(payload: SyndieWebhookPayload): Promise<string | 
   // 2. Use seat info to match with LinkedIn accounts
   // 3. Use a default user for all Syndie leads
   // 4. Use organization mapping
-  
+
   try {
     // Example strategy 1: Find user by matching campaign name or other criteria
     if (payload.campaign?.name) {
@@ -249,7 +261,7 @@ async function findUserForLead(payload: SyndieWebhookPayload): Promise<string | 
         .ilike('name', `%${payload.campaign.name}%`)
         .limit(1)
         .single()
-      
+
       if (campaign) {
         return campaign.user_id
       }
@@ -275,12 +287,12 @@ async function findUserForLead(payload: SyndieWebhookPayload): Promise<string | 
 export async function GET(req: NextRequest) {
   // Some webhook providers require GET endpoint verification
   const challenge = req.nextUrl.searchParams.get('challenge')
-  
+
   if (challenge) {
     return NextResponse.json({ challenge })
   }
-  
-  return NextResponse.json({ 
+
+  return NextResponse.json({
     message: 'Syndie webhook endpoint is active',
     timestamp: new Date().toISOString()
   })
