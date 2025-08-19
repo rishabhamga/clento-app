@@ -10,6 +10,7 @@ import {
   SyndieSeatInfo
 } from '@/types/syndie'
 import { Database } from '@/types/database'
+import { entryToCrm } from '../../../../lib/utils'
 
 // Environment variables for webhook validation
 const SYNDIE_WEBHOOK_SECRET = process.env.SYNDIE_WEBHOOK_SECRET
@@ -102,6 +103,17 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
 
     if (existingLead) {
       // Update existing lead
+      if(leadData.linkedin_connection_status === "replied"){
+          if(existingLead.crm_entry === 0){
+              await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "SYNDIE_REPLY", linkedIn: leadData.linkedin_url || undefined })
+              await supabaseAdmin
+                .from('leads')
+                .update({ crm_entry: 1 })
+                .eq('syndie_lead_id', payload.id)
+                .select()
+                .single()
+          }
+      }
       const { data: updatedLead, error: updateError } = await supabaseAdmin
         .from('leads')
         .update(leadData)
