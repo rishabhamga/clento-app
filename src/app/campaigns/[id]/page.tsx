@@ -331,8 +331,8 @@ export default function CampaignDetailPage() {
     const renderPitchContent = () => {
         const pitch = campaign?.settings?.pitch || {}
         const offering = campaign?.settings?.offering || {}
-        const painPoints = campaign?.settings?.pain_points || []
-        const proofPoints = campaign?.settings?.proof_points || []
+        const painPoints = pitch?.painPoints || []
+        const proofPoints = pitch?.proofPoints || []
 
         const hasCoreOffering = Boolean(offering.description || pitch.coreOffering || campaign?.description);
         const hasIcpSummary = Boolean(pitch?.websiteAnalysis?.icpSummary);
@@ -723,7 +723,7 @@ export default function CampaignDetailPage() {
                                         >
                                             <HStack spacing={3}>
                                                 <Text fontWeight="bold" color="red.500">{index + 1}</Text>
-                                                <Text fontSize="sm" color="gray.800">{point}</Text>
+                                                <Text fontSize="sm" color="gray.800">{point.description}</Text>
                                             </HStack>
                                         </Box>
                                     ))}
@@ -790,7 +790,7 @@ export default function CampaignDetailPage() {
                                         >
                                             <HStack spacing={3}>
                                                 <Text fontWeight="bold" color="green.500">{index + 1}</Text>
-                                                <Text fontSize="sm" color="gray.800">{point}</Text>
+                                                <Text fontSize="sm" color="gray.800">{point.description}</Text>
                                             </HStack>
                                         </Box>
                                     ))}
