@@ -177,7 +177,50 @@ export default function CampaignDetailPage() {
 
     const renderTargetingContent = () => {
         const targeting = campaign?.settings?.targeting || {}
-        const filters = campaign?.settings?.filters || {}
+        const filters = campaign?.settings?.targeting?.filters || {}
+
+        const filterLabels = {
+            hasEmail: "Has Email",
+            keywords: "Keywords",
+            jobTitles: "Job Titles",
+            industries: "Industries",
+            newsEvents: "News Events",
+            revenueMax: "Revenue Max",
+            revenueMin: "Revenue Min",
+            webTraffic: "Web Traffic",
+            jobPostings: "Job Postings",
+            seniorities: "Seniorities",
+            intentTopics: "Intent Topics",
+            technologies: "Technologies",
+            fundingStages: "Funding Stages",
+            companyDomains: "Company Domains",
+            foundedYearMax: "Founded Year Max",
+            foundedYearMin: "Founded Year Min",
+            technologyUids: "Technology UIDs",
+            personLocations: "Person Locations",
+            companyHeadcount: "Company Headcount",
+            fundingAmountMax: "Funding Amount Max",
+            fundingAmountMin: "Funding Amount Min",
+            excludeTechnologyUids: "Exclude Technology UIDs",
+            organizationJobTitles: "Organization Job Titles",
+            organizationLocations: "Organization Locations",
+            excludePersonLocations: "Exclude Person Locations",
+            organizationNumJobsMax: "Organization Num Jobs Max",
+            organizationNumJobsMin: "Organization Num Jobs Min",
+            organizationJobLocations: "Organization Job Locations",
+            organizationJobPostedAtMax: "Organization Job Posted At Max",
+            organizationJobPostedAtMin: "Organization Job Posted At Min",
+            excludeOrganizationLocations: "Exclude Organization Locations",
+        }
+
+        function isFilterActive(value) {
+            if (value === null) return false;
+            if (Array.isArray(value) && value.length === 0) return false;
+            return value !== undefined && value !== '';
+        }
+
+        const activeFilters = Object.entries(filters)
+            .filter(([key, value]) => isFilterActive(value) && key !== 'page' && key !== 'perPage');
 
         return (
             <Container maxW="7xl" py={8}>
@@ -242,38 +285,42 @@ export default function CampaignDetailPage() {
                             </HStack>
                         </CardHeader>
                         <CardBody pt={0}>
-                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                                <Box>
-                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Job Titles</Text>
-                                    <Text fontSize="sm" color="gray.800">
-                                        {filters.jobTitles?.length > 0
-                                            ? filters.jobTitles.join(', ')
-                                            : targeting.jobTitles || 'Head of Sales, CTO, VP Engineering'}
+                            {activeFilters.length === 0 ? (
+                                <Box py={6} textAlign="center">
+                                    <Text fontSize="lg" color="red.500" fontWeight="bold">
+                                        Oops, no filters found on your ICPs
                                     </Text>
                                 </Box>
-                                <Box>
-                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Industries</Text>
-                                    <Text fontSize="sm" color="gray.800">
-                                        {filters.industries?.length > 0
-                                            ? filters.industries.join(', ')
-                                            : targeting.industries || 'Technology, SaaS, Software'}
-                                    </Text>
-                                </Box>
-                                <Box>
-                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Company Size</Text>
-                                    <Text fontSize="sm" color="gray.800">
-                                        {filters.companySize || targeting.companySize || '100-500 employees'}
-                                    </Text>
-                                </Box>
-                                <Box>
-                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Location</Text>
-                                    <Text fontSize="sm" color="gray.800">
-                                        {filters.locations?.length > 0
-                                            ? filters.locations.join(', ')
-                                            : targeting.location || 'United States'}
-                                    </Text>
-                                </Box>
-                            </SimpleGrid>
+                            ) : (
+                                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                                    {activeFilters.map(([key, value]) => (
+                                        <Box key={key}>
+                                            <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>
+                                                {filterLabels[key] || key}
+                                            </Text>
+                                            {Array.isArray(value) ? (
+                                                <HStack wrap="wrap" spacing={2}>
+                                                    {value.map((item, idx) => (
+                                                        <Tag
+                                                            key={idx}
+                                                            size="sm"
+                                                            borderRadius="full"
+                                                            variant="subtle"
+                                                            colorScheme="purple"
+                                                        >
+                                                            <TagLabel>{item}</TagLabel>
+                                                        </Tag>
+                                                    ))}
+                                                </HStack>
+                                            ) : (
+                                                <Text fontSize="sm" color="gray.800">
+                                                    {String(value)}
+                                                </Text>
+                                            )}
+                                        </Box>
+                                    ))}
+                                </SimpleGrid>
+                            )}
                         </CardBody>
                     </Card>
                 </VStack>
@@ -286,6 +333,9 @@ export default function CampaignDetailPage() {
         const offering = campaign?.settings?.offering || {}
         const painPoints = campaign?.settings?.pain_points || []
         const proofPoints = campaign?.settings?.proof_points || []
+
+        const hasCoreOffering = Boolean(offering.description || pitch.coreOffering || campaign?.description);
+        const hasIcpSummary = Boolean(pitch?.websiteAnalysis?.icpSummary);
 
         return (
             <Container maxW="7xl" py={8}>
@@ -306,105 +356,110 @@ export default function CampaignDetailPage() {
                     </VStack>
 
                     {/* Core Offering */}
-                    <Card
-                        bg={glassBg}
-                        borderRadius="2xl"
-                        border="1px solid"
-                        borderColor={borderColor}
-                        backdropFilter="blur(20px)"
-                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
-                        _hover={{
-                            transform: 'translateY(-4px)',
-                            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
-                            transition: 'all 0.3s ease-in-out'
-                        }}
-                        transition="all 0.3s ease-in-out"
-                    >
-                        <CardHeader pb={2}>
-                            <HStack spacing={3} justify="space-between">
-                                <HStack spacing={3}>
-                                    <Box
-                                        p={3}
-                                        borderRadius="xl"
-                                        bg={accentGradient}
-                                        color="white"
-                                        boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                    {hasCoreOffering && (
+                        <Card
+                            bg={glassBg}
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            backdropFilter="blur(20px)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            _hover={{
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack spacing={3} justify="space-between">
+                                    <HStack spacing={3}>
+                                        <Box
+                                            p={3}
+                                            borderRadius="xl"
+                                            bg={accentGradient}
+                                            color="white"
+                                            boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                        >
+                                            <Target size="20" />
+                                        </Box>
+                                        <VStack align="start" spacing={0}>
+                                            <Heading size="md" color="gray.800">Core Offering</Heading>
+                                            <Text fontSize="sm" color="gray.600">Your primary value proposition</Text>
+                                        </VStack>
+                                    </HStack>
+                                    <Button
+                                        size="sm"
+                                        leftIcon={<Lock size={16} />}
+                                        onClick={handleEditAttempt}
+                                        variant="outline"
+                                        borderColor="purple.200"
+                                        _hover={{ borderColor: 'purple.400' }}
                                     >
-                                        <Target size="20" />
-                                    </Box>
-                                    <VStack align="start" spacing={0}>
-                                        <Heading size="md" color="gray.800">Core Offering</Heading>
-                                        <Text fontSize="sm" color="gray.600">Your primary value proposition</Text>
-                                    </VStack>
+                                        Edit
+                                    </Button>
                                 </HStack>
-                                <Button
-                                    size="sm"
-                                    leftIcon={<Lock size={16} />}
-                                    onClick={handleEditAttempt}
-                                    variant="outline"
-                                    borderColor="purple.200"
-                                    _hover={{ borderColor: 'purple.400' }}
-                                >
-                                    Edit
-                                </Button>
-                            </HStack>
-                        </CardHeader>
-                        <CardBody pt={0}>
-                            <Text fontSize="md" color="gray.800" lineHeight="1.6">
-                                {offering.description || pitch.coreOffering || campaign?.description || 'Clento provides an all-in-one AI-powered sales development platform that automates the entire outreach process, enhancing SDR performance and reducing costs.'}
-                            </Text>
-                        </CardBody>
-                    </Card>
+                            </CardHeader>
+                            <CardBody pt={0}>
+                                <Text fontSize="md" color="gray.800" lineHeight="1.6">
+                                    {offering.description || pitch.coreOffering || campaign?.description}
+                                </Text>
+                            </CardBody>
+                        </Card>
+                    )}
 
-                    <Card
-                        bg={glassBg}
-                        borderRadius="2xl"
-                        border="1px solid"
-                        borderColor={borderColor}
-                        backdropFilter="blur(20px)"
-                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
-                        _hover={{
-                            transform: 'translateY(-4px)',
-                            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
-                            transition: 'all 0.3s ease-in-out'
-                        }}
-                        transition="all 0.3s ease-in-out"
-                    >
-                        <CardHeader pb={2}>
-                            <HStack spacing={3} justify="space-between">
-                                <HStack spacing={3}>
-                                    <Box
-                                        p={3}
-                                        borderRadius="xl"
-                                        bg={accentGradient}
-                                        color="white"
-                                        boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                    {/* Ideal Customer Profile */}
+                    {hasIcpSummary && (
+                        <Card
+                            bg={glassBg}
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            backdropFilter="blur(20px)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            _hover={{
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack spacing={3} justify="space-between">
+                                    <HStack spacing={3}>
+                                        <Box
+                                            p={3}
+                                            borderRadius="xl"
+                                            bg={accentGradient}
+                                            color="white"
+                                            boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                        >
+                                            <Users size="20" />
+                                        </Box>
+                                        <VStack align="start" spacing={0}>
+                                            <Heading size="md" color="gray.800">Ideal Customer Profile</Heading>
+                                            <Text fontSize="sm" color="gray.600">Your Ideal Customer</Text>
+                                        </VStack>
+                                    </HStack>
+                                    <Button
+                                        size="sm"
+                                        leftIcon={<Lock size={16} />}
+                                        onClick={handleEditAttempt}
+                                        variant="outline"
+                                        borderColor="purple.200"
+                                        _hover={{ borderColor: 'purple.400' }}
                                     >
-                                        <Users size="20" />
-                                    </Box>
-                                    <VStack align="start" spacing={0}>
-                                        <Heading size="md" color="gray.800">Ideal Customer Profile</Heading>
-                                        <Text fontSize="sm" color="gray.600">Your Ideal Customer</Text>
-                                    </VStack>
+                                        Edit
+                                    </Button>
                                 </HStack>
-                                <Button
-                                    size="sm"
-                                    leftIcon={<Lock size={16} />}
-                                    onClick={handleEditAttempt}
-                                    variant="outline"
-                                    borderColor="purple.200"
-                                    _hover={{ borderColor: 'purple.400' }}
-                                >
-                                    Edit
-                                </Button>
-                            </HStack>
-                        </CardHeader>
-                        <CardBody pt={0}>
-                            <Text fontSize="md" color="gray.800" lineHeight="1.6">
-                                {pitch?.websiteAnalysis?.icpSummary || ''}
-                            </Text>
-                        </CardBody>
-                    </Card>
+                            </CardHeader>
+                            <CardBody pt={0}>
+                                <Text fontSize="md" color="gray.800" lineHeight="1.6">
+                                    {pitch?.websiteAnalysis?.icpSummary}
+                                </Text>
+                            </CardBody>
+                        </Card>
+                    )}
 
                     {/* Target Personas */}
                     {pitch?.websiteAnalysis?.targetPersonas && pitch?.websiteAnalysis?.targetPersonas.length > 0 && (
@@ -611,144 +666,138 @@ export default function CampaignDetailPage() {
 
 
                     {/* Customer Pain Points */}
-                    <Card
-                        bg={glassBg}
-                        borderRadius="2xl"
-                        border="1px solid"
-                        borderColor={borderColor}
-                        backdropFilter="blur(20px)"
-                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
-                        _hover={{
-                            transform: 'translateY(-4px)',
-                            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
-                            transition: 'all 0.3s ease-in-out'
-                        }}
-                        transition="all 0.3s ease-in-out"
-                    >
-                        <CardHeader pb={2}>
-                            <HStack spacing={3} justify="space-between">
-                                <HStack spacing={3}>
-                                    <Box
-                                        p={3}
-                                        borderRadius="xl"
-                                        bg="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
-                                        color="white"
-                                        boxShadow="0 8px 20px rgba(240, 147, 251, 0.4)"
+                    {painPoints.length > 0 && (
+                        <Card
+                            bg={glassBg}
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            backdropFilter="blur(20px)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            _hover={{
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack spacing={3} justify="space-between">
+                                    <HStack spacing={3}>
+                                        <Box
+                                            p={3}
+                                            borderRadius="xl"
+                                            bg="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+                                            color="white"
+                                            boxShadow="0 8px 20px rgba(240, 147, 251, 0.4)"
+                                        >
+                                            <Text fontSize="lg">😣</Text>
+                                        </Box>
+                                        <VStack align="start" spacing={0}>
+                                            <Heading size="md" color="gray.800">Customer Pain Points</Heading>
+                                            <Text fontSize="sm" color="gray.600">Problems your solution addresses</Text>
+                                        </VStack>
+                                    </HStack>
+                                    <Button
+                                        size="sm"
+                                        leftIcon={<Lock size={16} />}
+                                        onClick={handleEditAttempt}
+                                        variant="outline"
+                                        borderColor="purple.200"
+                                        _hover={{ borderColor: 'purple.400' }}
                                     >
-                                        <Text fontSize="lg">😣</Text>
-                                    </Box>
-                                    <VStack align="start" spacing={0}>
-                                        <Heading size="md" color="gray.800">Customer Pain Points</Heading>
-                                        <Text fontSize="sm" color="gray.600">Problems your solution addresses</Text>
-                                    </VStack>
+                                        Edit
+                                    </Button>
                                 </HStack>
-                                <Button
-                                    size="sm"
-                                    leftIcon={<Lock size={16} />}
-                                    onClick={handleEditAttempt}
-                                    variant="outline"
-                                    borderColor="purple.200"
-                                    _hover={{ borderColor: 'purple.400' }}
-                                >
-                                    Edit
-                                </Button>
-                            </HStack>
-                        </CardHeader>
-                        <CardBody pt={0}>
-                            <VStack spacing={3} align="stretch">
-                                {(painPoints.length > 0 ? painPoints : [
-                                    'High costs and complexity of managing multiple sales tools',
-                                    'Inconsistent outreach and low meeting conversion rates',
-                                    'Need for personalized outreach while maintaining compliance',
-                                    'Fragmented sales tools leading to inefficiencies'
-                                ]).map((point, index) => (
-                                    <Box
-                                        key={index}
-                                        p={4}
-                                        borderRadius="xl"
-                                        bg="rgba(248, 113, 113, 0.1)"
-                                        border="1px solid"
-                                        borderColor="red.200"
-                                    >
-                                        <HStack spacing={3}>
-                                            <Text fontWeight="bold" color="red.500">{index + 1}</Text>
-                                            <Text fontSize="sm" color="gray.800">{point}</Text>
-                                        </HStack>
-                                    </Box>
-                                ))}
-                            </VStack>
-                        </CardBody>
-                    </Card>
+                            </CardHeader>
+                            <CardBody pt={0}>
+                                <VStack spacing={3} align="stretch">
+                                    {painPoints.map((point, index) => (
+                                        <Box
+                                            key={index}
+                                            p={4}
+                                            borderRadius="xl"
+                                            bg="rgba(248, 113, 113, 0.1)"
+                                            border="1px solid"
+                                            borderColor="red.200"
+                                        >
+                                            <HStack spacing={3}>
+                                                <Text fontWeight="bold" color="red.500">{index + 1}</Text>
+                                                <Text fontSize="sm" color="gray.800">{point}</Text>
+                                            </HStack>
+                                        </Box>
+                                    ))}
+                                </VStack>
+                            </CardBody>
+                        </Card>
+                    )}
 
                     {/* Success Stories & Proof */}
-                    <Card
-                        bg={glassBg}
-                        borderRadius="2xl"
-                        border="1px solid"
-                        borderColor={borderColor}
-                        backdropFilter="blur(20px)"
-                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
-                        _hover={{
-                            transform: 'translateY(-4px)',
-                            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
-                            transition: 'all 0.3s ease-in-out'
-                        }}
-                        transition="all 0.3s ease-in-out"
-                    >
-                        <CardHeader pb={2}>
-                            <HStack spacing={3} justify="space-between">
-                                <HStack spacing={3}>
-                                    <Box
-                                        p={3}
-                                        borderRadius="xl"
-                                        bg="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
-                                        color="white"
-                                        boxShadow="0 8px 20px rgba(79, 172, 254, 0.4)"
+                    {proofPoints.length > 0 && (
+                        <Card
+                            bg={glassBg}
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            backdropFilter="blur(20px)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            _hover={{
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack spacing={3} justify="space-between">
+                                    <HStack spacing={3}>
+                                        <Box
+                                            p={3}
+                                            borderRadius="xl"
+                                            bg="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+                                            color="white"
+                                            boxShadow="0 8px 20px rgba(79, 172, 254, 0.4)"
+                                        >
+                                            <Text fontSize="lg">🏆</Text>
+                                        </Box>
+                                        <VStack align="start" spacing={0}>
+                                            <Heading size="md" color="gray.800">Success Stories & Proof</Heading>
+                                            <Text fontSize="sm" color="gray.600">Evidence of your solution's effectiveness</Text>
+                                        </VStack>
+                                    </HStack>
+                                    <Button
+                                        size="sm"
+                                        leftIcon={<Lock size={16} />}
+                                        onClick={handleEditAttempt}
+                                        variant="outline"
+                                        borderColor="purple.200"
+                                        _hover={{ borderColor: 'purple.400' }}
                                     >
-                                        <Text fontSize="lg">🏆</Text>
-                                    </Box>
-                                    <VStack align="start" spacing={0}>
-                                        <Heading size="md" color="gray.800">Success Stories & Proof</Heading>
-                                        <Text fontSize="sm" color="gray.600">Evidence of your solution's effectiveness</Text>
-                                    </VStack>
+                                        Edit
+                                    </Button>
                                 </HStack>
-                                <Button
-                                    size="sm"
-                                    leftIcon={<Lock size={16} />}
-                                    onClick={handleEditAttempt}
-                                    variant="outline"
-                                    borderColor="purple.200"
-                                    _hover={{ borderColor: 'purple.400' }}
-                                >
-                                    Edit
-                                </Button>
-                            </HStack>
-                        </CardHeader>
-                        <CardBody pt={0}>
-                            <VStack spacing={3} align="stretch">
-                                {(proofPoints.length > 0 ? proofPoints : [
-                                    'Streamlined sales processes',
-                                    'Increased meeting bookings and conversion rates',
-                                    'Enhanced personalization in outreach',
-                                    'Compliance with industry regulations'
-                                ]).map((point, index) => (
-                                    <Box
-                                        key={index}
-                                        p={4}
-                                        borderRadius="xl"
-                                        bg="rgba(34, 197, 94, 0.1)"
-                                        border="1px solid"
-                                        borderColor="green.200"
-                                    >
-                                        <HStack spacing={3}>
-                                            <Text fontWeight="bold" color="green.500">{index + 1}</Text>
-                                            <Text fontSize="sm" color="gray.800">{point}</Text>
-                                        </HStack>
-                                    </Box>
-                                ))}
-                            </VStack>
-                        </CardBody>
-                    </Card>
+                            </CardHeader>
+                            <CardBody pt={0}>
+                                <VStack spacing={3} align="stretch">
+                                    {proofPoints.map((point, index) => (
+                                        <Box
+                                            key={index}
+                                            p={4}
+                                            borderRadius="xl"
+                                            bg="rgba(34, 197, 94, 0.1)"
+                                            border="1px solid"
+                                            borderColor="green.200"
+                                        >
+                                            <HStack spacing={3}>
+                                                <Text fontWeight="bold" color="green.500">{index + 1}</Text>
+                                                <Text fontSize="sm" color="gray.800">{point}</Text>
+                                            </HStack>
+                                        </Box>
+                                    ))}
+                                </VStack>
+                            </CardBody>
+                        </Card>
+                    )}
 
                     {/* Expandable Sections */}
                     {((pitch?.websiteAnalysis?.caseStudies && pitch?.websiteAnalysis?.caseStudies.length > 0) ||
