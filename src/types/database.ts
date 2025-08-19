@@ -92,6 +92,7 @@ export interface Database {
           clento_campaign_id?: string | null;
           last_email_event: string | null;
           last_event_timestamp: string | null;
+          crm_entry?: number | null;
           // Syndie integration fields
           syndie_lead_id: string | null;
           linkedin_connection_status: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
@@ -121,6 +122,7 @@ export interface Database {
           organization_id: string | null;
           last_email_event?: string | null;
           last_event_timestamp?: string | null;
+          crm_entry?: number | null;
           // Syndie integration fields
           syndie_lead_id?: string | null;
           linkedin_connection_status?: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
@@ -150,6 +152,7 @@ export interface Database {
           organization_id: string | null;
           last_email_event?: string | null;
           last_event_timestamp?: string | null;
+          crm_entry?: number | null;
           // Syndie integration fields
           syndie_lead_id?: string | null;
           linkedin_connection_status?: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
