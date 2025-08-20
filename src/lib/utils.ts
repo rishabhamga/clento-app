@@ -56,7 +56,7 @@ export const entryToCrm = async({ companyName, firstName, lastName, country, mob
         }
         try {
             const req = await axios.post(crmUrl, reqBody, { headers })
-            console.log(req.data);
+            console.log(req.data, "CRM RESPONSE");
         } catch (err) {
             console.log("an error occured", err)
         }
