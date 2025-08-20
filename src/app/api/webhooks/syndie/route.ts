@@ -151,6 +151,14 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
         // user_id: userId, //This breaks -- yash
       }
 
+      if(leadData.linkedin_connection_status === "replied"){
+              await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "SYNDIE_REPLY", linkedIn: leadData.linkedin_url || undefined })
+              await supabaseAdmin
+                .from('leads')
+                .update({ crm_entry: 1 })
+                .eq('syndie_lead_id', payload.id);
+      }
+
       const { data: newLead, error: insertError } = await supabaseAdmin
         .from('leads')
         .insert(newLeadData)
