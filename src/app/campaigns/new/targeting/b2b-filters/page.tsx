@@ -160,6 +160,12 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
     if (filters.organizationJobPostedAtMax && filters.organizationJobPostedAtMin) {
         activeFilters.push({ label: 'Organization Job Dates', value: formatFilterValue(filters.organizationJobPostedAtMin + ' To ' + filters.organizationJobPostedAtMax) })
     }
+    if (filters.organizationJobPostedAtMin) {
+        activeFilters.push({ label: 'Organization Job Dates', value: formatFilterValue(filters.organizationJobPostedAtMin) })
+    }
+    if (filters.organizationJobPostedAtMax) {
+        activeFilters.push({ label: 'Organization Job Dates', value: formatFilterValue(filters.organizationJobPostedAtMin) })
+    }
     if (filters.jobPostings) {
         activeFilters.push({ label: 'Has Job Posting', value: formatFilterValue(filters.jobPostings) })
     }

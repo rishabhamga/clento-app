@@ -28,6 +28,7 @@ import {
 } from '@chakra-ui/react'
 import { FiUser, FiZap, FiTarget, FiMessageCircle, FiCheck, FiArrowRight, FiSend, FiPlus, FiRefreshCw } from 'react-icons/fi'
 import { GradientButton } from '@/components/ui/GradientButton'
+import { useSearchFilters } from '../../hooks/useApolloSearch'
 
 interface ParsedICP {
   // Basic search info
@@ -214,6 +215,7 @@ function filterSupportedFields(obj: any): ParsedICP {
 
 export function ConversationalICP({ onICPParsed, onReset, disabled = false }: ConversationalICPProps) {
   // Conversation state
+  const { filters } = useSearchFilters()
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ConversationMessage[]>([])
   const [input, setInput] = useState('')
@@ -827,7 +829,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                 </Text>
                 <Badge size="xs" colorScheme="purple">
                   {/* Only count supported and non-empty filters */}
-                  {Object.entries(currentFilters || {}).filter(
+                  {Object.entries(filters || {}).filter(
                     ([key, val]) =>
                       SUPPORTED_FILTER_KEYS.includes(key) &&
                       key !== 'confidence' && key !== 'reasoning' && key !== 'searchType' &&
