@@ -14,6 +14,7 @@ import {
   BarChart3,
   // Settings, // TODO: Re-enable when Integrations page is ready
   Users,
+  UserPlus,
   // Eye, // TODO: Re-enable when Website Visitors page is ready
   // Inbox, // TODO: Re-enable when Inbox page is ready
   Megaphone,
@@ -118,6 +119,7 @@ export default function Sidebar() {
     { icon: BarChart3, label: 'Analytics', href: '/analytics' },
     // { icon: Settings, label: 'Integrations', href: '/integrations' }, // TODO: Re-enable when ready
     { icon: Users, label: 'Leads', href: '/leads' },
+    { icon: UserPlus, label: 'Accounts', href: '/accounts' },
     // { icon: Eye, label: 'Website Visitors', href: '/website-visitors' }, // TODO: Re-enable when ready
   ]
 

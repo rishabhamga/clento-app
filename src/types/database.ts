@@ -500,6 +500,94 @@ export interface Database {
           updated_at?: string;
         };
       };
+      user_accounts: {
+        Row: {
+          id: string;
+          user_id: string;
+          organization_id: string | null;
+          unipile_account_id: string | null;
+          provider: 'linkedin' | 'email' | 'twitter' | 'facebook' | 'instagram' | 'whatsapp' | 'telegram' | 'messenger';
+          account_type: 'personal' | 'business' | 'page';
+          display_name: string;
+          username: string | null;
+          email: string | null;
+          profile_picture_url: string | null;
+          connection_status: 'connected' | 'disconnected' | 'expired' | 'error' | 'pending' | 'credentials';
+          last_sync_at: string | null;
+          expires_at: string | null;
+          unipile_data: Record<string, unknown>;
+          capabilities: Record<string, unknown>[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          organization_id?: string | null;
+          unipile_account_id?: string | null;
+          provider: 'linkedin' | 'email' | 'twitter' | 'facebook' | 'instagram' | 'whatsapp' | 'telegram' | 'messenger';
+          account_type?: 'personal' | 'business' | 'page';
+          display_name: string;
+          username?: string | null;
+          email?: string | null;
+          profile_picture_url?: string | null;
+          connection_status?: 'connected' | 'disconnected' | 'expired' | 'error' | 'pending' | 'credentials';
+          last_sync_at?: string | null;
+          expires_at?: string | null;
+          unipile_data?: Record<string, unknown>;
+          capabilities?: Record<string, unknown>[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          organization_id?: string | null;
+          unipile_account_id?: string | null;
+          provider?: 'linkedin' | 'email' | 'twitter' | 'facebook' | 'instagram' | 'whatsapp' | 'telegram' | 'messenger';
+          account_type?: 'personal' | 'business' | 'page';
+          display_name?: string;
+          username?: string | null;
+          email?: string | null;
+          profile_picture_url?: string | null;
+          connection_status?: 'connected' | 'disconnected' | 'expired' | 'error' | 'pending' | 'credentials';
+          last_sync_at?: string | null;
+          expires_at?: string | null;
+          unipile_data?: Record<string, unknown>;
+          capabilities?: Record<string, unknown>[];
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      organizations: {
+        Row: {
+          id: string;
+          clerk_org_id: string;
+          name: string;
+          slug: string | null;
+          permissible_seats: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          clerk_org_id: string;
+          name: string;
+          slug?: string | null;
+          permissible_seats?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          clerk_org_id?: string;
+          name?: string;
+          slug?: string | null;
+          permissible_seats?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: {
