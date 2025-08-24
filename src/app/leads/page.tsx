@@ -67,6 +67,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useOrganization } from '@clerk/nextjs'
 import {
     LeadWithSyndieData,
     LeadListResponse,
@@ -288,6 +289,7 @@ Heena
 
 export default function LeadsPage() {
     const router = useRouter()
+    const { organization } = useOrganization()
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
     const glassBg = useColorModeValue('rgba(255, 255, 255, 0.1)', 'rgba(26, 32, 44, 0.1)')
     const borderColor = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
@@ -308,6 +310,12 @@ export default function LeadsPage() {
     const [filters, setFilters] = useState<LeadFilters>({})
     const [searchTerm, setSearchTerm] = useState('')
 
+    // Filter options state
+    const [campaignOptions, setCampaignOptions] = useState<{id: string, name: string}[]>([])
+    const [accountOptions, setAccountOptions] = useState<{id: string, display_name: string}[]>([])
+    const [leadListOptions, setLeadListOptions] = useState<{id: string, name: string}[]>([])
+    const [filterOptionsLoading, setFilterOptionsLoading] = useState(false)
+
     // Handle search
     const handleSearch = (value: string) => {
         setSearchTerm(value)
@@ -327,6 +335,8 @@ export default function LeadsPage() {
                 ...(newFilters.connectionStatus && { connectionStatus: newFilters.connectionStatus.join(',') }),
                 ...(newFilters.account && { account: newFilters.account }),
                 ...(newFilters.campaign && { campaign: newFilters.campaign }),
+                ...(newFilters.leadListId && { lead_list_id: newFilters.leadListId }),
+                ...(newFilters.source && { source: newFilters.source }),
                 ...(newFilters.search && { search: newFilters.search }),
             })
 
@@ -392,12 +402,82 @@ export default function LeadsPage() {
         fetchLeads(1, updatedFilters)
     }
 
+    // Fetch filter options
+    const fetchFilterOptions = async () => {
+        setFilterOptionsLoading(true)
+        console.log('🔄 Starting to fetch filter options...')
+        
+        try {
+            // Get organization context from Clerk hook
+            const orgId = organization?.id
+            console.log('🏢 Organization ID:', orgId)
+            console.log('🏢 Organization object:', organization)
 
+            // Build query params with organization context
+            const queryParams = orgId ? `?organizationId=${orgId}` : ''
+            console.log('📝 Query params:', queryParams)
+
+            // Fetch campaigns
+            console.log('📊 Fetching campaigns...')
+            const campaignsRes = await fetch(`/api/campaigns${queryParams}`)
+            console.log('📊 Campaigns response status:', campaignsRes.status)
+            
+            if (campaignsRes.ok) {
+                const campaignsData = await campaignsRes.json()
+                console.log('📊 Campaigns data:', campaignsData)
+                setCampaignOptions(campaignsData.campaigns || [])
+                console.log('📊 Set campaign options:', campaignsData.campaigns?.length || 0, 'campaigns')
+            } else {
+                console.error('❌ Failed to fetch campaigns:', campaignsRes.status, campaignsRes.statusText)
+            }
+
+            // Fetch accounts  
+            console.log('👤 Fetching accounts...')
+            const accountsRes = await fetch(`/api/accounts${queryParams}`)
+            console.log('👤 Accounts response status:', accountsRes.status)
+            
+            if (accountsRes.ok) {
+                const accountsData = await accountsRes.json()
+                console.log('👤 Accounts data:', accountsData)
+                setAccountOptions(accountsData.accounts || [])
+                console.log('👤 Set account options:', accountsData.accounts?.length || 0, 'accounts')
+            } else {
+                console.error('❌ Failed to fetch accounts:', accountsRes.status, accountsRes.statusText)
+            }
+
+            // Fetch lead lists
+            console.log('📋 Fetching lead lists...')
+            const leadListsRes = await fetch(`/api/lead-lists${queryParams}`)
+            console.log('📋 Lead lists response status:', leadListsRes.status)
+            
+            if (leadListsRes.ok) {
+                const leadListsData = await leadListsRes.json()
+                console.log('📋 Lead lists data:', leadListsData)
+                setLeadListOptions(leadListsData.lead_lists || [])
+                console.log('📋 Set lead list options:', leadListsData.lead_lists?.length || 0, 'lead lists')
+            } else {
+                console.error('❌ Failed to fetch lead lists:', leadListsRes.status, leadListsRes.statusText)
+            }
+
+            console.log('✅ Filter options fetch completed')
+        } catch (error) {
+            console.error('❌ Error fetching filter options:', error)
+            toast({
+                title: 'Warning',
+                description: 'Failed to load filter options',
+                status: 'warning',
+                duration: 3000,
+                isClosable: true,
+            })
+        }
+        setFilterOptionsLoading(false)
+    }
 
     // Initial data fetch
     useEffect(() => {
         fetchLeads()
         fetchStats()
+        fetchFilterOptions()
     }, [])
 
     return (
@@ -561,34 +641,14 @@ export default function LeadsPage() {
                         borderColor={borderColor}
                         borderRadius="xl"
                         shadow="lg"
-                        px={6}
-                        py={3}
+                        px={4}
+                        py={2}
                     >
-                        <HStack spacing={6} align="end" justify="start">
-                            <Text 
-                                fontSize="sm" 
-                                fontWeight="bold" 
-                                bgGradient="linear(to-r, purple.400, blue.400)"
-                                bgClip="text"
-                                mb={2}
-                            >
-                                Filter Leads
-                            </Text>
-                            
+                        <HStack spacing={6} align="center" justify="start">
                             <Box>
-                                <Text 
-                                    fontSize="xs" 
-                                    fontWeight="semibold" 
-                                    color="gray.500" 
-                                    textTransform="uppercase"
-                                    letterSpacing="wider"
-                                    mb={1}
-                                >
-                                    Search
-                                </Text>
-                                <InputGroup size="lg">
+                                <InputGroup size="md">
                                     <InputLeftElement pointerEvents="none">
-                                        <Icon as={Search} color="gray.500" boxSize={5} />
+                                        <Icon as={Search} color="gray.500" boxSize={4} />
                                     </InputLeftElement>
                                     <Input
                                         placeholder="Search leads by name, email, or company..."
@@ -598,7 +658,7 @@ export default function LeadsPage() {
                                         border="1px solid"
                                         borderColor={borderColor}
                                         borderRadius="lg"
-                                        fontSize="md"
+                                        fontSize="sm"
                                         _hover={{ borderColor: 'purple.300' }}
                                         _focus={{
                                             borderColor: 'purple.400',
@@ -611,29 +671,14 @@ export default function LeadsPage() {
 
                             {/* Filter Options */}
                             <Box width="100%">
-                                <HStack justify="space-between" mb={4}>
-                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600">
-                                        Filter Options
-                                    </Text>
-                                    <Button
-                                        leftIcon={<Filter size={16} />}
-                                        variant="ghost"
-                                        size="sm"
-                                        color="purple.500"
-                                        _hover={{ bg: glassBg }}
-                                    >
-                                        Advanced Filters
-                                    </Button>
-                                </HStack>
-
-                                <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                                    <VStack align="stretch" spacing={2}>
+                                <SimpleGrid columns={{ base: 1, md: 4 }} spacing={3}>
+                                    <VStack align="stretch" spacing={1}>
                                         <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
                                             Connection Status
                                         </Text>
                                         <Select
                                             placeholder="All Statuses"
-                                            size="md"
+                                            size="sm"
                                             bg={glassBg}
                                             border="1px solid"
                                             borderColor={borderColor}
@@ -656,13 +701,13 @@ export default function LeadsPage() {
                                         </Select>
                                     </VStack>
 
-                                    <VStack align="stretch" spacing={2}>
+                                    <VStack align="stretch" spacing={1}>
                                         <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
                                             Account (Seat)
                                         </Text>
                                         <Select
                                             placeholder="All Accounts"
-                                            size="md"
+                                            size="sm"
                                             bg={glassBg}
                                             border="1px solid"
                                             borderColor={borderColor}
@@ -675,20 +720,23 @@ export default function LeadsPage() {
                                             onChange={(e) => handleFilterChange({
                                                 account: e.target.value || undefined
                                             })}
+                                            disabled={filterOptionsLoading}
                                         >
-                                            <option value="account1">Account 1</option>
-                                            <option value="account2">Account 2</option>
-                                            <option value="account3">Account 3</option>
+                                            {accountOptions.map(account => (
+                                                <option key={account.id} value={account.id}>
+                                                    {account.display_name}
+                                                </option>
+                                            ))}
                                         </Select>
                                     </VStack>
 
-                                    <VStack align="stretch" spacing={2}>
+                                    <VStack align="stretch" spacing={1}>
                                         <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
                                             Campaign
                                         </Text>
                                         <Select
                                             placeholder="All Campaigns"
-                                            size="md"
+                                            size="sm"
                                             bg={glassBg}
                                             border="1px solid"
                                             borderColor={borderColor}
@@ -701,10 +749,42 @@ export default function LeadsPage() {
                                             onChange={(e) => handleFilterChange({
                                                 campaign: e.target.value || undefined
                                             })}
+                                            disabled={filterOptionsLoading}
                                         >
-                                            <option value="campaign1">Campaign 1</option>
-                                            <option value="campaign2">Campaign 2</option>
-                                            <option value="campaign3">Campaign 3</option>
+                                            {campaignOptions.map(campaign => (
+                                                <option key={campaign.id} value={campaign.id}>
+                                                    {campaign.name}
+                                                </option>
+                                            ))}
+                                        </Select>
+                                    </VStack>
+
+                                    <VStack align="stretch" spacing={1}>
+                                        <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
+                                            Lead List
+                                        </Text>
+                                        <Select
+                                            placeholder="All Lists"
+                                            size="sm"
+                                            bg={glassBg}
+                                            border="1px solid"
+                                            borderColor={borderColor}
+                                            borderRadius="lg"
+                                            _hover={{ borderColor: 'purple.300' }}
+                                            _focus={{
+                                                borderColor: 'purple.400',
+                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)'
+                                            }}
+                                            onChange={(e) => handleFilterChange({
+                                                leadListId: e.target.value || undefined
+                                            })}
+                                            disabled={filterOptionsLoading}
+                                        >
+                                            {leadListOptions.map(leadList => (
+                                                <option key={leadList.id} value={leadList.id}>
+                                                    {leadList.name}
+                                                </option>
+                                            ))}
                                         </Select>
                                     </VStack>
                                 </SimpleGrid>
@@ -770,6 +850,25 @@ export default function LeadsPage() {
                                                                 <Text fontSize="sm">{selectedLead.location}</Text>
                                                             </HStack>
                                                         )}
+                                                    </VStack>
+                                                </Box>
+
+                                                <Box>
+                                                    <Text fontWeight="semibold" mb={2}>Lead Source</Text>
+                                                    <VStack spacing={2} align="stretch">
+                                                        <HStack>
+                                                            <Text fontWeight="semibold" fontSize="sm">Lead List:</Text>
+                                                            <Text fontSize="sm">{selectedLead?.lead_list_name || 'No List'}</Text>
+                                                        </HStack>
+                                                        <HStack>
+                                                            <Text fontWeight="semibold" fontSize="sm">Account Used:</Text>
+                                                            <Text fontSize="sm">
+                                                                {selectedLead?.seat_info?.firstName && selectedLead?.seat_info?.lastName 
+                                                                    ? `${selectedLead.seat_info.firstName} ${selectedLead.seat_info.lastName}`
+                                                                    : 'No Account'
+                                                                }
+                                                            </Text>
+                                                        </HStack>
                                                     </VStack>
                                                 </Box>
                                             </VStack>
@@ -927,7 +1026,8 @@ export default function LeadsPage() {
                                             <Tr>
                                                 <Th color="gray.600" fontWeight="semibold" py={4}>Lead</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Company</Th>
-                                                <Th color="gray.600" fontWeight="semibold">Status</Th>
+                                                <Th color="gray.600" fontWeight="semibold">Lead List</Th>
+                                                <Th color="gray.600" fontWeight="semibold">Account</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Connection</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Progress</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Last Activity</Th>
@@ -975,14 +1075,17 @@ export default function LeadsPage() {
                                                         </VStack>
                                                     </Td>
                                                     <Td>
-                                                        <Badge
-                                                            colorScheme={getStatusColor(lead.status)}
-                                                            variant="subtle"
-                                                            fontSize="xs"
-                                                            textTransform="capitalize"
-                                                        >
-                                                            {lead.status}
-                                                        </Badge>
+                                                        <Text fontSize="sm" color="gray.600">
+                                                            {lead.lead_list_name || 'No List'}
+                                                        </Text>
+                                                    </Td>
+                                                    <Td>
+                                                        <Text fontSize="sm" color="gray.600">
+                                                            {lead.seat_info?.firstName && lead.seat_info?.lastName 
+                                                                ? `${lead.seat_info.firstName} ${lead.seat_info.lastName}`
+                                                                : 'No Account'
+                                                            }
+                                                        </Text>
                                                     </Td>
                                                     <Td>
                                                         <Badge
@@ -1087,7 +1190,7 @@ export default function LeadsPage() {
                                 >
                                     <Flex justify="space-between" align="center">
                                         <Text fontSize="sm" color="gray.600">
-                                            Page {page} of {200} • Showing {leads.length} of {3000} leads
+                                            Page {page} of {totalPages} • Showing {leads.length} of {totalLeads} leads
                                         </Text>
                                         <HStack spacing={2}>
                                             <IconButton

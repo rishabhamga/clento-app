@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         if (unipileService.isConfigured()) {
           try {
             accountDetails = await unipileService.getAccount(account_id)
-            console.log('Account details fetched for new account:', JSON.stringify(accountDetails, null, 2))
+            console.log('Account details fetched for new account:', accountDetails?.account_id || account_id)
           } catch (fetchError) {
             console.warn('Failed to fetch account details from Unipile:', fetchError)
           }

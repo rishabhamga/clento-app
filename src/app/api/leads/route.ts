@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     // Note: Showing all leads regardless of user, organization, or campaign
 
-    const { data: organizationData, error: orgError } = await supabase
+    const { data: organizationData, error: orgError } = await supabaseAdmin
       .from('organizations')
       .select('id')
       .eq('clerk_org_id', orgId)
@@ -57,13 +57,37 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: stats })
     }
 
+    // Check if organization exists
+    if (!organizationData) {
+      console.error('❌ Organization not found for orgId:', orgId)
+      return NextResponse.json(
+        { error: 'Organization not found' },
+        { status: 404 }
+      )
+    }
+
+    console.log('🏢 Found organization:', organizationData)
+
+    // Debug: Check if there are any leads at all for this organization
+    const { count: totalLeadsInOrg } = await supabaseAdmin
+      .from('leads')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationData.id)
+    
+    console.log('📊 Total leads in organization:', totalLeadsInOrg)
+
+    // Build the base query
     let baseQuery = supabaseAdmin
       .from('leads')
-      .select('*')
-      .eq('organization_id', organizationData?.id)
+      .select(`
+        *,
+        lead_lists!left(id, name)
+      `)
+      .eq('organization_id', organizationData.id)
 
     // Apply filters
-    baseQuery = applyLeadFilters(baseQuery, params.filters)
+    console.log('🔍 Applying filters:', JSON.stringify(params.filters, null, 2))
+    baseQuery = applyLeadFiltersSync(baseQuery, params.filters)
 
     // Apply sorting
     const sortField = params.sortBy || 'created_at'
@@ -76,30 +100,38 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit
     baseQuery = baseQuery.range(offset, offset + limit - 1)
 
+    console.log('🔍 Executing leads query...')
     const { data: leads, error: leadsError } = await baseQuery
 
     if (leadsError) {
-      console.error('Error fetching leads:', leadsError)
+      console.error('❌ Error fetching leads:', leadsError)
       return NextResponse.json(
         { error: 'Failed to fetch leads' },
         { status: 500 }
       )
     }
 
+    console.log('📊 Leads query result:', {
+      leadsCount: leads?.length || 0,
+      firstLead: leads?.[0] ? { id: leads[0].id, name: leads[0].full_name } : null
+    })
+
     // Get total count for pagination
     // Count only filtered leads for pagination
-    let countQuery = supabase
+    let countQuery = supabaseAdmin
       .from('leads')
       .select('id', { count: 'exact', head: true })
-      .eq('organization_id', organizationData?.id)
+      .eq('organization_id', organizationData.id)
 
-    countQuery = applyLeadFilters(countQuery, params.filters)
+    countQuery = applyLeadFiltersSync(countQuery, params.filters)
 
     const { count, error: countError } = await countQuery
 
     if (countError) {
-      console.error('Error fetching leads count:', countError)
+      console.error('❌ Error fetching leads count:', countError)
     }
+
+    console.log('📊 Count query result:', { count })
 
     // Transform leads data to include computed fields
     // Transform leads data to include computed fields
@@ -115,6 +147,12 @@ export async function GET(request: NextRequest) {
       },
       filters: params.filters || {}
     }
+
+    console.log('✅ Final response:', {
+      leadsCount: transformedLeads.length,
+      pagination: response.pagination,
+      filters: response.filters
+    })
 
     return NextResponse.json({ success: true, data: response })
 
@@ -236,7 +274,17 @@ function parseLeadSearchParams(searchParams: URLSearchParams): LeadSearchParams 
     filters.account = account
   }
 
+  // Parse lead list filter
+  const leadListId = searchParams.get('lead_list_id')
+  if (leadListId) {
+    filters.leadListId = leadListId
+  }
 
+  // Parse source filter
+  const source = searchParams.get('source')
+  if (source) {
+    filters.source = source
+  }
 
   // Parse date range
   const startDate = searchParams.get('startDate')
@@ -265,7 +313,7 @@ function parseLeadSearchParams(searchParams: URLSearchParams): LeadSearchParams 
   }
 }
 
-function applyLeadFilters(query: any, filters?: LeadFilters) {
+function applyLeadFiltersSync(query: any, filters?: LeadFilters) {
   if (!filters) return query
 
   // Apply status filters
@@ -278,14 +326,14 @@ function applyLeadFilters(query: any, filters?: LeadFilters) {
     query = query.in('linkedin_connection_status', filters.connectionStatus)
   }
 
-  // Apply account filters (from seat_info)
-  if (filters.account) {
-    query = query.contains('seat_info', { account: filters.account })
+  // Apply lead list filter first (most direct)
+  if (filters.leadListId) {
+    query = query.eq('lead_list_id', filters.leadListId)
   }
 
-  // Apply campaign filters (from campaign_info)
-  if (filters.campaign) {
-    query = query.contains('campaign_info', { name: filters.campaign })
+  // Apply source filter
+  if (filters.source) {
+    query = query.eq('source', filters.source)
   }
 
   // Apply date range
@@ -300,7 +348,47 @@ function applyLeadFilters(query: any, filters?: LeadFilters) {
     query = query.or(`full_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,company.ilike.%${filters.search}%`)
   }
 
+  return query
+}
 
+// Keep the async version for complex filters that need database lookups
+async function applyLeadFilters(query: any, filters?: LeadFilters) {
+  // First apply sync filters
+  query = applyLeadFiltersSync(query, filters)
+  
+  if (!filters) return query
+
+  // Apply account filters - now using lead_lists relationship
+  if (filters.account) {
+    const { data: accountLeadLists } = await supabaseAdmin
+      .from('lead_lists')
+      .select('id')
+      .eq('connected_account_id', filters.account)
+    
+    const leadListIds = accountLeadLists?.map(ll => ll.id) || []
+    if (leadListIds.length > 0) {
+      query = query.in('lead_list_id', leadListIds)
+    } else {
+      // No lead lists for this account, return empty results
+      query = query.eq('id', 'no-results')
+    }
+  }
+
+  // Apply campaign filters - now using lead_lists relationship
+  if (filters.campaign) {
+    const { data: campaignLeadLists } = await supabaseAdmin
+      .from('lead_lists')
+      .select('id')
+      .eq('campaign_id', filters.campaign)
+    
+    const leadListIds = campaignLeadLists?.map(ll => ll.id) || []
+    if (leadListIds.length > 0) {
+      query = query.in('lead_list_id', leadListIds)
+    } else {
+      // No lead lists for this campaign, return empty results
+      query = query.eq('id', 'no-results')
+    }
+  }
 
   return query
 }
@@ -321,6 +409,12 @@ function transformLeadData(lead: any) {
     failedSteps: steps.filter((s: any) => !s.success).length,
     connectionProgress,
     isActive: lead.status !== 'unsubscribed' && lead.linkedin_connection_status !== 'not_interested',
+    // Add lead list information
+    lead_list_name: lead.lead_lists?.name || null,
+    // Add account information from seat_info
+    seat_account_name: lead.seat_info?.firstName && lead.seat_info?.lastName 
+      ? `${lead.seat_info.firstName} ${lead.seat_info.lastName}`
+      : null,
     // Remove campaign_leads since we don't have that table
     campaign_leads: []
   }
@@ -332,19 +426,19 @@ async function getLeadStats(organizationData: {id: string}): Promise<LeadStats> 
     const { count: totalCount } = await supabaseAdmin
       .from('leads')
       .select('id', { count: 'exact', head: true })
-      .eq('organization_id', organizationData?.id)
+      .eq('organization_id', organizationData.id)
 
     // Get leads by connection status (all leads, not filtered by user)
     const { data: connectionStatusData } = await supabaseAdmin
       .from('leads')
       .select('linkedin_connection_status')
-      .eq('organization_id', organizationData?.id)
+      .eq('organization_id', organizationData.id)
 
     // Get leads by source (all leads, not filtered by user)
     const { data: sourceData } = await supabaseAdmin
       .from('leads')
       .select('source')
-      .eq('organization_id', organizationData?.id)
+      .eq('organization_id', organizationData.id)
 
     // Get recent activity count (last 7 days)
     const weekAgo = new Date()
@@ -353,21 +447,21 @@ async function getLeadStats(organizationData: {id: string}): Promise<LeadStats> 
     const { count: recentActivityCount } = await supabaseAdmin
       .from('leads')
       .select('id', { count: 'exact', head: true })
-      .eq('organization_id', organizationData?.id)
+      .eq('organization_id', organizationData.id)
       .gte('updated_at', weekAgo.toISOString())
 
     // Get active automations (leads with steps)
     const { count: activeAutomationsCount } = await supabaseAdmin
       .from('leads')
       .select('id', { count: 'exact', head: true })
-      .eq('organization_id', organizationData?.id)
+      .eq('organization_id', organizationData.id)
       .not('steps', 'eq', '[]')
 
     // Get new leads this week
     const { count: newThisWeekCount } = await supabaseAdmin
       .from('leads')
       .select('id', { count: 'exact', head: true })
-      .eq('organization_id', organizationData?.id)
+      .eq('organization_id', organizationData.id)
       .gte('created_at', weekAgo.toISOString())
 
     // Get replied this week
@@ -375,7 +469,7 @@ async function getLeadStats(organizationData: {id: string}): Promise<LeadStats> 
       .from('leads')
       .select('id', { count: 'exact', head: true })
       .eq('linkedin_connection_status', 'replied')
-      .eq('organization_id', organizationData?.id)
+      .eq('organization_id', organizationData.id)
       .gte('updated_at', weekAgo.toISOString())
 
     // Process connection status counts
