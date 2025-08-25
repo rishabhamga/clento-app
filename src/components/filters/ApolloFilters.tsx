@@ -47,6 +47,7 @@ import {
   getTechnologies,
 } from '@/types/apollo'
 import { TechnologySelect } from './TechnologySelect'
+import { useApolloSearch } from '../../hooks/useApolloSearch'
 
 // Base component for adding tags (locations, industries, etc.)
 interface TagInputProps {
@@ -640,6 +641,46 @@ export default function ApolloFilters({
       <PeopleFilters filters={filters} onChange={onChange} />
       <CompanyFilters filters={filters} onChange={onChange} />
       <CommonFilters searchType="people" filters={filters} onChange={onChange} />
+    </VStack>
+  )
+}
+
+// People-only wrapper component that binds the UI to the people filter slice
+export function ApolloPeopleFilters() {
+  const { peopleFilters, updatePeopleFilter, setSearchType } = useApolloSearch()
+
+  React.useEffect(() => {
+    setSearchType('people')
+  }, [setSearchType])
+
+  const onChange = React.useCallback((field: any, value: any) => {
+    updatePeopleFilter(field as any, value)
+  }, [updatePeopleFilter])
+
+  return (
+    <VStack spacing={6} align="stretch">
+      <PeopleFilters filters={peopleFilters} onChange={onChange} />
+      <CommonFilters searchType="people" filters={peopleFilters} onChange={onChange} />
+    </VStack>
+  )
+}
+
+// Company-only wrapper component that binds the UI to the company filter slice
+export function ApolloCompanyFilters() {
+  const { companyFilters, updateCompanyFilter, setSearchType } = useApolloSearch()
+
+  React.useEffect(() => {
+    setSearchType('company')
+  }, [setSearchType])
+
+  const onChange = React.useCallback((field: any, value: any) => {
+    updateCompanyFilter(field as any, value)
+  }, [updateCompanyFilter])
+
+  return (
+    <VStack spacing={6} align="stretch">
+      <CompanyFilters filters={companyFilters} onChange={onChange} />
+      <CommonFilters searchType="company" filters={companyFilters} onChange={onChange} />
     </VStack>
   )
 }

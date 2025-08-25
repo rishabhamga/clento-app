@@ -643,9 +643,6 @@ function B2BFiltersContent() {
                                                                 if (parsedICP.technologies && parsedICP.technologies.length > 0) {
                                                                     handleFilterChange('technologyUids', parsedICP.technologies)
                                                                 }
-                                                                if (parsedICP.excludeTechnologies && parsedICP.excludeTechnologies.length > 0) {
-                                                                    handleFilterChange('excludeTechnologyUids', parsedICP.excludeTechnologies)
-                                                                }
                                                                 if (parsedICP.companyDomains && parsedICP.companyDomains.length > 0) {
                                                                     handleFilterChange('companyDomains', parsedICP.companyDomains)
                                                                 }
@@ -659,9 +656,6 @@ function B2BFiltersContent() {
                                                                 }
                                                                 if (parsedICP.organizationNumJobsMin !== null && parsedICP.organizationNumJobsMin !== undefined) {
                                                                     handleFilterChange('organizationNumJobsMin', parsedICP.organizationNumJobsMin)
-                                                                }
-                                                                if (parsedICP.companySize) {
-                                                                    handleFilterChange('companyHeadcount', parsedICP.companySize)
                                                                 }
                                                                 if (parsedICP.organizationNumJobsMax !== null && parsedICP.organizationNumJobsMax !== undefined) {
                                                                     handleFilterChange('organizationNumJobsMax', parsedICP.organizationNumJobsMax)
@@ -689,7 +683,7 @@ function B2BFiltersContent() {
                                                                 // Count applied filters more accurately
                                                                 const appliedFiltersCount = [
                                                                     parsedICP.jobTitles, parsedICP.personLocations, parsedICP.organizationLocations,
-                                                                    parsedICP.seniorities, parsedICP.companySize,
+                                                                    parsedICP.seniorities,
                                                                     parsedICP.technologies, parsedICP.organizationJobTitles,
                                                                     parsedICP.organizationJobLocations, parsedICP.keywords
                                                                 ].filter(arr => Array.isArray(arr) && arr.length > 0).length +

@@ -138,7 +138,7 @@ class ApolloThrottleManager {
     try {
       while (this.requestQueue.length > 0 && this.canMakeRequest()) {
         const request = this.requestQueue.shift()!
-        
+
         if (this.activeRequests.size >= this.config.maxConcurrentRequests) {
           // Put request back at front of queue and wait
           this.requestQueue.unshift(request)
@@ -167,33 +167,35 @@ class ApolloThrottleManager {
 
     try {
       console.log(`Apollo: Executing request ${request.id} (${request.requestType})`)
-      
+
       // Update rate limiting counters
       this.updateRateLimitCounters()
-      
+
       // Execute the actual request
       const result = await request.requestFn()
-      
+
       // Update metrics
       const responseTime = Date.now() - startTime
       this.updateMetrics(true, responseTime)
-      
+
       console.log(`Apollo: Request ${request.id} completed in ${responseTime}ms`)
       request.resolve(result)
-      
+
     } catch (error) {
       const responseTime = Date.now() - startTime
-      
+
+      console.log(error);
+
       // Check if it's a rate limit error
       if (this.isRateLimitError(error)) {
         this.metrics.rateLimitedRequests++
         console.warn(`Apollo: Rate limited for request ${request.id}`)
-        
+
         // Retry with backoff if under retry limit
         if (request.retryCount < 3) {
           const retryDelay = this.calculateRetryDelay(request.retryCount)
           console.log(`Apollo: Retrying request ${request.id} in ${retryDelay}ms`)
-          
+
           setTimeout(() => {
             request.retryCount++
             this.addToQueue(request)
@@ -211,7 +213,7 @@ class ApolloThrottleManager {
     } finally {
       this.activeRequests.delete(request.id)
       this.requestTimestamps.push(new Date())
-      
+
       // Continue processing queue
       setTimeout(() => this.processQueue(), 100)
     }
@@ -260,7 +262,7 @@ class ApolloThrottleManager {
     const queuePenalty = Math.min(this.requestQueue.length * 100, 2000)
 
     // Add exponential backoff if we have recent rate limit errors
-    const rateLimitPenalty = this.metrics.rateLimitedRequests > 0 ? 
+    const rateLimitPenalty = this.metrics.rateLimitedRequests > 0 ?
       Math.min(Math.pow(2, this.metrics.rateLimitedRequests) * 1000, 30000) : 0
 
     return baseDelay + queuePenalty + rateLimitPenalty
@@ -273,7 +275,7 @@ class ApolloThrottleManager {
     const baseDelay = 1000 // 1 second
     const exponentialDelay = Math.pow(2, retryCount) * baseDelay
     const jitter = Math.random() * 1000 // Add jitter to prevent thundering herd
-    
+
     return Math.min(exponentialDelay + jitter, 60000) // Max 1 minute
   }
 
@@ -387,10 +389,10 @@ class ApolloThrottleManager {
     if (!this.canMakeRequest()) {
       return this.calculateNextRequestDelay()
     }
-    
+
     const queuePosition = this.requestQueue.length
     const averageRequestTime = this.metrics.averageResponseTime || 2000
-    
+
     return queuePosition * averageRequestTime
   }
 }
@@ -412,4 +414,4 @@ export function createApolloThrottleManager(config?: Partial<ThrottleConfig>): A
 // Export singleton instance
 export const apolloThrottle = getApolloThrottleManager()
 
-export { ApolloThrottleManager } 
+export { ApolloThrottleManager }

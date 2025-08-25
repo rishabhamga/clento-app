@@ -13,7 +13,7 @@ import {
   type RateLimitInfo,
   DEFAULT_SEARCH_STATE
 } from '@/types/apollo'
-import { StatHelpText } from '@chakra-ui/react';
+import { Stats } from 'fs';
 
 // Action types for the reducer
 type SearchAction =
@@ -30,6 +30,10 @@ type SearchAction =
   | { type: 'CLEAR_RESULTS' }
   | { type: 'RESET_FILTERS' }
   | { type: 'SET_PAGE'; payload: number }
+  | { type: 'SET_PEOPLE_PAGE'; payload: number }
+  | { type: 'SET_COMPANY_PAGE'; payload: number }
+  | { type: 'SET_PEOPLE_PER_PAGE'; payload: number }
+  | { type: 'SET_COMPANY_PER_PAGE'; payload: number }
   | { type: 'SET_SEARCH_RESULTS'; payload: LeadSearchResult[] }
   | { type: 'SET_PER_PAGE'; payload: number }
 
@@ -150,6 +154,24 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
         ),
       }
 
+    case 'SET_PEOPLE_PAGE':
+      return {
+        ...state,
+        peopleFilters: {
+          ...state.peopleFilters,
+          page: action.payload,
+        },
+      }
+
+    case 'SET_COMPANY_PAGE':
+      return {
+        ...state,
+        companyFilters: {
+          ...state.companyFilters,
+          page: action.payload,
+        },
+      }
+
     case 'SET_SEARCH_RESULTS':
       return {
         ...state,
@@ -190,6 +212,26 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
       }
     }
 
+    case 'SET_PEOPLE_PER_PAGE':
+      return {
+        ...state,
+        peopleFilters: {
+          ...state.peopleFilters,
+          perPage: action.payload,
+          page: 1,
+        },
+      }
+
+    case 'SET_COMPANY_PER_PAGE':
+      return {
+        ...state,
+        companyFilters: {
+          ...state.companyFilters,
+          perPage: action.payload,
+          page: 1,
+        },
+      }
+
     default:
       return state
   }
@@ -217,14 +259,26 @@ interface ApolloSearchContextType {
   setSearchResults: (results: LeadSearchResult[]) => void
   setPerPage: (perPage: number) => void
 
+  // Per-type pagination helpers
+  setPeoplePage: (page: number) => void
+  setCompanyPage: (page: number) => void
+  setPeoplePerPage: (perPage: number) => void
+  setCompanyPerPage: (perPage: number) => void
+
   // Search functions
   searchPeople: () => Promise<void>
   searchCompanies: () => Promise<void>
   search: (pageNumber?: number) => Promise<void>
+  searchBoth?: () => Promise<{ people: LeadSearchResult[]; companies: CompanySearchResult[] }>
 
   // Computed values
   currentFilters: ApolloFilterInput | CompanyFilterInput
   currentResults: LeadSearchResult[] | CompanySearchResult[]
+  // Expose both sides explicitly
+  peopleFilters: ApolloFilterInput
+  companyFilters: CompanyFilterInput
+  peopleResults: LeadSearchResult[]
+  companyResults: CompanySearchResult[]
   hasActiveFilters: boolean
   isSearching: boolean
 }
@@ -330,6 +384,22 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
     dispatch({ type: 'SET_PER_PAGE', payload: perPage })
   }, [])
 
+  const setPeoplePage = useCallback((page: number) => {
+    dispatch({ type: 'SET_PEOPLE_PAGE', payload: page })
+  }, [])
+
+  const setCompanyPage = useCallback((page: number) => {
+    dispatch({ type: 'SET_COMPANY_PAGE', payload: page })
+  }, [])
+
+  const setPeoplePerPage = useCallback((perPage: number) => {
+    dispatch({ type: 'SET_PEOPLE_PER_PAGE', payload: perPage })
+  }, [])
+
+  const setCompanyPerPage = useCallback((perPage: number) => {
+    dispatch({ type: 'SET_COMPANY_PER_PAGE', payload: perPage })
+  }, [])
+
   // Search functions
   const searchPeople = useCallback(async (overridePage?: number) => {
     try {
@@ -343,6 +413,7 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
         },
         body: JSON.stringify({
             filters: {
+            orgIds: state.companyResults.map(company  => company.id.replace("apollo_company_", "")),
             ...state.peopleFilters,
         },
         page: overridePage ?? state.peopleFilters.page,
@@ -436,38 +507,76 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
     }
   }, [state.searchType, searchPeople, searchCompanies])
 
+  const searchBoth = useCallback(async () => {
+    // run both searches in parallel and return results
+    setLoading(true)
+    setError(null)
+    try {
+      const [peopleRes, companyRes] = await Promise.all([searchPeople(), searchCompanies()])
+      return {
+        people: state.peopleResults,
+        companies: state.companyResults,
+      }
+    } catch (err) {
+      // errors are handled inside searchPeople/searchCompanies
+      return {
+        people: state.peopleResults,
+        companies: state.companyResults,
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [searchPeople, searchCompanies, setLoading, setError, state.peopleResults, state.companyResults])
+
   // Computed values
   const currentFilters = state.searchType === 'people' ? state.peopleFilters : state.companyFilters
   const currentResults = state.searchType === 'people' ? state.peopleResults : state.companyResults
 
-  const hasActiveFilters = React.useMemo(() => {
-    if (state.searchType === 'people') {
-      const filters = state.peopleFilters
-      return !!(
-        filters.jobTitles.length ||
-        filters.seniorities.length ||
-        filters.personLocations.length ||
-        filters.organizationLocations.length ||
-        filters.companyHeadcount.length ||
-        filters.technologyUids.length ||
-        filters.excludeTechnologyUids.length ||
-        filters.organizationJobTitles.length ||
-        filters.organizationJobLocations.length ||
-        (filters.organizationNumJobsMin !== null && filters.organizationNumJobsMin !== undefined) ||
-        (filters.organizationNumJobsMax !== null && filters.organizationNumJobsMax !== undefined) ||
-        (filters.revenueMin !== null && filters.revenueMin !== undefined) ||
-        (filters.revenueMax !== null && filters.revenueMax !== undefined)
-      )
-    } else {
-      const filters = state.companyFilters
-      return !!(
-        filters.headcountRanges.length ||
-        filters.revenueRanges.length ||
-        filters.technologies.length ||
-        filters.excludeTechnologies.length
-      )
-    }
-  }, [state.searchType, state.peopleFilters, state.companyFilters])
+  const hasPeopleFilters = React.useMemo(() => {
+    const f = state.peopleFilters
+    return !!(
+      (Array.isArray(f.jobTitles) && f.jobTitles.length > 0) ||
+      (Array.isArray(f.seniorities) && f.seniorities.length > 0) ||
+      (Array.isArray(f.personLocations) && f.personLocations.length > 0) ||
+      (Array.isArray(f.organizationLocations) && f.organizationLocations.length > 0) ||
+      (Array.isArray(f.companyHeadcount) && f.companyHeadcount.length > 0) ||
+      (Array.isArray(f.technologyUids) && f.technologyUids.length > 0) ||
+      (Array.isArray(f.excludeTechnologyUids) && f.excludeTechnologyUids.length > 0) ||
+      (Array.isArray(f.organizationJobTitles) && f.organizationJobTitles.length > 0) ||
+      (Array.isArray(f.organizationJobLocations) && f.organizationJobLocations.length > 0) ||
+      (f.organizationNumJobsMin !== null && f.organizationNumJobsMin !== undefined) ||
+      (f.organizationNumJobsMax !== null && f.organizationNumJobsMax !== undefined) ||
+      (f.revenueMin !== null && f.revenueMin !== undefined) ||
+      (f.revenueMax !== null && f.revenueMax !== undefined)
+    )
+  }, [state.peopleFilters])
+
+  const hasCompanyFilters = React.useMemo(() => {
+    const f = state.companyFilters as any
+    return !!(
+      (Array.isArray(f.organizationNumEmployeesRange) && f.organizationNumEmployeesRange.length > 0) ||
+      (Array.isArray(f.organizationLocations) && f.organizationLocations.length > 0) ||
+      (Array.isArray(f.excludeOrganization) && f.excludeOrganization.length > 0) ||
+      (f.revenueRangeMin !== null && f.revenueRangeMin !== undefined) ||
+      (f.revenueRangeMax !== null && f.revenueRangeMax !== undefined) ||
+      (Array.isArray(f.companyTechnologies) && f.companyTechnologies.length > 0) ||
+      (Array.isArray(f.companyKeywords) && f.companyKeywords.length > 0) ||
+      (typeof f.organizationName === 'string' && f.organizationName.length > 0) ||
+      (Array.isArray(f.organizationIds) && f.organizationIds.length > 0) ||
+      (f.latestFundingAmountMin !== null && f.latestFundingAmountMin !== undefined) ||
+      (f.latestFundingAmountMax !== null && f.latestFundingAmountMax !== undefined) ||
+      (f.totalFundingMin !== null && f.totalFundingMin !== undefined) ||
+      (f.totalFundingMax !== null && f.totalFundingMax !== undefined) ||
+      (f.latestFundingDateRangeMin !== null && f.latestFundingDateRangeMin !== undefined) ||
+      (f.latestFundingDateRangeMax !== null && f.latestFundingDateRangeMax !== undefined) ||
+      (Array.isArray(f.organizationJobTitles) && f.organizationJobTitles.length > 0) ||
+      (Array.isArray(f.organizationJobLocations) && f.organizationJobLocations.length > 0) ||
+      (f.organizationJobsMin !== null && f.organizationJobsMin !== undefined) ||
+      (f.organizationJobsMax !== null && f.organizationJobsMax !== undefined)
+    )
+  }, [state.companyFilters])
+
+  const hasActiveFilters = state.searchType === 'people' ? hasPeopleFilters : hasCompanyFilters
 
   const isSearching = state.loading
 
@@ -492,17 +601,27 @@ export function ApolloSearchProvider({ children, initialState }: ApolloSearchPro
     setPage,
     setSearchResults,
     setPerPage,
+  setPeoplePage,
+  setCompanyPage,
+  setPeoplePerPage,
+  setCompanyPerPage,
 
     // Search functions
     searchPeople,
     searchCompanies,
     search,
+  searchBoth,
 
     // Computed values
     currentFilters,
     currentResults,
     hasActiveFilters,
     isSearching,
+  // expose both explicitly
+  peopleFilters: state.peopleFilters,
+  companyFilters: state.companyFilters,
+  peopleResults: state.peopleResults,
+  companyResults: state.companyResults,
   }
 
   return (
@@ -523,6 +642,8 @@ export function useSearchResults() {
     error: state.error,
     searchId: state.searchId,
     searchType: state.searchType,
+    companyResults: state.companyResults,
+    peopleResults: state.peopleResults
   }
 }
 
@@ -547,12 +668,15 @@ export function useSearchFilters() {
   }, [state.searchType, updatePeopleFilter, updateCompanyFilter])
 
   return {
-    filters: currentFilters,
+  filters: currentFilters,
     hasActiveFilters,
     searchType: state.searchType,
     updateFilter,
     resetFilters,
     setSearchType,
+  // explicit accessors
+  peopleFilters: state.peopleFilters,
+  companyFilters: state.companyFilters,
   }
 }
 
@@ -584,6 +708,25 @@ export function useSearchPagination() {
     prevPage,
 
     setPerPage, // Expose setPerPage
+    // per-type pagination helpers
+    setPeoplePage: (page: number) => {
+      // @ts-ignore
+      // use setPeoplePage exposed on context
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(useApolloSearch() as any).setPeoplePage(page)
+    },
+    setCompanyPage: (page: number) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(useApolloSearch() as any).setCompanyPage(page)
+    },
+    setPeoplePerPage: (perPage: number) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(useApolloSearch() as any).setPeoplePerPage(perPage)
+    },
+    setCompanyPerPage: (perPage: number) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(useApolloSearch() as any).setCompanyPerPage(perPage)
+    },
     canGoNext: (state.pagination?.page || 1) < (state.pagination?.total_pages || 1),
     canGoPrev: (state.pagination?.page || 1) > 1
   }

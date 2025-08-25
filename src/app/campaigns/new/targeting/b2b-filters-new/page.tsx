@@ -1,7 +1,7 @@
 // src/app/campaigns/new/targeting/b2b-filters/ui-only.tsx
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import {
     Box,
     Container,
@@ -28,14 +28,19 @@ import { ConversationalICP } from '@/components/filters/ConversationalICP'
 import CSVUpload from '@/components/filters/CSVUpload'
 import ApolloFilters from '@/components/filters/ApolloFilters'
 import SearchResults from '@/components/results/SearchResults'
-import { useSearchFilters } from '../../../../../hooks/useApolloSearch'
+import { useSearchFilters, ApolloSearchProvider, useApolloSearch, useSearchResults } from '../../../../../hooks/useApolloSearch'
+import { ApolloPeopleFilters, ApolloCompanyFilters } from '@/components/filters/ApolloFiltersNew'
+import { ApolloFilterInput, CompanyFilterInput } from '../../../../../types/apollo'
+import { ApolloCompanyInfo } from '../../../../../lib/data-providers/apollo-provider'
+import { createCustomToast } from '../../../../../lib/utils/custom-toast'
+import { toast } from '../../../../../hooks/use-toast'
 
 // Animations (kept for visual parity)
 const float = keyframes`
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-6px); }
 `
-export default function B2BFilters() {
+function B2BFiltersInner() {
     // Color tokens (rendered once; these calls are pure)
     const cardBg = useColorModeValue('rgba(255,255,255,0.9)', 'rgba(26,32,44,0.9)')
     const borderColor = useColorModeValue('rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)')
@@ -49,11 +54,29 @@ export default function B2BFilters() {
     )
     const titleTextColor = useColorModeValue('white', 'gray.100')
     const subtitleTextColor = useColorModeValue('whiteAlpha.900', 'gray.200')
+    const customToast = createCustomToast(toast);
 
-    const { searchType, filters, hasActiveFilters, updateFilter, resetFilters, setSearchType } = useSearchFilters()
+    const { companyResults } = useSearchResults();
+    const { search, isSearching, clearResults, setSearchResults, state } = useApolloSearch();
+    const { searchType, filters, hasActiveFilters, updateFilter, resetFilters, setSearchType, peopleFilters, companyFilters } = useSearchFilters();
 
     const handleFilterChange = (field: string, value: unknown) => {
         updateFilter(field, value)
+    }
+
+    const handleSearch = async () => {
+        try {
+            await search()
+            customToast.success({
+                title: 'Search Complete',
+                description: `Found results for your people search`,
+            })
+        } catch (error) {
+            customToast.error({
+                title: 'Search Error',
+                description: error instanceof Error ? error.message : 'Something went wrong',
+            })
+        }
     }
 
     return (
@@ -100,7 +123,7 @@ export default function B2BFilters() {
                     </Box>
 
                     {/* Selected Filters */}
-                    <SelectedFiltersDisplay filters={filters} searchType={searchType} />
+                    <SelectedFiltersDisplay companyFilters={companyFilters} peopleFilters={peopleFilters} searchType={searchType} />
 
                     {/* Grid with Filters column and Results column */}
                     <Grid templateColumns={{ base: '1fr', lg: '450px 1fr' }} gap={6} alignItems="start">
@@ -128,36 +151,45 @@ export default function B2BFilters() {
                                             <Box flex={1} overflow="auto" pr={2}>
                                                 <VStack spacing={6} align="stretch">
                                                     {/* Conversational ICP (UI placeholder) */}
-                                                    <ConversationalICP onICPParsed={(parsedICP) => {console.log("parsed icps", parsedICP)}} />
+                                                    <ConversationalICP onICPParsed={(parsedICP) => { console.log("parsed icps", parsedICP) }} />
 
                                                     <Divider />
 
-                                                    {/* Fine-tune filters (UI placeholder for ApolloFilters) */}
+                                                    {/* Filter Type Switcher */}
                                                     <Box>
-                                                        <Text fontSize="sm" fontWeight="semibold" color="purple.600" mb={4}>
-                                                            Fine-tune Your Filters
+                                                        <Text fontSize="sm" fontWeight="semibold" color="purple.600" mb={2}>
+                                                            Filter Type
                                                         </Text>
-
-                                                        <Card p={4} borderRadius="md">
-                                                            <VStack align="stretch" spacing={3}>
-                                                                <Box>
-                                                                    <Text fontSize="xs" color="gray.600">Job Titles</Text>
-                                                                    <Text fontSize="sm" color="gray.700">Head of Sales, VP Sales</Text>
-                                                                </Box>
-                                                                <Box>
-                                                                    <Text fontSize="xs" color="gray.600">Locations</Text>
-                                                                    <Text fontSize="sm" color="gray.700">San Francisco, Remote</Text>
-                                                                </Box>
-                                                                <Box>
-                                                                    <Text fontSize="xs" color="gray.600">Company Size</Text>
-                                                                    <Text fontSize="sm" color="gray.700">51-200</Text>
-                                                                </Box>
-                                                                <Box pt={2}>
-                                                                    <Button size="sm" variant="ghost">Save Profile</Button>
-                                                                </Box>
-                                                            </VStack>
-                                                        </Card>
+                                                        <HStack spacing={4}>
+                                                            <Button
+                                                                size="sm"
+                                                                variant={searchType === 'company' ? 'solid' : 'outline'}
+                                                                colorScheme="purple"
+                                                                onClick={() => setSearchType('company')}
+                                                            >
+                                                                Company Filters
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant={searchType === 'people' ? 'solid' : 'outline'}
+                                                                colorScheme="purple"
+                                                                onClick={() => setSearchType('people')}
+                                                            >
+                                                                People Filters
+                                                            </Button>
+                                                        </HStack>
                                                     </Box>
+                                                    {searchType && searchType === 'people' ? (
+                                                        <ApolloPeopleFilters
+                                                            filters={peopleFilters}
+                                                            onChange={handleFilterChange}
+                                                        />
+                                                    ) : (
+                                                        <ApolloCompanyFilters
+                                                            filters={companyFilters}
+                                                            onChange={handleFilterChange}
+                                                        />
+                                                    )}
                                                 </VStack>
                                             </Box>
                                         </VStack>
@@ -166,7 +198,7 @@ export default function B2BFilters() {
 
                                 {/* Search Actions (UI-only) */}
                                 <VStack spacing={4}>
-                                    <GradientButton size="lg" w="full">🔍 Search Prospects</GradientButton>
+                                    <GradientButton size="lg" w="full" onClick={handleSearch}>🔍 Search Prospects</GradientButton>
 
                                     <Box p={3} bg="blue.50" borderRadius="md" border="1px solid" borderColor="blue.200" w="full">
                                         <Text fontSize="sm" color="blue.700" textAlign="center">
@@ -174,7 +206,7 @@ export default function B2BFilters() {
                                         </Text>
                                     </Box>
 
-                                    <Button variant="outline" size="md" w="full" bg="white" color="purple.600" borderColor="purple.300" borderWidth="2px" fontWeight="600">
+                                    <Button onClick={resetFilters} variant="outline" size="md" w="full" bg="white" color="purple.600" borderColor="purple.300" borderWidth="2px" fontWeight="600">
                                         🗑️ Clear All Filters
                                     </Button>
                                 </VStack>
@@ -199,38 +231,16 @@ export default function B2BFilters() {
                                     {/* Search results header */}
                                     <HStack justify="space-between" mb={4}>
                                         <Heading size="md" color="purple.500">Preview Results</Heading>
-                                        <Box>
-                                            <Button size="sm" variant="ghost" mr={2}>Export</Button>
-                                            <Button size="sm">Select</Button>
-                                        </Box>
+                                        {companyResults.length !== 0 && searchType === 'people' && (
+                                            <Box>
+                                                <Text fontSize={'sm'} textColor={'gray.400'}>Company Results Found</Text>
+                                            </Box>
+                                        )}
                                     </HStack>
 
                                     {/* Results placeholder (keeps layout for SearchResults) */}
                                     <Box flex={1} overflow="auto" borderRadius="md" p={2} bg="transparent">
-                                        <Card p={4} mb={3}>
-                                            <HStack justify="space-between">
-                                                <Box>
-                                                    <Text fontWeight="600">Jane Doe</Text>
-                                                    <Text fontSize="sm" color="gray.600">Head of Sales — Acme Co.</Text>
-                                                </Box>
-                                                <Text fontSize="sm" color="gray.500">Email: jane@acme.com</Text>
-                                            </HStack>
-                                        </Card>
-
-                                        <Card p={4} mb={3}>
-                                            <HStack justify="space-between">
-                                                <Box>
-                                                    <Text fontWeight="600">John Smith</Text>
-                                                    <Text fontSize="sm" color="gray.600">VP Sales — Example Inc.</Text>
-                                                </Box>
-                                                <Text fontSize="sm" color="gray.500">Email: john@example.com</Text>
-                                            </HStack>
-                                        </Card>
-
-                                        {/* End of static results */}
-                                        <Box textAlign="center" mt={6} color="gray.500">
-                                            <Text fontSize="sm">End of preview results (static)</Text>
-                                        </Box>
+                                        <SearchResults />
                                     </Box>
                                 </CardBody>
                             </Card>
@@ -251,8 +261,18 @@ export default function B2BFilters() {
     )
 }
 
+// Wrap the inner component with the provider so hooks have context
+export default function B2BFilters() {
+    return (
+        <ApolloSearchProvider>
+            <B2BFiltersInner />
+        </ApolloSearchProvider>
+    )
+}
+
 // Selected Filters Display Component
-function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchType: string }) {
+function SelectedFiltersDisplay({ companyFilters, peopleFilters, searchType }: { companyFilters: CompanyFilterInput, peopleFilters: ApolloFilterInput, searchType: string }) {
+    const { companyResults } = useSearchResults();
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.95)', 'rgba(26, 32, 44, 0.95)')
     const borderColor = useColorModeValue('rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.2)')
     const filterChipBg = useColorModeValue('purple.50', 'purple.900')
@@ -277,58 +297,51 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
     }
 
     // Get active filters
-    const activeFilters: Array<{ label: string; value: string }> = []
+    const activeFilters: Array<{ label: string; value: string }> = [];
 
-    if (searchType === 'people') {
-        // People-specific filters (whitelisted only)
-        if (filters.jobTitles?.length > 0) {
-            activeFilters.push({ label: 'Job Titles', value: formatFilterValue(filters.jobTitles) })
-        }
-        if (filters.excludeJobTitles?.length > 0) {
-            activeFilters.push({ label: 'Exclude Titles', value: formatFilterValue(filters.excludeJobTitles) })
-        }
-        if (filters.hasEmail) {
-            activeFilters.push({ label: 'Require Email', value: formatFilterValue(filters.hasEmail) })
-        }
-        if (filters.companyDomains?.length > 0) {
-            activeFilters.push({ label: 'Company Domains', value: formatFilterValue(filters.companyDomains) })
-        }
-        if (filters.industries?.length > 0) {
-            activeFilters.push({ label: 'Industries', value: formatFilterValue(filters.industries) })
-        }
-        if (filters.intentTopics?.length > 0) {
-            activeFilters.push({ label: 'Intent Topics', value: formatFilterValue(filters.intentTopics) })
-        }
-        if (filters.seniorities?.length > 0) {
-            activeFilters.push({ label: 'Job Levels (Seniority)', value: formatFilterValue(filters.seniorities) })
-        }
-        if (filters.personLocations?.length > 0) {
-            activeFilters.push({ label: 'Person Locations', value: formatFilterValue(filters.personLocations) })
-        }
-        if (filters.organizationLocations?.length > 0) {
-            activeFilters.push({ label: 'Company Locations', value: formatFilterValue(filters.organizationLocations) })
-        }
+    // People filters (show all fields explicitly)
+    if (peopleFilters.jobTitles?.length > 0) {
+        activeFilters.push({ label: 'Job Titles', value: formatFilterValue(peopleFilters.jobTitles) });
     }
-
-    // Common filters (people & company) – whitelisted only
-    if (filters.companyHeadcount?.length > 0) {
-        activeFilters.push({ label: 'Company Size (Employees)', value: formatFilterValue(filters.companyHeadcount) })
+    if (peopleFilters.companyDomains?.length > 0) {
+        activeFilters.push({ label: 'Company Domains', value: formatFilterValue(peopleFilters.companyDomains) });
     }
-    if (filters.technologyUids?.length > 0) {
-        activeFilters.push({ label: 'Technologies Used (UIDs)', value: formatFilterValue(filters.technologyUids) })
+    if (peopleFilters.industries?.length > 0) {
+        activeFilters.push({ label: 'Industries', value: formatFilterValue(peopleFilters.industries) });
     }
-    if (filters.excludeTechnologyUids?.length > 0) {
-        activeFilters.push({ label: 'Exclude Technologies (UIDs)', value: formatFilterValue(filters.excludeTechnologyUids) })
+    if (peopleFilters.intentTopics?.length > 0) {
+        activeFilters.push({ label: 'Intent Topics', value: formatFilterValue(peopleFilters.intentTopics) });
+    }
+    if (peopleFilters.seniorities?.length > 0) {
+        activeFilters.push({ label: 'Job Levels (Seniority)', value: formatFilterValue(peopleFilters.seniorities) });
+    }
+    if (peopleFilters.personLocations?.length > 0) {
+        activeFilters.push({ label: 'Person Locations', value: formatFilterValue(peopleFilters.personLocations) });
+    }
+    if (peopleFilters.organizationLocations?.length > 0) {
+        activeFilters.push({ label: 'Company Locations', value: formatFilterValue(peopleFilters.organizationLocations) });
+    }
+    if (peopleFilters.industries?.length > 0) {
+        activeFilters.push({ label: 'Industries', value: formatFilterValue(peopleFilters.industries) });
+    }
+    if (peopleFilters.excludePersonLocations?.length > 0) {
+        activeFilters.push({ label: 'Exclude Person Locations', value: formatFilterValue(peopleFilters.excludePersonLocations) });
+    }
+    if (peopleFilters.excludeOrganizationLocations?.length > 0) {
+        activeFilters.push({ label: 'Exclude Company Locations', value: formatFilterValue(peopleFilters.excludeOrganizationLocations) });
     }
 
-    // Annual revenue (Apollo / Explorium may attach via different keys)
-    if (filters.annual_revenue?.length > 0 || filters.company_annual_revenue?.length > 0) {
-        const value = filters.annual_revenue || filters.company_annual_revenue
-        activeFilters.push({ label: 'Annual Revenue', value: formatFilterValue(value) })
+    // Company filters (show all fields explicitly from CompanyFilterInput)
+    if (companyFilters.organizationNumEmployeesRange?.length > 0) {
+        activeFilters.push({ label: 'Company Size (Employees)', value: formatFilterValue(companyFilters.organizationNumEmployeesRange) });
     }
-    else if ((typeof filters.revenueMin === 'number' && !isNaN(filters.revenueMin)) ||
-        (typeof filters.revenueMax === 'number' && !isNaN(filters.revenueMax))) {
-        // Format revenue values in a human-readable way
+    if (companyFilters.organizationLocations?.length > 0) {
+        activeFilters.push({ label: 'Company Locations', value: formatFilterValue(companyFilters.organizationLocations) });
+    }
+    if (companyFilters.excludeOrganizationLocations?.length > 0) {
+        activeFilters.push({ label: 'Exclude Company Locations', value: formatFilterValue(companyFilters.excludeOrganizationLocations) });
+    }
+    if (typeof companyFilters.revenueRangeMin === 'number' && typeof companyFilters.revenueRangeMax === 'number' && (companyFilters.revenueRangeMin > 0 || companyFilters.revenueRangeMax > 0)) {
         const formatRevenue = (value: number | null | undefined) => {
             if (value === null || value === undefined || isNaN(value)) return 'Any';
             if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
@@ -336,46 +349,52 @@ function SelectedFiltersDisplay({ filters, searchType }: { filters: any, searchT
             if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
             return `$${value}`;
         };
-
-        const minRev = formatRevenue(filters.revenueMin);
-        const maxRev = formatRevenue(filters.revenueMax);
+        const minRev = formatRevenue(companyFilters.revenueRangeMin);
+        const maxRev = formatRevenue(companyFilters.revenueRangeMax);
         activeFilters.push({ label: 'Annual Revenue Range', value: `${minRev} - ${maxRev}` });
     }
-
-    // Organization job related filters
-    if (filters.organizationJobTitles?.length > 0) {
-        activeFilters.push({ label: 'Organization Job Titles', value: formatFilterValue(filters.organizationJobTitles) })
+    if (companyFilters.companyTechnologies?.length > 0) {
+        activeFilters.push({ label: 'Technologies Used', value: formatFilterValue(companyFilters.companyTechnologies) });
     }
-    if (filters.organizationJobLocations?.length > 0) {
-        activeFilters.push({ label: 'Organization Job Locations', value: formatFilterValue(filters.organizationJobLocations) })
+    if (companyFilters.companyKeywords?.length > 0) {
+        activeFilters.push({ label: 'Company Keywords', value: formatFilterValue(companyFilters.companyKeywords) });
     }
-    if (filters.organizationJobPostedAtMax && filters.organizationJobPostedAtMin) {
-        activeFilters.push({ label: 'Organization Job Dates', value: formatFilterValue(filters.organizationJobPostedAtMin + ' To ' + filters.organizationJobPostedAtMax) })
+    if (companyFilters.organizationName && companyFilters.organizationName.trim()) {
+        activeFilters.push({ label: 'Organization Name', value: formatFilterValue(companyFilters.organizationName) });
     }
-    if (filters.organizationJobPostedAtMin) {
-        activeFilters.push({ label: 'Organization Job Dates', value: formatFilterValue(filters.organizationJobPostedAtMin) })
+    if (companyFilters.latestFundingAmountMin > 0 || companyFilters.latestFundingAmountMax > 0) {
+        activeFilters.push({ label: 'Latest Funding Amount', value: `${companyFilters.latestFundingAmountMin} - ${companyFilters.latestFundingAmountMax}` });
     }
-    if (filters.organizationJobPostedAtMax) {
-        activeFilters.push({ label: 'Organization Job Dates', value: formatFilterValue(filters.organizationJobPostedAtMin) })
+    if (companyFilters.totalFundingMin > 0 || companyFilters.totalFundingMax > 0) {
+        activeFilters.push({ label: 'Total Funding', value: `${companyFilters.totalFundingMin} - ${companyFilters.totalFundingMax}` });
     }
-    if (filters.jobPostings) {
-        activeFilters.push({ label: 'Has Job Posting', value: formatFilterValue(filters.jobPostings) })
+    if (companyFilters.latestFundingDateRangeMin || companyFilters.latestFundingDateRangeMax) {
+        activeFilters.push({ label: 'Latest Funding Date Range', value: `${companyFilters.latestFundingDateRangeMin || ''} - ${companyFilters.latestFundingDateRangeMax || ''}` });
     }
-    if (filters.newsEvents) {
-        activeFilters.push({ label: 'Recent News', value: formatFilterValue(filters.newsEvents) })
+    if (companyFilters.organizationJobTitles?.length > 0) {
+        activeFilters.push({ label: 'Organization Job Titles', value: formatFilterValue(companyFilters.organizationJobTitles) });
     }
-    if (filters.webTraffic) {
-        activeFilters.push({ label: 'High Web Traffic', value: formatFilterValue(filters.webTraffic) })
+    if (companyFilters.organizationJobLocations?.length > 0) {
+        activeFilters.push({ label: 'Organization Job Locations', value: formatFilterValue(companyFilters.organizationJobLocations) });
     }
-    if ((filters.organizationNumJobsMin !== undefined && filters.organizationNumJobsMin !== null) ||
-        (filters.organizationNumJobsMax !== undefined && filters.organizationNumJobsMax !== null)) {
-        const min = filters.organizationNumJobsMin !== null ? filters.organizationNumJobsMin : 'Any'
-        const max = filters.organizationNumJobsMax !== null ? filters.organizationNumJobsMax : 'Any'
-        activeFilters.push({ label: 'Number of Active Job Postings', value: `${min} - ${max}` })
+    if (companyFilters.organizationJobsMin > 0 || companyFilters.organizationJobsMax > 0) {
+        activeFilters.push({ label: 'Number of Active Job Postings', value: `${companyFilters.organizationJobsMin} - ${companyFilters.organizationJobsMax}` });
+    }
+    if (companyFilters.organizationJobPostedAtRangeMin && !companyFilters.organizationJobPostedAtRangeMax) {
+        activeFilters.push({ label: 'Organization Job Dates Minimum', value: `${companyFilters.organizationJobPostedAtRangeMin || ''}` });
+    }
+    if (!companyFilters.organizationJobPostedAtRangeMin && companyFilters.organizationJobPostedAtRangeMax) {
+        activeFilters.push({ label: 'Organization Job Dates Maximum', value: `${companyFilters.organizationJobPostedAtRangeMax || ''}` });
+    }
+    if (companyFilters.organizationJobPostedAtRangeMin && companyFilters.organizationJobPostedAtRangeMax) {
+        activeFilters.push({ label: 'Organization Job Dates', value: `${companyFilters.organizationJobPostedAtRangeMin || ''} To ${companyFilters.organizationJobPostedAtRangeMax || ''}` });
+    }
+    if (searchType === 'people' && companyResults.length !== 0) {
+        activeFilters.push({ label: 'Searching Using Company Results', value: companyResults.map(company => company.name).join(', ') });
     }
 
     if (activeFilters.length === 0) {
-        return null
+        return null;
     }
 
     return (

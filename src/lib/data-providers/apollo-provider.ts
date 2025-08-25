@@ -331,6 +331,9 @@ export class ApolloProviderService implements DataProvider {
       include_similar_titles: true // Apollo feature to include similar job titles
     }
 
+    if(filters.orgIds?.length){
+        params.organization_ids = filters.orgIds
+    }
     // Person-level filters
     if (filters.jobTitles?.length) {
       params.person_titles = filters.jobTitles
