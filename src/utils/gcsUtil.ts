@@ -77,6 +77,10 @@ try {
 const bucketName = process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'leads-list';
 const bucket = storage.bucket(bucketName);
 
+// Separate bucket for campaign workflows
+const flowBucketName = process.env.GOOGLE_CLOUD_FLOW_STORAGE_BUCKET || 'campaign-flow';
+const flowBucket = storage.bucket(flowBucketName);
+
 export interface UploadResult {
   success: boolean;
   url?: string;
@@ -202,6 +206,54 @@ export async function uploadFileToGCS(
 }
 
 /**
+ * Download a file from Google Cloud Storage
+ */
+export async function downloadFileFromGCS(fileName: string): Promise<Buffer | null> {
+  try {
+    console.log('📥 Downloading file from GCS:', fileName);
+    
+    const fileRef = bucket.file(fileName);
+    
+    // Check if file exists
+    const [exists] = await fileRef.exists();
+    if (!exists) {
+      console.warn('⚠️ File not found in GCS:', fileName);
+      return null;
+    }
+    
+    // Download file content
+    const [contents] = await fileRef.download();
+    console.log('✅ File downloaded successfully from GCS:', fileName);
+    
+    return contents;
+  } catch (error: any) {
+    console.error('❌ Error downloading from Google Cloud Storage:', error);
+    return null;
+  }
+}
+
+/**
+ * Download a JSON file from Google Cloud Storage and parse it
+ */
+export async function downloadJsonFromGCS<T = any>(fileName: string): Promise<T | null> {
+  try {
+    const buffer = await downloadFileFromGCS(fileName);
+    if (!buffer) {
+      return null;
+    }
+    
+    const jsonString = buffer.toString('utf-8');
+    const parsedData = JSON.parse(jsonString);
+    
+    console.log('✅ JSON file parsed successfully from GCS:', fileName);
+    return parsedData;
+  } catch (error: any) {
+    console.error('❌ Error parsing JSON from GCS:', error);
+    return null;
+  }
+}
+
+/**
  * Delete a file from Google Cloud Storage
  */
 export async function deleteFileFromGCS(fileName: string): Promise<boolean> {
@@ -250,4 +302,181 @@ export async function generateSignedUrl(
   }
 }
 
-export { storage, bucket };
+/**
+ * Upload a workflow JSON file to the dedicated flow storage bucket
+ */
+export async function uploadFlowToGCS(
+  file: Buffer,
+  fileName: string,
+  folder: string = 'workflows'
+): Promise<UploadResult> {
+  console.log('🚀 Starting workflow file upload to flow bucket...');
+  console.log('Flow upload parameters:', {
+    fileName,
+    folder,
+    fileSize: file.length,
+    flowBucketName
+  });
+
+  try {
+    // Validate flow bucket environment
+    if (!process.env.GOOGLE_CLOUD_FLOW_STORAGE_BUCKET) {
+      console.warn('⚠️ GOOGLE_CLOUD_FLOW_STORAGE_BUCKET not set, using default: campaign-flow');
+    }
+
+    // Create full file path
+    const fullFileName = folder ? `${folder}/${fileName}` : fileName;
+    console.log('📁 Full flow file path:', fullFileName);
+    
+    // Get file reference from flow bucket
+    const fileRef = flowBucket.file(fullFileName);
+    console.log('📄 Flow file reference created');
+
+    // Check flow bucket exists and we have access
+    console.log('🔍 Checking flow bucket access...');
+    try {
+      const [bucketExists] = await flowBucket.exists();
+      console.log('Flow bucket exists:', bucketExists);
+      
+      if (!bucketExists) {
+        throw new Error(`Flow bucket '${flowBucketName}' does not exist or is not accessible`);
+      }
+    } catch (bucketError: any) {
+      console.error('❌ Flow bucket access error:', bucketError);
+      throw new Error(`Cannot access flow bucket '${flowBucketName}': ${bucketError.message}`);
+    }
+
+    // Upload file to flow bucket
+    console.log('⬆️ Starting flow file upload...');
+    await fileRef.save(file, {
+      metadata: {
+        contentType: 'application/json',
+        cacheControl: 'public, max-age=31536000', // 1 year cache
+      },
+    });
+
+    console.log('✅ Flow file saved to bucket');
+
+    // Generate public URL for flow bucket
+    const publicUrl = `https://storage.googleapis.com/${flowBucketName}/${fullFileName}`;
+    console.log('🌐 Generated flow public URL:', publicUrl);
+
+    // Generate signed URL for secure access
+    let signedUrl = publicUrl; // fallback to public URL
+    try {
+      console.log('🔐 Attempting to generate flow signed URL...');
+      const [generatedSignedUrl] = await fileRef.getSignedUrl({
+        action: 'read',
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+      signedUrl = generatedSignedUrl;
+      console.log('✅ Successfully generated flow signed URL');
+    } catch (signedUrlError: any) {
+      console.error('❌ Failed to generate flow signed URL:', signedUrlError.message);
+      console.log('⚠️ Falling back to public URL for flow');
+    }
+
+    console.log(`✅ Flow file uploaded successfully to GCS: ${publicUrl}`);
+
+    return {
+      success: true,
+      url: signedUrl,
+      publicUrl: publicUrl,
+      signedUrl: signedUrl,
+      fileName: fullFileName,
+    };
+
+  } catch (error: any) {
+    console.error('❌ Error uploading flow to Google Cloud Storage:', error);
+    console.error('Flow upload error details:', {
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      flowBucketName
+    });
+    
+    return {
+      success: false,
+      error: error.message || 'Unknown flow upload error',
+    };
+  }
+}
+
+/**
+ * Download a workflow JSON file from the dedicated flow storage bucket
+ */
+export async function downloadFlowFromGCS(fileName: string): Promise<Buffer | null> {
+  try {
+    console.log('📥 Downloading flow file from flow bucket:', fileName);
+    
+    const fileRef = flowBucket.file(fileName);
+    
+    // Check if file exists in flow bucket
+    const [exists] = await fileRef.exists();
+    if (!exists) {
+      console.warn('⚠️ Flow file not found in flow bucket:', fileName);
+      return null;
+    }
+    
+    // Download file content from flow bucket
+    const [contents] = await fileRef.download();
+    console.log('✅ Flow file downloaded successfully from flow bucket:', fileName);
+    
+    return contents;
+  } catch (error: any) {
+    console.error('❌ Error downloading flow from flow bucket:', error);
+    return null;
+  }
+}
+
+/**
+ * Download a workflow JSON file from flow bucket and parse it
+ */
+export async function downloadFlowJsonFromGCS<T = any>(fileName: string): Promise<T | null> {
+  try {
+    const buffer = await downloadFlowFromGCS(fileName);
+    if (!buffer) {
+      return null;
+    }
+    
+    const jsonString = buffer.toString('utf-8');
+    const parsedData = JSON.parse(jsonString);
+    
+    console.log('✅ Flow JSON file parsed successfully from flow bucket:', fileName);
+    return parsedData;
+  } catch (error: any) {
+    console.error('❌ Error parsing flow JSON from flow bucket:', error);
+    return null;
+  }
+}
+
+/**
+ * Delete a workflow file from the dedicated flow storage bucket
+ */
+export async function deleteFlowFromGCS(fileName: string): Promise<boolean> {
+  try {
+    const fileRef = flowBucket.file(fileName);
+    await fileRef.delete();
+    console.log(`✅ Flow file deleted successfully from flow bucket: ${fileName}`);
+    return true;
+  } catch (error: any) {
+    console.error('❌ Error deleting flow from flow bucket:', error);
+    return false;
+  }
+}
+
+/**
+ * Check if a workflow file exists in the dedicated flow storage bucket
+ */
+export async function flowExistsInGCS(fileName: string): Promise<boolean> {
+  try {
+    const fileRef = flowBucket.file(fileName);
+    const [exists] = await fileRef.exists();
+    return exists;
+  } catch (error: any) {
+    console.error('❌ Error checking flow file existence in flow bucket:', error);
+    return false;
+  }
+}
+
+export { storage, bucket, flowBucket };

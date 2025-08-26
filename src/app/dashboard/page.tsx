@@ -404,6 +404,7 @@ export default function Dashboard() {
                                 {filteredCampaigns.map((campaign) => (
                                     <CampaignCard
                                         key={campaign.id}
+                                        id={campaign.id}
                                         name={campaign.name}
                                         type={campaign.type}
                                         leads={campaign.leads}
@@ -412,6 +413,14 @@ export default function Dashboard() {
                                         onMenuClick={() => {
                                             // For now, just navigate to campaign view
                                             router.push(`/campaigns/${campaign.id}`)
+                                        }}
+                                        onDelete={(deletedId) => {
+                                            // Remove the deleted campaign from the state
+                                            setState(prev => ({
+                                                ...prev,
+                                                campaigns: prev.campaigns.filter(c => c.id !== deletedId),
+                                                dbCampaigns: prev.dbCampaigns.filter(c => c.id !== deletedId)
+                                            }))
                                         }}
                                     />
                                 ))}
