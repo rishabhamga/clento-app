@@ -1,0 +1,533 @@
+{
+  "nodes": [
+    {
+      "id": "profile_visit-1741803242094",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 0
+      },
+      "data": {
+        "type": "profile_visit",
+        "label": "Visit Profile",
+        "isConfigured": true,
+        "config": {}
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      },
+      "selected": false
+    },
+    {
+      "id": "comment_post-1755016587374",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 158
+      },
+      "data": {
+        "type": "comment_post",
+        "label": "Comment on Post",
+        "isConfigured": true,
+        "config": {
+          "useAI": true,
+          "language": "english",
+          "length": "short(1 sentence)",
+          "commentTone": "agreeable",
+          "customGuidelines": "Write comments that feel extremely natural, casual, and human — as if a real person is replying on LinkedIn without overthinking it. Avoid sounding like a bot or using generic phrases.\n\n\nThe comments should feel personalized, relatable, and friendly — like how people naturally reply when they come across a post they like or resonate with.\n\n\nThink:\n\n\nLight humor (if it fits)\n\nEmojis (but not forced)\n\nReactions like \"Haha love this\" / \"So true!\" / \"Been there!\"\n\nShort stories or personal takes\n\nAsking simple follow-up questions\n\nGiving authentic compliments\n\n\nTone: Human > Helpful > Relatable > Casual > No corporate jargon.",
+          "postCount": 1,
+          "config": {
+            "useAI": true,
+            "language": "english",
+            "length": "medium(2-3 sentences)",
+            "commentTone": "agreeable",
+            "customGuidelines": "",
+            "postCount": 1
+          },
+          "recentPostWithin": 15,
+          "customComment": "Stand-up meetings can be surprisingly effective when done right; it's great to hear your team found value in streamlining your workflow!"
+        }
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      },
+      "selected": false
+    },
+    {
+      "id": "send-invite-1755016596165",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 318
+      },
+      "data": {
+        "type": "send_invite",
+        "label": "Connection Request",
+        "isConfigured": true,
+        "config": {
+          "useAI": false,
+          "tone": "Warm",
+          "formality": "Casual",
+          "approach": "Direct",
+          "focus": "Personal",
+          "intention": "Networking",
+          "callToAction": "Subtle",
+          "personalization": "Specific",
+          "language": "english",
+          "mentionPost": false,
+          "customGuidelines": "",
+          "config": {
+            "useAI": true,
+            "tone": "Warm",
+            "formality": "Casual",
+            "approach": "Direct",
+            "focus": "Personal",
+            "intention": "Networking",
+            "callToAction": "Subtle",
+            "personalization": "Specific",
+            "language": "english",
+            "mentionPost": false,
+            "customGuidelines": ""
+          },
+          "message": "Hi [first_name], I'm swaraj from Alloroots—India's leading hair restoration clinic. We specialize in safe, natural procedures performed only by M.D. dermatologists from AIIMS (Delhi). "
+        }
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      },
+      "selected": false
+    },
+    {
+      "id": "notify_webhook-1755016601031",
+      "type": "action",
+      "position": {
+        "x": 292,
+        "y": 538
+      },
+      "data": {
+        "type": "notify_webhook",
+        "label": "Notify Webhook",
+        "isConfigured": true,
+        "config": {
+          "typeId": "webhook",
+          "integrationId": "68a43ae0a4473aa372c5b843",
+          "targetUrl": "https://dashboard.clento.ai/api/webhooks/syndie",
+          "integrationName": "clento-webhook",
+          "timeDelay": {
+            "value": 0,
+            "unit": "minutes"
+          }
+        },
+        "pathType": "accepted",
+        "integrationLogoUrl": "/logos/webhook.svg",
+        "subtitle": "clento-webhook"
+      },
+      "measured": {
+        "width": 220,
+        "height": 62
+      },
+      "selected": false
+    },
+    {
+      "id": "send_followup-1755016604848",
+      "type": "action",
+      "position": {
+        "x": 292,
+        "y": 706
+      },
+      "data": {
+        "type": "send_followup",
+        "label": "Send Message",
+        "isConfigured": true,
+        "config": {
+          "useAI": false,
+          "isFollowUp": true,
+          "mentionPost": false,
+          "language": "english",
+          "messageLength": "medium",
+          "tone": "casual",
+          "customGuidelines": "",
+          "config": {
+            "useAI": true,
+            "isFollowUp": true,
+            "mentionPost": false,
+            "language": "english",
+            "messageLength": "medium",
+            "tone": "casual",
+            "customGuidelines": ""
+          },
+          "message": "Thanks for connecting, [first_name]!  \nJust sharing for your awareness—at Alloroots, we help professionals and achievers restore confidence with modern hair and beard solutions. Many people aren't sure when or if to address hair thinning, and that's perfectly normal.\n\nIf you ever want expert advice (or know someone facing hair concerns), happy to explain what's possible—no pressure, just insights. Would a quick Q&A be useful?\n"
+        },
+        "pathType": "accepted"
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      },
+      "selected": false
+    },
+    {
+      "id": "withdraw_request-1755016639716",
+      "type": "action",
+      "position": {
+        "x": -128,
+        "y": 532
+      },
+      "data": {
+        "type": "withdraw_request",
+        "label": "Withdraw Request",
+        "isConfigured": true,
+        "config": {},
+        "pathType": "not-accepted"
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      },
+      "selected": false
+    },
+    {
+      "id": "send_followup-1755016897601",
+      "type": "action",
+      "position": {
+        "x": 292,
+        "y": 878
+      },
+      "data": {
+        "type": "send_followup",
+        "label": "Send Message",
+        "isConfigured": true,
+        "config": {
+          "useAI": false,
+          "isFollowUp": true,
+          "mentionPost": false,
+          "language": "english",
+          "messageLength": "medium",
+          "tone": "casual",
+          "customGuidelines": "",
+          "config": {
+            "useAI": true,
+            "isFollowUp": true,
+            "mentionPost": false,
+            "language": "english",
+            "messageLength": "medium",
+            "tone": "casual",
+            "customGuidelines": ""
+          },
+          "message": "[first_name], here's what stood out about Alloroots:\n• Our surgeons (AIIMS alumni, 2000+ surgeries) achieve 90%+ graft viability—industry best.\n• We work with both men and women, offering advanced restoration (hair, beard, eyebrows).\n• One client: \"Wish I'd known my options earlier—a single visit changed my life.\"\n\nIf you're ever curious to see real results or ask a few anonymous questions, I can send you some before-and-after stories from our patients. Interested?\n"
+        },
+        "pathType": "accepted"
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      },
+      "selected": false
+    },
+    {
+      "id": "send_followup-1755016965915",
+      "type": "action",
+      "position": {
+        "x": 292,
+        "y": 1054
+      },
+      "data": {
+        "type": "send_followup",
+        "label": "Send Message",
+        "isConfigured": true,
+        "config": {
+          "useAI": false,
+          "isFollowUp": true,
+          "mentionPost": false,
+          "language": "english",
+          "messageLength": "medium",
+          "tone": "casual",
+          "customGuidelines": "",
+          "config": {
+            "useAI": true,
+            "isFollowUp": true,
+            "mentionPost": false,
+            "language": "english",
+            "messageLength": "medium",
+            "tone": "casual",
+            "customGuidelines": ""
+          },
+          "message": "If hair wellness isn't a priority right now, all good.\n\nBut if you or someone you know has ever wondered about their options, I'm happy to offer a free, private consultation—online or in person. No commitments, just expert guidance from doctors.\n\nLet me know if you'd like details on how it works!"
+        },
+        "pathType": "accepted"
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      },
+      "selected": false
+    },
+    {
+      "id": "send_followup-1755017147081",
+      "type": "action",
+      "position": {
+        "x": 292,
+        "y": 1238
+      },
+      "data": {
+        "type": "send_followup",
+        "label": "Send Message",
+        "isConfigured": true,
+        "config": {
+          "useAI": false,
+          "isFollowUp": true,
+          "mentionPost": false,
+          "language": "english",
+          "messageLength": "medium",
+          "tone": "casual",
+          "customGuidelines": "",
+          "config": {
+            "useAI": true,
+            "isFollowUp": true,
+            "mentionPost": false,
+            "language": "english",
+            "messageLength": "medium",
+            "tone": "casual",
+            "customGuidelines": ""
+          },
+          "message": "Hi [first_name],\nJust dropping one final note—I know hair wellness might not be on your mind right now, and that's totally fine. If it ever does become relevant (for you or someone close), feel free to reach out anytime—I'll be happy to help.\n\nWishing you all the best ahead! ✨"
+        },
+        "pathType": "accepted"
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      },
+      "selected": false
+    },
+    {
+      "id": "profile_visit-1756030745430",
+      "type": "action",
+      "position": {
+        "x": -128,
+        "y": 696
+      },
+      "data": {
+        "type": "profile_visit",
+        "label": "Visit Profile",
+        "isConfigured": true,
+        "config": {},
+        "pathType": "not-accepted"
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      },
+      "selected": false
+    },
+    {
+      "id": "add-step-not-accepted-1756030968466",
+      "type": "addStep",
+      "position": {
+        "x": -128,
+        "y": 884
+      },
+      "data": {
+        "pathType": "not-accepted"
+      },
+      "measured": {
+        "width": 220,
+        "height": 40
+      },
+      "selected": false
+    },
+    {
+      "id": "add-step-accepted-1755017147081",
+      "type": "addStep",
+      "position": {
+        "x": 292,
+        "y": 1388
+      },
+      "data": {
+        "pathType": "accepted"
+      },
+      "measured": {
+        "width": 220,
+        "height": 40
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-profile_visit-1741803242094-comment_post-1755016587374",
+      "source": "profile_visit-1741803242094",
+      "target": "comment_post-1755016587374",
+      "type": "buttonedge",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        }
+      }
+    },
+    {
+      "id": "e-comment_post-1755016587374-send-invite-1755016596165",
+      "source": "comment_post-1755016587374",
+      "target": "send-invite-1755016596165",
+      "type": "buttonedge",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        }
+      }
+    },
+    {
+      "id": "e-send-invite-1755016596165-notify_webhook-1755016601031",
+      "source": "send-invite-1755016596165",
+      "target": "notify_webhook-1755016601031",
+      "type": "conditional",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        },
+        "isPositive": true,
+        "isConditionalPath": true
+      }
+    },
+    {
+      "id": "e-send-invite-1755016596165-withdraw_request-1755016639716",
+      "source": "send-invite-1755016596165",
+      "target": "withdraw_request-1755016639716",
+      "type": "conditional",
+      "animated": true,
+      "data": {
+        "delay": "7d",
+        "delayData": {
+          "delay": 7,
+          "unit": "d"
+        },
+        "isPositive": false,
+        "isConditionalPath": true
+      }
+    },
+    {
+      "id": "e-notify_webhook-1755016601031-send_followup-1755016604848",
+      "source": "notify_webhook-1755016601031",
+      "target": "send_followup-1755016604848",
+      "type": "conditional",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        },
+        "isPositive": true,
+        "isConditionalPath": true
+      }
+    },
+    {
+      "id": "e-send_followup-1755016604848-send_followup-1755016897601",
+      "source": "send_followup-1755016604848",
+      "target": "send_followup-1755016897601",
+      "type": "conditional",
+      "animated": true,
+      "data": {
+        "delay": "2d",
+        "delayData": {
+          "delay": 2,
+          "unit": "d"
+        },
+        "isPositive": true,
+        "isConditionalPath": true
+      }
+    },
+    {
+      "id": "e-send_followup-1755016897601-send_followup-1755016965915",
+      "source": "send_followup-1755016897601",
+      "target": "send_followup-1755016965915",
+      "type": "conditional",
+      "animated": true,
+      "data": {
+        "delay": "2d",
+        "delayData": {
+          "delay": 2,
+          "unit": "d"
+        },
+        "isPositive": true,
+        "isConditionalPath": true
+      }
+    },
+    {
+      "id": "e-send_followup-1755016965915-send_followup-1755017147081",
+      "source": "send_followup-1755016965915",
+      "target": "send_followup-1755017147081",
+      "type": "conditional",
+      "animated": true,
+      "data": {
+        "delay": "2d",
+        "delayData": {
+          "delay": 2,
+          "unit": "d"
+        },
+        "isPositive": true,
+        "isConditionalPath": true
+      }
+    },
+    {
+      "id": "e-send_followup-1755017147081-add-step-accepted-1755017147081",
+      "source": "send_followup-1755017147081",
+      "target": "add-step-accepted-1755017147081",
+      "type": "conditional",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        },
+        "isPositive": true,
+        "isConditionalPath": true
+      }
+    },
+    {
+      "id": "e-withdraw_request-1755016639716-profile_visit-1756030745430",
+      "source": "withdraw_request-1755016639716",
+      "target": "profile_visit-1756030745430",
+      "type": "conditional",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        },
+        "isPositive": false,
+        "isConditionalPath": true
+      }
+    },
+    {
+      "id": "e-profile_visit-1756030745430-add-step-not-accepted-1756030968466",
+      "source": "profile_visit-1756030745430",
+      "target": "add-step-not-accepted-1756030968466",
+      "type": "conditional",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        },
+        "isPositive": false,
+        "isConditionalPath": true
+      }
+    }
+  ],
+  "timestamp": "2025-08-24T16:16:00.097Z"
+}

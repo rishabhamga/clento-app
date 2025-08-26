@@ -108,6 +108,10 @@ export interface LeadWithSyndieData extends SyndieLead {
   completedSteps?: number;
   failedSteps?: number;
   isActive?: boolean;
+  // Lead list information from JOIN
+  lead_list_name?: string | null;
+  // Account information from seat_info JSONB
+  seat_account_name?: string | null;
 }
 
 // Lead filtering and search interfaces
@@ -116,6 +120,8 @@ export interface LeadFilters {
   connectionStatus?: LinkedInConnectionStatus[];
   account?: string;
   campaign?: string;
+  leadListId?: string;
+  source?: string;
   dateRange?: {
     start: string;
     end: string;

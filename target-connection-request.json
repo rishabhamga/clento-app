@@ -1,0 +1,184 @@
+{
+  "nodes": [
+    {
+      "id": "profile_visit-1756055976887",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 0
+      },
+      "data": {
+        "type": "profile_visit",
+        "label": "Visit Profile",
+        "isConfigured": true,
+        "config": {}
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      }
+    },
+    {
+      "id": "comment_post-1756055980550",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 150
+      },
+      "data": {
+        "type": "comment_post",
+        "label": "Comment on Post",
+        "isConfigured": true,
+        "config": {
+          "useAI": true,
+          "language": "english",
+          "length": "medium(2-3 sentences)",
+          "commentTone": "agreeable",
+          "customGuidelines": "",
+          "postCount": 1
+        }
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      }
+    },
+    {
+      "id": "send-invite-1756055983008",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 300
+      },
+      "data": {
+        "type": "send_invite",
+        "label": "Connection Request",
+        "isConfigured": true,
+        "config": {
+          "useAI": true,
+          "tone": "Warm",
+          "formality": "Casual",
+          "approach": "Direct",
+          "focus": "Personal",
+          "intention": "Networking",
+          "callToAction": "Subtle",
+          "personalization": "Specific",
+          "language": "english",
+          "mentionPost": false,
+          "customGuidelines": ""
+        }
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      }
+    },
+    {
+      "id": "add-step-accepted-1756055983008",
+      "type": "addStep",
+      "position": {
+        "x": 300,
+        "y": 450
+      },
+      "data": {
+        "pathType": "accepted"
+      },
+      "measured": {
+        "width": 220,
+        "height": 40
+      }
+    },
+    {
+      "id": "add-step-not-accepted-1756055983008",
+      "type": "addStep",
+      "position": {
+        "x": -100,
+        "y": 450
+      },
+      "data": {
+        "pathType": "not-accepted"
+      },
+      "measured": {
+        "width": 220,
+        "height": 40
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0-1",
+      "source": "profile_visit-1756055976887",
+      "target": "comment_post-1756055980550",
+      "type": "buttonedge",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        }
+      }
+    },
+    {
+      "id": "e2-add-step",
+      "source": "comment_post-1756055980550",
+      "target": "add-step",
+      "type": "buttonedge",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        }
+      }
+    },
+    {
+      "id": "e-prev-1756055983008",
+      "source": "comment_post-1756055980550",
+      "target": "send-invite-1756055983008",
+      "type": "buttonedge",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        }
+      }
+    },
+    {
+      "id": "e-accepted-1756055983008",
+      "source": "send-invite-1756055983008",
+      "target": "add-step-accepted-1756055983008",
+      "type": "conditional",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        },
+        "isPositive": true,
+        "isConditionalPath": true
+      }
+    },
+    {
+      "id": "e-not-accepted-1756055983008",
+      "source": "send-invite-1756055983008",
+      "target": "add-step-not-accepted-1756055983008",
+      "type": "conditional",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        },
+        "isPositive": false,
+        "isConditionalPath": true
+      }
+    }
+  ],
+  "timestamp": "2025-08-24T17:19:50.231Z"
+}

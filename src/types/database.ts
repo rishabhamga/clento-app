@@ -93,6 +93,8 @@ export interface Database {
           last_email_event: string | null;
           last_event_timestamp: string | null;
           crm_entry?: number | null;
+          // Lead list integration
+          lead_list_id: string | null;
           // Syndie integration fields
           syndie_lead_id: string | null;
           linkedin_connection_status: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
@@ -123,6 +125,8 @@ export interface Database {
           last_email_event?: string | null;
           last_event_timestamp?: string | null;
           crm_entry?: number | null;
+          // Lead list integration
+          lead_list_id?: string | null;
           // Syndie integration fields
           syndie_lead_id?: string | null;
           linkedin_connection_status?: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
@@ -153,6 +157,8 @@ export interface Database {
           last_email_event?: string | null;
           last_event_timestamp?: string | null;
           crm_entry?: number | null;
+          // Lead list integration
+          lead_list_id?: string | null;
           // Syndie integration fields
           syndie_lead_id?: string | null;
           linkedin_connection_status?: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
@@ -588,6 +594,68 @@ export interface Database {
           updated_at?: string;
         };
       };
+      lead_lists: {
+        Row: {
+          id: string;
+          user_id: string;
+          organization_id: string;
+          connected_account_id: string | null;
+          name: string;
+          description: string | null;
+          total_leads: number;
+          processed_leads: number;
+          failed_leads: number;
+          original_filename: string | null;
+          csv_file_url: string | null;
+          sample_csv_url: string | null;
+          status: 'draft' | 'processing' | 'completed' | 'failed';
+          processing_started_at: string | null;
+          processing_completed_at: string | null;
+          error_message: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          organization_id: string;
+          connected_account_id?: string | null;
+          name: string;
+          description?: string | null;
+          total_leads?: number;
+          processed_leads?: number;
+          failed_leads?: number;
+          original_filename?: string | null;
+          csv_file_url?: string | null;
+          sample_csv_url?: string | null;
+          status?: 'draft' | 'processing' | 'completed' | 'failed';
+          processing_started_at?: string | null;
+          processing_completed_at?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          organization_id?: string;
+          connected_account_id?: string | null;
+          name?: string;
+          description?: string | null;
+          total_leads?: number;
+          processed_leads?: number;
+          failed_leads?: number;
+          original_filename?: string | null;
+          csv_file_url?: string | null;
+          sample_csv_url?: string | null;
+          status?: 'draft' | 'processing' | 'completed' | 'failed';
+          processing_started_at?: string | null;
+          processing_completed_at?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -830,4 +898,107 @@ export interface LeadWithSmartleadData extends Lead {
   last_event_timestamp?: string
   email_events?: SmartleadEmailEvent[]
   campaign_stats?: SmartleadCampaignStats
+}
+
+// Lead Lists Types
+export interface LeadList {
+  id: string
+  user_id: string
+  organization_id: string
+  connected_account_id?: string | null
+  campaign_id?: string | null
+  name: string
+  description?: string | null
+  total_leads: number
+  processed_leads: number
+  failed_leads: number
+  original_filename?: string | null
+  csv_file_url?: string | null
+  sample_csv_url?: string | null
+  status: 'draft' | 'processing' | 'completed' | 'failed'
+  processing_started_at?: string | null
+  processing_completed_at?: string | null
+  error_message?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LeadListWithAccount extends LeadList {
+  connected_account?: {
+    id: string
+    provider: string
+    display_name: string
+    connection_status: string
+    profile_picture_url?: string | null
+  } | null
+  campaign?: {
+    id: string
+    name: string
+    description?: string | null
+    status: string
+  } | null
+}
+
+export interface LeadListStats {
+  total_lists: number
+  total_leads: number
+  processing_lists: number
+  completed_lists: number
+  failed_lists: number
+}
+
+export interface CSVPreviewData {
+  headers: string[]
+  rows: string[][]
+  total_rows: number
+  sample_size: number
+}
+
+export interface CSVColumnMapping {
+  csv_column: string
+  mapped_field: string
+  required: boolean
+  sample_data?: string[]
+}
+
+export interface LeadListProcessingJob {
+  id: string
+  lead_list_id: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  progress: number
+  total_rows: number
+  processed_rows: number
+  successful_rows: number
+  failed_rows: number
+  error_details?: string[]
+  started_at?: string
+  completed_at?: string
+}
+
+export interface CreateLeadListRequest {
+  name: string
+  description?: string
+  connected_account_id?: string
+  campaign_id?: string
+  organization_id: string
+}
+
+export interface UpdateLeadListRequest {
+  name?: string
+  description?: string
+  connected_account_id?: string
+  campaign_id?: string
+  status?: 'draft' | 'processing' | 'completed' | 'failed'
+}
+
+export interface UploadCSVRequest {
+  file: File
+  lead_list_id: string
+}
+
+export interface ProcessCSVRequest {
+  lead_list_id: string
+  column_mapping: CSVColumnMapping[]
+  skip_duplicates?: boolean
+  validate_emails?: boolean
 }

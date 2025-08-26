@@ -92,7 +92,7 @@ interface UserAccount {
 interface AccountStats {
     total_accounts: number
     connected_accounts: number
-    by_provider: Record<string, number>
+    by_provider: Record<string, { total: number; connected: number }>
 }
 
 // Provider configuration
@@ -713,7 +713,7 @@ function AccountsPageContent() {
                             <VStack spacing={1}>
                                 <Icon as={Linkedin} boxSize={5} color="blue.500" />
                                 <Text fontSize="2xl" fontWeight="bold">
-                                    {state.stats.by_provider.linkedin || 0}
+                                    {state.stats.by_provider.linkedin?.connected || 0}
                                 </Text>
                                 <Text fontSize="xs" color="gray.600">LinkedIn</Text>
                             </VStack>
