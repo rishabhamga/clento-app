@@ -10,7 +10,7 @@ const supabase = createClient(
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth()
-    
+
     if (!userId) {
       console.log('❌ Accounts API: Unauthorized - no userId')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -39,11 +39,11 @@ export async function GET(request: NextRequest) {
     console.log('👤 Accounts API: Found user:', userData.id)
 
     let orgDbId = null
-    
+
     // If organizationId is provided, get the corresponding database ID
     if (organizationId) {
       console.log('👤 Looking up organization for accounts list:', organizationId)
-      
+
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
         .select('id, name')
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
-    
+
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
     }
 
     let orgDbId = null
-    
+
     // If organization_id is provided, validate it exists and user has access
     if (organization_id) {
       const { data: orgData, error: orgError } = await supabase
@@ -205,9 +205,9 @@ export async function POST(request: NextRequest) {
           { status: 404 }
         )
       }
-      
+
       orgDbId = orgData.id
-      
+
       // Check if user is a member of the organization
       const { data: memberData, error: memberError } = await supabase
         .from('organization_members')

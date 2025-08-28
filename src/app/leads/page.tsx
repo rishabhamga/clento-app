@@ -1,87 +1,77 @@
 'use client'
 
-import {
-    Box,
-    Container,
-    VStack,
-    Heading,
-    Text,
-    Card,
-    CardBody,
-    Badge,
-    HStack,
-    Avatar,
-    Select,
-    useColorModeValue,
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalCloseButton,
-    useDisclosure,
-    Icon,
-    useToast,
-    Spinner,
-    Spacer,
-    SimpleGrid,
-    Progress,
-    Flex,
-    Wrap,
-    WrapItem,
-    Button,
-    Table,
-    Thead,
-    Tbody,
-    Tr,
-    Th,
-    Td,
-    TableContainer,
-    IconButton,
-    Tooltip,
-    Input,
-    InputGroup,
-    InputLeftElement
-} from '@chakra-ui/react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
 import {
-    Search,
-    Filter,
-    Download,
-    Plus,
-    CheckCircle,
-    Mail,
-    Linkedin,
-    Clock,
-    TrendingUp,
-    Users,
-    Activity,
-    Star,
-    AlertCircle,
-    MessageCircle,
-    Eye,
-    ChevronLeft,
-    ChevronRight,
-    ExternalLink
-} from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+    LeadActivityTimeline,
+    LeadFilters,
+    LeadStats,
+    LeadWithSyndieData,
+    LinkedInConnectionStatus
+} from '@/types/syndie'
+import {
+    Avatar,
+    Badge,
+    Box,
+    Button,
+    Card,
+    Container,
+    Flex,
+    Heading,
+    HStack,
+    Icon,
+    IconButton,
+    Input,
+    InputGroup,
+    InputLeftElement,
+    Modal,
+    ModalBody,
+    ModalCloseButton,
+    ModalContent,
+    ModalHeader,
+    ModalOverlay,
+    Progress,
+    Select,
+    SimpleGrid,
+    Spinner,
+    Table,
+    TableContainer,
+    Tbody,
+    Td,
+    Text,
+    Th,
+    Thead,
+    Tooltip,
+    Tr,
+    useColorModeValue,
+    useDisclosure,
+    useToast,
+    VStack
+} from '@chakra-ui/react'
 import { useOrganization } from '@clerk/nextjs'
 import {
-    LeadWithSyndieData,
-    LeadListResponse,
-    LeadStats,
-    LeadFilters,
-    LinkedInConnectionStatus,
-    LeadActivityTimeline
-} from '@/types/syndie'
-import { timeStamp } from 'console'
+    Activity,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    Download,
+    ExternalLink,
+    Eye,
+    Linkedin,
+    Mail,
+    MessageCircle,
+    Plus,
+    Search,
+    TrendingUp,
+    Users
+} from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 // Helper functions
 function getConnectionStatusColor(status: LinkedInConnectionStatus): string {
     switch (status) {
-        case 'connected': return 'green'
+        case 'accepted': return 'green'
         case 'replied': return 'blue'
         case 'pending': return 'yellow'
         case 'bounced': return 'red'
@@ -106,187 +96,6 @@ function formatConnectionStatus(status: LinkedInConnectionStatus): string {
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
-const emailSet = {
-    "akshay@shakedeal.com": [
-        {
-            action: "email_sent",
-            message: `Subject: Congrats on ShakeDeal’s loyalty feature launch, Akshay
-
-Hi Akshay,
-
-Huge congrats on ShakeDeal’s new loyalty rewards feature after your latest funding round! It’s fantastic to see innovation in customer engagement space—how has user uptake been so far?
-
-At Clento, we help scale loyalty and retention efforts through AI-powered SDR that streamlines outreach and enriches prospects—cutting manual effort while improving engagement.
-
-Would love to connect and swap ideas on AI-led growth strategies. Open to it?
-
-Best,
-Heena
-`,
-            timestamp: "2025-07-08T02:07:00.000Z",
-            stepNodeId: "step_001"
-        },
-        {
-            action: "email_sent",
-            message: `Subject: Re: ShakeDeal’s loyalty launch
-
-Hi Akshay,
-
-Following up—ShakeDeal’s loyalty feature launch sounds like a game-changer for engagement. Anything surprising in how users are reacting?
-
-We’ve supported similar launches where AI outreach helped onboard 30% more pilot users quickly. Happy to share strategy ideas if it’s helpful.
-
-Best,
-Heena
-`,
-            timestamp: "2025-07-09T13:41:00.000Z",
-            stepNodeId: "step_002"
-        },
-        {
-            action: "email_sent",
-            message: `Subject: AI for loyalty rollout?
-
-Hi Akshay,
-
-Hope things are going well! Got me thinking—customers who opt into loyalty schemes often also respond well to personal messages. Clento helps create highly relevant outreach to drive that engagement at scale.
-
-Mind if we chat for 10 mins to sketch something out?
-
-Warm regards,
-Heena
-`,
-            timestamp: "2025-07-11T05:03:00.000Z",
-            stepNodeId: "step_003"
-        },
-        {
-            action: "reply recieved",
-            message: `Subject: Re: One last thing…
-
-Hi Heena,
-
-Apologies for the silence—I’ve been busy with our new rollout. That campaign mockup sounds interesting! Can you send it over? I’d love to see how your AI messaging could align with what we’re doing at ShakeDeal.
-
-Best regards,
-Akshay Hegde
-Co-Founder & Managing Director, ShakeDeal
-`,
-            timestamp: "2025-07-14T07:34:00.000Z",
-            stepNodeId: "step_005"
-        }
-    ],
-    // "manoj@cubiclogics.com": [
-    //     {
-    //         action: "email_sent",
-    //         message: "Hey Manoj, I’ve been following Cubic Logics' innovative work in tech solutions, especially how you’re helping clients scale with data and automation. At Clento, we’re building something similar — AI-driven SDR workflows that handle everything from intent data to personalized outreach. I’d love to hear your thoughts on how you think such tech could be integrated into your operations.",
-    //         timestamp: "2025-07-12T00:00:00.000Z",
-    //         stepNodeId: "step_007"
-    //     },
-    //     {
-    //         action: "email_sent",
-    //         message: "Thanks for the connect, Manoj! I was wondering — how much time does your team spend managing different tools for your sales process? CRM, enrichment, copy, delivery, etc.? We’ve been testing a streamlined stack that integrates all these components into one. If this sounds like something you’re exploring for your GTM ops, I’d be happy to share how we’ve been making this work for clients in the tech space.",
-    //         timestamp: "2025-07-14T00:00:00.000Z",
-    //         stepNodeId: "step_008"
-    //     },
-    //     {
-    //         action: "email_sent",
-    //         message: "I’ve seen how companies like Cubic Logics are transforming their outreach and thought you might find this interesting. Clento helps teams find warm leads, personalize their messaging, and launch campaigns without extra tools or manual effort. Users are saving ₹5-6L/month and consistently booking 15+ demos ahead of schedule. I’ve recorded a quick 90-second Loom video explaining how it works. Would you like to check it out?",
-    //         timestamp: "2025-07-16T00:00:00.000Z",
-    //         stepNodeId: "step_009"
-    //     },
-    // ],
-    "marco@halo.live": [
-        {
-            action: "email_sent",
-            message: `Subject: Congrats on Halo's UK push, Marco
-
-Hi Marco,
-
-Congrats on Halo's expanding into the UK—awesome move! Breaking into new markets is always a big milestone. How have local partners or founders responded so far?
-
-At Clento, we’ve built an AI sales development platform that simplifies scaling outreach—automating prospecting, enrichment, and follow-ups to support expansion without adding headcount.
-
-Would love to connect and talk about how AI-powered tools can help you build that initial pipeline in new regions.
-
-Best,
-Heena
-`,
-            timestamp: "2025-07-03T06:35:00.000Z",
-            stepNodeId: "step_011"
-        },
-        {
-            action: "email_sent",
-            message: `Subject: Thoughts on UK FinTech prospects?
-
-Hi Marco,
-
-Just circling back—your UK expansion with Halo has really potential. Found anything surprising in the local FinTech space?
-
-We’ve supported finance teams entering new markets with AI-driven SDR that helped them engage 20% more prospects early on. Happy to share examples if you’d like.
-
-Best,
-Heena
-`,
-            timestamp: "2025-07-06T08:23:00.000Z",
-            stepNodeId: "step_012"
-        },
-        {
-            action: "email_sent",
-            message: `Subject: Last note—UK outreach help?
-
-Hey Marco,
-
-Not sure if now’s perchance too busy, but wanted to check if I could send over a tailored mock campaign draft—just 10 mins, no strings—showcasing how Clento would approach outreach for your UK launch.
-
-Let me know!
-
-Cheers,
-Heena
-`,
-            timestamp: "2025-07-08T07:54:00.000Z",
-            stepNodeId: "step_012"
-        }
-    ],
-    "bhargav@intellicar.in": [
-        {
-            action: "email_sent",
-            message: `Subject: Congrats on Intellicar’s AI diagnostic module, Bhargav
-Hi Bhargav,
-
-Congratulations on Intellicar’s launch of the new AI vehicle diagnostics feature—super exciting to see that kind of innovation in India’s auto-tech scene! How’s the initial feedback from customers been?
-
-As CBO, I know orchestrating product rollouts and capturing early adoption insights can feel like juggling multiple moving parts. At Clento, we’ve built an AI-powered SDR platform that integrates prospecting, enrichment, and multi-channel outreach into one streamlined workflow—helping teams like yours save time and stay nimble.
-
-Would love to connect and swap ideas on how AI is reshaping operations in mobility. Up for a quick chat?
-
-Best regards,
-Heena Bhardwaj
-Business Development Manager at Clento
-`,
-            timestamp: "2025-07-03T00:00:00.000Z",
-            stepNodeId: "step_017"
-        },
-        {
-            action: "email_sent",
-            message: `Subject: Still interested, Bhargav?
-
-Hi Bhargav,
-
-Just wanted to drop one final note on this—your AI diagnostics suite is seriously impressive, and I believe Clento could help you engage more shops/fleets without extra headcount.
-
-If you’d like, I can pull together a quick mock campaign based on Intellicar’s launch—just to visualize the value.
-
-Let me know either way, and thanks for your time!
-
-Cheers,
-Heena
-`,
-            timestamp: "2025-07-06T00:00:00.000Z",
-            stepNodeId: "step_018"
-        }
-    ]
-
-}
-
 export default function LeadsPage() {
     const router = useRouter()
     const { organization } = useOrganization()
@@ -302,6 +111,8 @@ export default function LeadsPage() {
     const [selectedLead, setSelectedLead] = useState<LeadWithSyndieData | null>(null)
     const [selectedLeadTimeline, setSelectedLeadTimeline] = useState<LeadActivityTimeline | null>(null)
     const [loading, setLoading] = useState(false)
+    const [leadDetailLoading, setLeadDetailLoading] = useState(false);
+
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
     const [totalLeads, setTotalLeads] = useState(0)
@@ -311,15 +122,14 @@ export default function LeadsPage() {
     const [searchTerm, setSearchTerm] = useState('')
 
     // Filter options state
-    const [campaignOptions, setCampaignOptions] = useState<{id: string, name: string}[]>([])
-    const [accountOptions, setAccountOptions] = useState<{id: string, display_name: string}[]>([])
-    const [leadListOptions, setLeadListOptions] = useState<{id: string, name: string}[]>([])
+    const [campaignOptions, setCampaignOptions] = useState<{ id: string, name: string }[]>([])
+    const [accountOptions, setAccountOptions] = useState<{ id: string, display_name: string }[]>([])
+    const [leadListOptions, setLeadListOptions] = useState<{ id: string, name: string }[]>([])
     const [filterOptionsLoading, setFilterOptionsLoading] = useState(false)
 
     // Handle search
-    const handleSearch = (value: string) => {
-        setSearchTerm(value)
-        const updatedFilters = { ...filters, search: value || undefined }
+    const handleSearch = () => {
+        const updatedFilters = { ...filters, search: searchTerm || undefined }
         setFilters(updatedFilters)
         fetchLeads(1, updatedFilters)
     }
@@ -344,10 +154,11 @@ export default function LeadsPage() {
             if (!response.ok) throw new Error('Failed to fetch leads')
 
             const result = await response.json()
+            console.log(result);
             if (result.success) {
-                setLeads(result.data.leads)
-                setPage(result.data.pagination.page)
-                setTotalPages(result.data.pagination.totalPages)
+                setLeads(result.data.data) //get leads from syndie
+                setPage(result.data.pagination.currentPage)
+                setTotalPages(result.data.pagination.pages)
                 setTotalLeads(result.data.pagination.total || 0)
             }
         } catch (error) {
@@ -363,21 +174,6 @@ export default function LeadsPage() {
         setLoading(false)
     }
 
-    // Fetch lead statistics
-    const fetchStats = async () => {
-        try {
-            const response = await fetch('/api/leads?stats=true')
-            if (!response.ok) throw new Error('Failed to fetch stats')
-
-            const result = await response.json()
-            if (result.success) {
-                setStats(result.data)
-            }
-        } catch (error) {
-            console.error('Error fetching stats:', error)
-        }
-    }
-
     // Handle lead selection for detail view
     const handleLeadSelect = async (lead: LeadWithSyndieData) => {
         setSelectedLead(lead)
@@ -387,7 +183,8 @@ export default function LeadsPage() {
 
             const result = await response.json()
             if (result.success) {
-                setSelectedLeadTimeline(result.data.timeline)
+                console.log(result.data);
+                setSelectedLeadTimeline(result.data)
             }
         } catch (error) {
             console.error('Error fetching lead details:', error)
@@ -403,81 +200,25 @@ export default function LeadsPage() {
     }
 
     // Fetch filter options
-    const fetchFilterOptions = async () => {
-        setFilterOptionsLoading(true)
-        console.log('🔄 Starting to fetch filter options...')
-        
+    const fetchStats = async () => {
         try {
-            // Get organization context from Clerk hook
-            const orgId = organization?.id
-            console.log('🏢 Organization ID:', orgId)
-            console.log('🏢 Organization object:', organization)
-
-            // Build query params with organization context
-            const queryParams = orgId ? `?organizationId=${orgId}` : ''
-            console.log('📝 Query params:', queryParams)
-
-            // Fetch campaigns
-            console.log('📊 Fetching campaigns...')
-            const campaignsRes = await fetch(`/api/campaigns${queryParams}`)
-            console.log('📊 Campaigns response status:', campaignsRes.status)
-            
-            if (campaignsRes.ok) {
-                const campaignsData = await campaignsRes.json()
-                console.log('📊 Campaigns data:', campaignsData)
-                setCampaignOptions(campaignsData.campaigns || [])
-                console.log('📊 Set campaign options:', campaignsData.campaigns?.length || 0, 'campaigns')
-            } else {
-                console.error('❌ Failed to fetch campaigns:', campaignsRes.status, campaignsRes.statusText)
+            const response = await fetch(`/api/leads?stats=true`)
+            if (!response.ok) throw new Error('Failed to fetch lead stats')
+            const result = await response.json();
+            if (result.success){
+                setStats(result.data)
             }
-
-            // Fetch accounts  
-            console.log('👤 Fetching accounts...')
-            const accountsRes = await fetch(`/api/accounts${queryParams}`)
-            console.log('👤 Accounts response status:', accountsRes.status)
-            
-            if (accountsRes.ok) {
-                const accountsData = await accountsRes.json()
-                console.log('👤 Accounts data:', accountsData)
-                setAccountOptions(accountsData.accounts || [])
-                console.log('👤 Set account options:', accountsData.accounts?.length || 0, 'accounts')
-            } else {
-                console.error('❌ Failed to fetch accounts:', accountsRes.status, accountsRes.statusText)
-            }
-
-            // Fetch lead lists
-            console.log('📋 Fetching lead lists...')
-            const leadListsRes = await fetch(`/api/lead-lists${queryParams}`)
-            console.log('📋 Lead lists response status:', leadListsRes.status)
-            
-            if (leadListsRes.ok) {
-                const leadListsData = await leadListsRes.json()
-                console.log('📋 Lead lists data:', leadListsData)
-                setLeadListOptions(leadListsData.lead_lists || [])
-                console.log('📋 Set lead list options:', leadListsData.lead_lists?.length || 0, 'lead lists')
-            } else {
-                console.error('❌ Failed to fetch lead lists:', leadListsRes.status, leadListsRes.statusText)
-            }
-
-            console.log('✅ Filter options fetch completed')
-        } catch (error) {
-            console.error('❌ Error fetching filter options:', error)
-            toast({
-                title: 'Warning',
-                description: 'Failed to load filter options',
-                status: 'warning',
-                duration: 3000,
-                isClosable: true,
-            })
+            // setStats()
+        } catch (err) {
+            console.error('Error fetching lead stats:', err)
         }
-        setFilterOptionsLoading(false)
     }
 
     // Initial data fetch
     useEffect(() => {
         fetchLeads()
         fetchStats()
-        fetchFilterOptions()
+        // fetchFilterOptions()
     }, [])
 
     return (
@@ -522,7 +263,7 @@ export default function LeadsPage() {
 
                     {/* Stats Overview */}
                     {stats && (
-                        <SimpleGrid columns={{ base: 2, md: 6 }} spacing={6}>
+                        <SimpleGrid columns={{ base: 2, md: 3 }} spacing={6}>
                             <Card
                                 bg={cardBg}
                                 border="1px solid"
@@ -535,9 +276,9 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={Users} boxSize={5} color="purple.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.total}
+                                        {stats.requestsSent}
                                     </Text>
-                                    <Text fontSize="xs" color="gray.600">Total Leads</Text>
+                                    <Text fontSize="xs" color="gray.600">Requests Sent</Text>
                                 </VStack>
                             </Card>
 
@@ -553,7 +294,7 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={Linkedin} boxSize={5} color="green.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.byConnectionStatus.connected + stats.byConnectionStatus.replied}
+                                        {stats.accepted}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">Connected</Text>
                                 </VStack>
@@ -571,63 +312,9 @@ export default function LeadsPage() {
                                 <VStack spacing={1}>
                                     <Icon as={MessageCircle} boxSize={5} color="blue.500" />
                                     <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.byConnectionStatus.replied}
+                                        {stats.replied}
                                     </Text>
                                     <Text fontSize="xs" color="gray.600">Replied</Text>
-                                </VStack>
-                            </Card>
-
-                            <Card
-                                bg={cardBg}
-                                border="1px solid"
-                                borderColor={borderColor}
-                                borderRadius="xl"
-                                p={4}
-                                _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                                transition="all 0.2s ease"
-                            >
-                                <VStack spacing={1}>
-                                    <Icon as={Activity} boxSize={5} color="orange.500" />
-                                    <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.activeAutomations}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.600">Active</Text>
-                                </VStack>
-                            </Card>
-
-                            <Card
-                                bg={cardBg}
-                                border="1px solid"
-                                borderColor={borderColor}
-                                borderRadius="xl"
-                                p={4}
-                                _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                                transition="all 0.2s ease"
-                            >
-                                <VStack spacing={1}>
-                                    <Icon as={TrendingUp} boxSize={5} color="purple.500" />
-                                    <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.newThisWeek}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.600">This Week</Text>
-                                </VStack>
-                            </Card>
-
-                            <Card
-                                bg={cardBg}
-                                border="1px solid"
-                                borderColor={borderColor}
-                                borderRadius="xl"
-                                p={4}
-                                _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                                transition="all 0.2s ease"
-                            >
-                                <VStack spacing={1}>
-                                    <Icon as={Clock} boxSize={5} color="gray.500" />
-                                    <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.recentActivity}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.600">Recent</Text>
                                 </VStack>
                             </Card>
                         </SimpleGrid>
@@ -644,16 +331,43 @@ export default function LeadsPage() {
                         px={4}
                         py={2}
                     >
-                        <HStack spacing={6} align="center" justify="start">
-                            <Box>
-                                <InputGroup size="md">
+                        <HStack spacing={6} align="end" justify="start">
+                            <Text
+                                fontSize="sm"
+                                fontWeight="bold"
+                                bgGradient="linear(to-r, purple.400, blue.400)"
+                                bgClip="text"
+                                mb={5}
+                                whiteSpace="nowrap"
+                            >
+                                Filter Leads
+                            </Text>
+
+                            <Box width={'2xl'}>
+                                <Text
+                                    fontSize="xs"
+                                    fontWeight="semibold"
+                                    color="gray.500"
+                                    textTransform="uppercase"
+                                    letterSpacing="wider"
+                                    mb={1}
+                                    ml={5}
+                                >
+                                    Search
+                                </Text>
+                                <InputGroup size="lg" width={{ base: '100%', md: '400px', lg: '500px' }}>
                                     <InputLeftElement pointerEvents="none">
                                         <Icon as={Search} color="gray.500" boxSize={4} />
                                     </InputLeftElement>
                                     <Input
                                         placeholder="Search leads by name, email, or company..."
                                         value={searchTerm}
-                                        onChange={(e) => handleSearch(e.target.value)}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleSearch()
+                                            }
+                                        }}
                                         bg={glassBg}
                                         border="1px solid"
                                         borderColor={borderColor}
@@ -692,16 +406,13 @@ export default function LeadsPage() {
                                                 connectionStatus: e.target.value ? [e.target.value as LinkedInConnectionStatus] : undefined
                                             })}
                                         >
-                                            <option value="not_connected">Not Connected</option>
                                             <option value="pending">Pending</option>
-                                            <option value="connected">Connected</option>
+                                            <option value="accepted">Accepted</option>
                                             <option value="replied">Replied</option>
-                                            <option value="bounced">Bounced</option>
-                                            <option value="not_interested">Not Interested</option>
                                         </Select>
                                     </VStack>
 
-                                    <VStack align="stretch" spacing={1}>
+                                    {/* <VStack align="stretch" spacing={1}>
                                         <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
                                             Account (Seat)
                                         </Text>
@@ -786,7 +497,7 @@ export default function LeadsPage() {
                                                 </option>
                                             ))}
                                         </Select>
-                                    </VStack>
+                                    </VStack> */}
                                 </SimpleGrid>
                             </Box>
                         </HStack>
@@ -798,29 +509,24 @@ export default function LeadsPage() {
                         <ModalContent bg={cardBg} borderRadius="xl">
                             <ModalHeader>
                                 <HStack spacing={4}>
-                                    <Avatar size="lg" name={selectedLead?.full_name} />
+                                    <Avatar size="lg" name={selectedLead?.name} />
                                     <VStack align="start" spacing={1}>
-                                        <Heading size="lg">{selectedLead?.full_name}</Heading>
-                                        <Text color="gray.600">{selectedLead?.title}</Text>
+                                        <Heading size="lg">{selectedLead?.name}</Heading>
+                                        <Text color="gray.600">{selectedLead?.headline}</Text>
                                         <HStack spacing={2}>
                                             <Badge
-                                                colorScheme={getConnectionStatusColor(selectedLead?.linkedin_connection_status || 'not_connected')}
+                                                colorScheme={getConnectionStatusColor(selectedLead?.status || 'not_connected')}
                                                 variant="subtle"
                                             >
-                                                {formatConnectionStatus(selectedLead?.linkedin_connection_status || 'not_connected')}
+                                                {formatConnectionStatus(selectedLead?.status || 'not_connected')}
                                             </Badge>
-                                            {selectedLead?.source === 'syndie' && (
-                                                <Badge colorScheme="purple" variant="subtle">
-                                                    Automation
-                                                </Badge>
-                                            )}
                                         </HStack>
                                     </VStack>
                                 </HStack>
                             </ModalHeader>
                             <ModalCloseButton />
                             <ModalBody pb={6}>
-                                {selectedLead && (
+                                {selectedLeadTimeline && (
                                     <VStack spacing={6} align="stretch">
                                         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
                                             <VStack spacing={4} align="stretch">
@@ -828,14 +534,10 @@ export default function LeadsPage() {
                                                     <Text fontWeight="semibold" mb={2}>Contact Information</Text>
                                                     <VStack spacing={2} align="stretch">
                                                         <HStack>
-                                                            <Icon as={Mail} boxSize={4} color="gray.500" />
-                                                            <Text fontSize="sm">{selectedLead.email || 'No email'}</Text>
-                                                        </HStack>
-                                                        <HStack>
                                                             <Icon as={Linkedin} boxSize={4} color="blue.500" />
                                                             <Text
                                                                 as="a"
-                                                                href={selectedLead.linkedin_url || '#'}
+                                                                href={'https://linkedin.com/in/' + selectedLeadTimeline.profile.public_identifier || '#'}
                                                                 target="_blank"
                                                                 color="blue.500"
                                                                 fontSize="sm"
@@ -844,31 +546,12 @@ export default function LeadsPage() {
                                                                 LinkedIn Profile
                                                             </Text>
                                                         </HStack>
-                                                        {selectedLead.location && (
+                                                        {selectedLeadTimeline.profile.location && (
                                                             <HStack>
                                                                 <Text fontWeight="semibold" fontSize="sm">Location:</Text>
-                                                                <Text fontSize="sm">{selectedLead.location}</Text>
+                                                                <Text fontSize="sm">{selectedLeadTimeline.profile.location}</Text>
                                                             </HStack>
                                                         )}
-                                                    </VStack>
-                                                </Box>
-
-                                                <Box>
-                                                    <Text fontWeight="semibold" mb={2}>Lead Source</Text>
-                                                    <VStack spacing={2} align="stretch">
-                                                        <HStack>
-                                                            <Text fontWeight="semibold" fontSize="sm">Lead List:</Text>
-                                                            <Text fontSize="sm">{selectedLead?.lead_list_name || 'No List'}</Text>
-                                                        </HStack>
-                                                        <HStack>
-                                                            <Text fontWeight="semibold" fontSize="sm">Account Used:</Text>
-                                                            <Text fontSize="sm">
-                                                                {selectedLead?.seat_info?.firstName && selectedLead?.seat_info?.lastName 
-                                                                    ? `${selectedLead.seat_info.firstName} ${selectedLead.seat_info.lastName}`
-                                                                    : 'No Account'
-                                                                }
-                                                            </Text>
-                                                        </HStack>
                                                     </VStack>
                                                 </Box>
                                             </VStack>
@@ -880,30 +563,38 @@ export default function LeadsPage() {
                                                         <HStack justify="space-between">
                                                             <Text fontSize="sm">Connection Progress</Text>
                                                             <Text fontWeight="bold" fontSize="sm">
-                                                                {selectedLead.connectionProgress || 0}%
+                                                                {selectedLeadTimeline.steps
+                                                                    ? Math.round(
+                                                                        (selectedLeadTimeline.steps.filter(step => step.success).length / selectedLeadTimeline.steps.length) * 100
+                                                                    )
+                                                                    : 0}%
                                                             </Text>
                                                         </HStack>
                                                         <Progress
-                                                            value={selectedLead.connectionProgress || 0}
+                                                            value={selectedLeadTimeline.steps
+                                                                ? Math.round(
+                                                                    (selectedLeadTimeline.steps.filter(step => step.success).length / selectedLeadTimeline.steps.length) * 100
+                                                                )
+                                                                : 0}
                                                             colorScheme="purple"
                                                             borderRadius="md"
                                                         />
                                                         <SimpleGrid columns={3} spacing={4}>
                                                             <VStack>
                                                                 <Text fontSize="lg" fontWeight="bold">
-                                                                    {selectedLead.totalSteps || 0}
+                                                                    {selectedLeadTimeline.steps.length || 0}
                                                                 </Text>
                                                                 <Text fontSize="xs" color="gray.600">Total Steps</Text>
                                                             </VStack>
                                                             <VStack>
                                                                 <Text fontSize="lg" fontWeight="bold" color="green.500">
-                                                                    {selectedLead.completedSteps || 0}
+                                                                    {selectedLeadTimeline.steps.filter(step => step.success).length || 0}
                                                                 </Text>
                                                                 <Text fontSize="xs" color="gray.600">Completed</Text>
                                                             </VStack>
                                                             <VStack>
                                                                 <Text fontSize="lg" fontWeight="bold" color="red.500">
-                                                                    {selectedLead.failedSteps || 0}
+                                                                    {selectedLeadTimeline.steps.filter(it => it.errorMessage !== null && it.errorMessage !== undefined || it.success === false).length || 0}
                                                                 </Text>
                                                                 <Text fontSize="xs" color="gray.600">Failed</Text>
                                                             </VStack>
@@ -912,64 +603,6 @@ export default function LeadsPage() {
                                                 </Box>
                                             </VStack>
                                         </SimpleGrid>
-
-                                        {/* Activity Timeline */}
-                                        {selectedLeadTimeline?.steps && (
-                                            <Box>
-                                                <VStack spacing={6} align="stretch" maxH="300px" overflow="auto">
-                                                    {/* Mock Data Section */}
-                                                    {selectedLead.email && emailSet[selectedLead.email]?.length > 0 && (
-                                                        <Box>
-                                                            <Text fontWeight="semibold" mb={4}>Email Activity Timeline</Text>
-                                                            <VStack spacing={3} align="stretch">
-                                                                {emailSet[selectedLead.email]?.map((step, index) => (
-                                                                    <HStack key={`mock-${index}`} spacing={3} p={3} bg={glassBg} borderRadius="md">
-                                                                        <Icon
-                                                                            as={CheckCircle}
-                                                                            color={'blue.500'}
-                                                                            boxSize={4}
-                                                                        />
-                                                                        <VStack align="start" spacing={1} flex={1}>
-                                                                            <Text fontWeight="medium" fontSize="sm" textTransform={'capitalize'}>{step?.action?.split('_').join(' ')}</Text>
-                                                                            <Text fontSize="xs" color="gray.600" whiteSpace="pre-line">{step.message}</Text>
-                                                                            <Text fontSize="xs" color="gray.500">
-                                                                                {new Date(step.timestamp).toLocaleString()}
-                                                                            </Text>
-                                                                        </VStack>
-                                                                    </HStack>
-                                                                ))}
-                                                            </VStack>
-                                                        </Box>
-                                                    )}
-
-                                                    {/* Actual Steps Section */}
-                                                    {selectedLeadTimeline.steps.length > 0 && (
-                                                        <Box>
-                                                            <Text fontWeight="semibold" mb={4}>Linkedin Activity Timeline</Text>
-                                                            {/* <Text fontWeight="semibold" mb={2} color="blue.500">Actual Steps</Text> */}
-                                                            <VStack spacing={3} align="stretch">
-                                                                {selectedLeadTimeline.steps.map((step, index) => (
-                                                                    <HStack key={`actual-${index}`} spacing={3} p={3} bg={glassBg} borderRadius="md">
-                                                                        <Icon
-                                                                            as={step.success ? CheckCircle : AlertCircle}
-                                                                            color={step.success ? 'green.500' : 'red.500'}
-                                                                            boxSize={4}
-                                                                        />
-                                                                        <VStack align="start" spacing={1} flex={1}>
-                                                                            <Text fontWeight="medium" fontSize="sm" textTransform={'capitalize'}>{step?.title?.split('_').join(' ')}</Text>
-                                                                            <Text fontSize="xs" color="gray.600">{step.description}</Text>
-                                                                            <Text fontSize="xs" color="gray.500">
-                                                                                {new Date(step.timestamp).toLocaleString()}
-                                                                            </Text>
-                                                                        </VStack>
-                                                                    </HStack>
-                                                                ))}
-                                                            </VStack>
-                                                        </Box>
-                                                    )}
-                                                </VStack>
-                                            </Box>
-                                        )}
                                     </VStack>
                                 )}
                             </ModalBody>
@@ -1026,40 +659,48 @@ export default function LeadsPage() {
                                             <Tr>
                                                 <Th color="gray.600" fontWeight="semibold" py={4}>Lead</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Company</Th>
-                                                <Th color="gray.600" fontWeight="semibold">Lead List</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Account</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Connection</Th>
-                                                <Th color="gray.600" fontWeight="semibold">Progress</Th>
+                                                <Th color="gray.600" fontWeight="semibold">Campaign</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Last Activity</Th>
                                                 <Th color="gray.600" fontWeight="semibold">Actions</Th>
                                             </Tr>
                                         </Thead>
-                                        <Tbody>
+                                        <Tbody >
                                             {leads.map((lead) => (
                                                 <Tr
                                                     key={lead.id}
                                                     _hover={{
-                                                        bg: glassBg,
+                                                        bgGradient: 'linear(to-r, purple.50 0%, white 100%)',
                                                         transform: 'scale(1.01)',
-                                                        cursor: 'pointer'
+                                                        cursor: 'pointer',
+                                                        transition: 'background 0.8s cubic-bezier(0.4,0,0.2,1)'
                                                     }}
                                                     transition="all 0.2s ease"
                                                     onClick={() => handleLeadSelect(lead)}
+                                                    bg={selectedLead?.id === lead.id ? 'purple.50' : undefined}
+                                                    style={selectedLead?.id === lead.id
+                                                        ? { transition: 'background 0.8s cubic-bezier(0.4,0,0.2,1)' }
+                                                        : undefined
+                                                    }
                                                 >
                                                     <Td py={4}>
                                                         <HStack spacing={3}>
                                                             <Avatar
+                                                                src={lead.profilePicture}
                                                                 size="sm"
-                                                                name={lead.full_name}
+                                                                name={lead.name}
                                                                 border="2px solid"
                                                                 borderColor={borderColor}
                                                             />
                                                             <VStack align="start" spacing={0}>
                                                                 <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
-                                                                    {lead.full_name}
+                                                                    {lead.name}
                                                                 </Text>
                                                                 <Text fontSize="xs" color="gray.500" noOfLines={1}>
-                                                                    {lead.title}
+                                                                    {lead.headline?.length > 40
+                                                                        ? `${lead.headline.slice(0, 40)}...`
+                                                                        : lead.headline}
                                                                 </Text>
                                                             </VStack>
                                                         </HStack>
@@ -1076,49 +717,34 @@ export default function LeadsPage() {
                                                     </Td>
                                                     <Td>
                                                         <Text fontSize="sm" color="gray.600">
-                                                            {lead.lead_list_name || 'No List'}
-                                                        </Text>
-                                                    </Td>
-                                                    <Td>
-                                                        <Text fontSize="sm" color="gray.600">
-                                                            {lead.seat_info?.firstName && lead.seat_info?.lastName 
-                                                                ? `${lead.seat_info.firstName} ${lead.seat_info.lastName}`
+                                                            {lead.senderName
+                                                                ? `${lead.senderName}`
                                                                 : 'No Account'
                                                             }
                                                         </Text>
                                                     </Td>
                                                     <Td>
                                                         <Badge
-                                                            colorScheme={getConnectionStatusColor(lead.linkedin_connection_status)}
+                                                            colorScheme={getConnectionStatusColor(lead.status)}
                                                             variant="subtle"
                                                             fontSize="xs"
                                                         >
-                                                            {formatConnectionStatus(lead.linkedin_connection_status)}
+                                                            {formatConnectionStatus(lead.status)}
                                                         </Badge>
                                                     </Td>
                                                     <Td>
-                                                        {(lead.totalSteps || 0) > 0 ? (
-                                                            <VStack spacing={1} align="start">
-                                                                <Text fontSize="xs" color="gray.600">
-                                                                    {lead.completedSteps}/{lead.totalSteps} steps
-                                                                </Text>
-                                                                <Progress
-                                                                    value={((lead.completedSteps || 0) / (lead.totalSteps || 1)) * 100}
-                                                                    colorScheme="purple"
-                                                                    size="sm"
-                                                                    borderRadius="md"
-                                                                    w="60px"
-                                                                />
-                                                            </VStack>
-                                                        ) : (
-                                                            <Text fontSize="xs" color="gray.400">No automation</Text>
-                                                        )}
+                                                        <Text fontSize="sm" color="gray.600">
+                                                            {lead.campaign
+                                                                ? `${lead.campaign}`
+                                                                : 'No Account'
+                                                            }
+                                                        </Text>
                                                     </Td>
 
                                                     <Td>
-                                                        {lead.lastStepAt ? (
+                                                        {lead.updatedAt ? (
                                                             <Text fontSize="xs" color="gray.500">
-                                                                {new Date(lead.lastStepAt).toLocaleDateString()}
+                                                                {new Date(lead.updatedAt).toLocaleDateString()}
                                                             </Text>
                                                         ) : (
                                                             <Text fontSize="xs" color="gray.400">No activity</Text>
@@ -1139,7 +765,7 @@ export default function LeadsPage() {
                                                                     aria-label="View lead details"
                                                                 />
                                                             </Tooltip>
-                                                            {lead.linkedin_url && (
+                                                            {lead.publicIdentifier && (
                                                                 <Tooltip label="Open LinkedIn">
                                                                     <IconButton
                                                                         icon={<ExternalLink size={14} />}
@@ -1148,24 +774,9 @@ export default function LeadsPage() {
                                                                         colorScheme="blue"
                                                                         onClick={(e) => {
                                                                             e.stopPropagation()
-                                                                            window.open(lead.linkedin_url || '#', '_blank')
+                                                                            window.open(`https://linkedin.com/in/` + lead.publicIdentifier || '#', '_blank')
                                                                         }}
                                                                         aria-label="Open LinkedIn profile"
-                                                                    />
-                                                                </Tooltip>
-                                                            )}
-                                                            {lead.email && (
-                                                                <Tooltip label="Send Email">
-                                                                    <IconButton
-                                                                        icon={<Mail size={14} />}
-                                                                        size="xs"
-                                                                        variant="ghost"
-                                                                        colorScheme="green"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation()
-                                                                            window.open(`mailto:${lead.email}`, '_blank')
-                                                                        }}
-                                                                        aria-label="Send email"
                                                                     />
                                                                 </Tooltip>
                                                             )}

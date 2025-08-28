@@ -13,6 +13,8 @@ interface ICrmProps {
     source: string
 }
 
+export const syndieBaseUrl = 'https://api.syndie.io'
+
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
 }

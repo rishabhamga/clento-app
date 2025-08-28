@@ -161,7 +161,7 @@ export interface Database {
           lead_list_id?: string | null;
           // Syndie integration fields
           syndie_lead_id?: string | null;
-          linkedin_connection_status?: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
+          linkedin_connection_status?: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested' | 'accepted' | 'sent';
           steps?: Record<string, unknown>[];
           campaign_info?: Record<string, unknown>;
           seat_info?: Record<string, unknown>;

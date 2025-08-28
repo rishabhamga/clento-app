@@ -17,7 +17,7 @@ interface UnipileWebhookPayload {
 export async function POST(request: NextRequest) {
   try {
     const body: UnipileWebhookPayload = await request.json()
-    
+
     console.log('Received Unipile webhook:', body)
 
     const { status, account_id, name: userDbId, error } = body
@@ -75,30 +75,30 @@ export async function POST(request: NextRequest) {
         // Extract display information from account details if available
         if (accountDetails) {
           console.log('Processing account details from Unipile:', JSON.stringify(accountDetails, null, 2))
-          
+
           // Try multiple possible name fields
-          const displayName = accountDetails.name || 
+          const displayName = accountDetails.name ||
                              accountDetails.display_name ||
                              accountDetails.full_name ||
                              `${accountDetails.first_name || ''} ${accountDetails.last_name || ''}`.trim() ||
                              null
-          
+
           if (displayName) {
             updateData.display_name = displayName
           }
-          
+
           if (accountDetails.username || accountDetails.handle) {
             updateData.username = accountDetails.username || accountDetails.handle
           }
-          
+
           if (accountDetails.email) {
             updateData.email = accountDetails.email
           }
-          
+
           // LinkedIn profile pictures are not available via Unipile API
           // The UI will display user initials instead
           console.log('LinkedIn profile picture not available via API - UI will show initials')
-          
+
           if (accountDetails.capabilities) {
             updateData.capabilities = accountDetails.capabilities
           }
@@ -106,9 +106,9 @@ export async function POST(request: NextRequest) {
           // Extract premium status from LinkedIn connection params
           if (accountDetails.connection_params?.im) {
             const linkedinData = accountDetails.connection_params.im
-            const isPremium = linkedinData.premiumId !== null || 
+            const isPremium = linkedinData.premiumId !== null ||
                              (linkedinData.premiumFeatures && linkedinData.premiumFeatures.length > 0)
-            
+
             console.log('LinkedIn Premium Status for new account:', {
               premiumId: linkedinData.premiumId,
               premiumFeatures: linkedinData.premiumFeatures,
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
 
       } catch (fetchError) {
         console.error('Error fetching account details:', fetchError)
-        
+
         // Still update with basic success info even if we can't fetch details
         const { error: basicUpdateError } = await supabase
           .from('user_accounts')
