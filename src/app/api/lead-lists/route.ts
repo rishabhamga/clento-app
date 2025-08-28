@@ -11,7 +11,7 @@ const supabase = createClient(
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth()
-    
+
     if (!userId) {
       console.log('❌ Lead Lists API: Unauthorized - no userId')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -43,11 +43,11 @@ export async function GET(request: NextRequest) {
     console.log('📋 Lead Lists API: Found user:', userData.id)
 
     let orgDbId = null
-    
+
     // If organizationId is provided, get the corresponding database ID
     if (organizationId) {
       console.log('📋 Looking up organization for lead lists:', organizationId)
-      
+
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
         .select('id, name')
@@ -92,15 +92,14 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('📋 Found lead lists:', leadLists?.length || 0)
-    console.log('📋 Lead list details:', leadLists)
 
     // Fetch connected accounts and campaigns separately if there are lead lists
     const leadListsWithDetails: any[] = []
-    
+
     for (const leadList of leadLists || []) {
       let connectedAccount: any = null
       let campaign: any = null
-      
+
       // Get connected account if exists
       if (leadList.connected_account_id) {
         const { data: accountData, error: accountError } = await supabase
@@ -108,12 +107,12 @@ export async function GET(request: NextRequest) {
           .select('id, provider, display_name, connection_status, profile_picture_url')
           .eq('id', leadList.connected_account_id)
           .single()
-        
+
         if (!accountError && accountData) {
           connectedAccount = accountData
         }
       }
-      
+
       // Get campaign if exists
       if (leadList.campaign_id) {
         const { data: campaignData, error: campaignError } = await supabase
@@ -121,12 +120,12 @@ export async function GET(request: NextRequest) {
           .select('id, name, description, status')
           .eq('id', leadList.campaign_id)
           .single()
-        
+
         if (!campaignError && campaignData) {
           campaign = campaignData
         }
       }
-      
+
       leadListsWithDetails.push({
         ...leadList,
         connected_account: connectedAccount,
@@ -189,7 +188,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
-    
+
     if (!userId) {
       console.log('❌ Lead Lists POST API: Unauthorized - no userId')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -335,14 +334,14 @@ export async function POST(request: NextRequest) {
     // Get connected account and campaign information if they exist
     let connectedAccount: any = null
     let campaign: any = null
-    
+
     if (newLeadList?.connected_account_id) {
       const { data: accountData, error: accountError } = await supabase
         .from('user_accounts')
         .select('id, provider, display_name, connection_status, profile_picture_url')
         .eq('id', newLeadList.connected_account_id)
         .single()
-      
+
       if (!accountError && accountData) {
         connectedAccount = accountData
       }
@@ -354,7 +353,7 @@ export async function POST(request: NextRequest) {
         .select('id, name, description, status')
         .eq('id', newLeadList.campaign_id)
         .single()
-      
+
       if (!campaignError && campaignData) {
         campaign = campaignData
       }

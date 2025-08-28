@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { uploadFileToGCS } from '@/utils/gcsUtil'
 import Papa from 'papaparse'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -39,7 +39,7 @@ export async function POST(
   try {
     const { id } = await params
     console.log('🚀 Starting CSV upload process for lead list:', id)
-    
+
     // Authenticate user
     const { userId, orgId } = await auth()
     if (!userId || !orgId) {
@@ -138,7 +138,7 @@ export async function POST(
     console.log('☁️ Uploading to Google Cloud Storage...')
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const gcsFileName = `lead-lists/${leadList.id}/${timestamp}-${file.name}`
-    
+
     const uploadResult = await uploadFileToGCS(
       fileBuffer,
       gcsFileName,
@@ -199,13 +199,13 @@ export async function POST(
 
     for (let i = 0; i < csvData.length; i++) {
       const row = csvData[i]
-      
+
       try {
         // Extract required fields
         const email = row.email || row.Email || row.EMAIL || ''
         const firstName = row.first_name || row.firstName || row['First Name'] || ''
         const lastName = row.last_name || row.lastName || row['Last Name'] || ''
-        const fullName = row.full_name || row.fullName || row['Full Name'] || 
+        const fullName = row.full_name || row.fullName || row['Full Name'] ||
                         `${firstName} ${lastName}`.trim() || email.split('@')[0]
 
         if (!email) {
@@ -260,13 +260,13 @@ export async function POST(
     // Insert leads into database in batches
     if (leadsToInsert.length > 0) {
       console.log('💾 Inserting leads into database...')
-      
+
       const batchSize = 100
       let insertedCount = 0
-      
+
       for (let i = 0; i < leadsToInsert.length; i += batchSize) {
         const batch = leadsToInsert.slice(i, i + batchSize)
-        
+
         const { data: insertedLeads, error: insertError } = await supabaseAdmin
           .from('leads')
           .insert(batch)
@@ -341,9 +341,9 @@ export async function POST(
   } catch (error: any) {
     console.error('❌ Error in upload process:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
-        details: error.message 
+        details: error.message
       },
       { status: 500 }
     )

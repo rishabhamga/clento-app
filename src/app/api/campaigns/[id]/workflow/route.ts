@@ -5,7 +5,7 @@ import { saveWorkflowToGCS, loadWorkflowFromGCS, deleteWorkflowFromGCS } from '@
 import { FlowData } from '@/components/workflow/types/WorkflowTypes';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
@@ -51,7 +51,7 @@ export async function GET(
 
     // Extract flow ID from file name
     const flowId = campaign.workflow_json_file.replace('workflows/', '').replace('.json', '');
-    
+
     // Load workflow from GCS
     const workflowData = await loadWorkflowFromGCS(flowId);
 
