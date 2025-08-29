@@ -55,10 +55,9 @@ interface OrganizationSwitcherProps {
 export default function OrganizationSwitcher({ onOrganizationChange }: OrganizationSwitcherProps) {
     const { isOpen, onOpen, onClose } = useDisclosure()
     const { organization } = useOrganization();
+    const isFirstRun = useRef(true);
 
     useEffect(() => {
-        const isFirstRun = useRef(true);
-
         if (isFirstRun.current) {
             isFirstRun.current = false;
             return; // skip first run
