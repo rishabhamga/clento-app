@@ -117,6 +117,16 @@ export default function Dashboard() {
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
     const cardBorder = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
 
+    const handleCreateCampaign = () => {
+        localStorage.removeItem('campaignTargeting')
+        localStorage.removeItem('campaignPitchData')
+        localStorage.removeItem('campaignOutreachData')
+        localStorage.removeItem('campaignWorkflow')
+        localStorage.removeItem('campaignLaunch')
+        localStorage.removeItem('selectedLeads')
+        router.push('/campaigns/new')
+    }
+
     useEffect(() => {
         const fetchProfile = async () => {
             if (!user) return
@@ -271,8 +281,8 @@ export default function Dashboard() {
                 {/* Campaigns Header */}
                 <HStack justify="space-between" align="center">
                     <VStack spacing={1} align="start">
-                        <Heading 
-                            size="xl" 
+                        <Heading
+                            size="xl"
                             bgGradient="linear(to-r, purple.400, blue.400)"
                             bgClip="text"
                             fontWeight="bold"
@@ -283,11 +293,11 @@ export default function Dashboard() {
                             Manage your outreach campaigns and track performance
                         </Text>
                     </VStack>
-                    <GradientButton 
-                        leftIcon={<Plus size={16} />} 
+                    <GradientButton
+                        leftIcon={<Plus size={16} />}
                         variant="primary"
                         size="lg"
-                        onClick={() => router.push('/campaigns/new')}
+                        onClick={() => handleCreateCampaign()}
                     >
                         Create a Campaign
                     </GradientButton>
@@ -315,10 +325,10 @@ export default function Dashboard() {
 
                 {/* Dashboard Stats */}
                 <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6} mb={8}>
-                    <Card 
+                    <Card
                         bg={cardBg}
                         backdropFilter="blur(10px)"
-                        border="1px solid" 
+                        border="1px solid"
                         borderColor={cardBorder}
                         borderRadius="xl"
                         p={4}
@@ -334,10 +344,10 @@ export default function Dashboard() {
                         </VStack>
                     </Card>
 
-                    <Card 
+                    <Card
                         bg={cardBg}
                         backdropFilter="blur(10px)"
-                        border="1px solid" 
+                        border="1px solid"
                         borderColor={cardBorder}
                         borderRadius="xl"
                         p={4}
@@ -353,10 +363,10 @@ export default function Dashboard() {
                         </VStack>
                     </Card>
 
-                    <Card 
+                    <Card
                         bg={cardBg}
                         backdropFilter="blur(10px)"
-                        border="1px solid" 
+                        border="1px solid"
                         borderColor={cardBorder}
                         borderRadius="xl"
                         p={4}
@@ -372,10 +382,10 @@ export default function Dashboard() {
                         </VStack>
                     </Card>
 
-                    <Card 
+                    <Card
                         bg={cardBg}
                         backdropFilter="blur(10px)"
-                        border="1px solid" 
+                        border="1px solid"
                         borderColor={cardBorder}
                         borderRadius="xl"
                         p={4}
@@ -395,60 +405,60 @@ export default function Dashboard() {
                 {/* Campaigns Section */}
                 <Box>
 
-                            {/* Campaign Grid */}
-                            <Grid
-                                templateColumns="repeat(auto-fill, minmax(300px, 1fr))"
-                                gap={6}
-                                w="100%"
-                            >
-                                {filteredCampaigns.map((campaign) => (
-                                    <CampaignCard
-                                        key={campaign.id}
-                                        id={campaign.id}
-                                        name={campaign.name}
-                                        type={campaign.type}
-                                        leads={campaign.leads}
-                                        createdAt={campaign.createdAt}
-                                        onClick={() => router.push(`/campaigns/${campaign.id}`)}
-                                        onMenuClick={() => {
-                                            // For now, just navigate to campaign view
-                                            router.push(`/campaigns/${campaign.id}`)
-                                        }}
-                                        onDelete={(deletedId) => {
-                                            // Remove the deleted campaign from the state
-                                            setState(prev => ({
-                                                ...prev,
-                                                campaigns: prev.campaigns.filter(c => c.id !== deletedId),
-                                                dbCampaigns: prev.dbCampaigns.filter(c => c.id !== deletedId)
-                                            }))
-                                        }}
-                                    />
-                                ))}
-                            </Grid>
+                    {/* Campaign Grid */}
+                    <Grid
+                        templateColumns="repeat(auto-fill, minmax(300px, 1fr))"
+                        gap={6}
+                        w="100%"
+                    >
+                        {filteredCampaigns.map((campaign) => (
+                            <CampaignCard
+                                key={campaign.id}
+                                id={campaign.id}
+                                name={campaign.name}
+                                type={campaign.type}
+                                leads={campaign.leads}
+                                createdAt={campaign.createdAt}
+                                onClick={() => router.push(`/campaigns/${campaign.id}`)}
+                                onMenuClick={() => {
+                                    // For now, just navigate to campaign view
+                                    router.push(`/campaigns/${campaign.id}`)
+                                }}
+                                onDelete={(deletedId) => {
+                                    // Remove the deleted campaign from the state
+                                    setState(prev => ({
+                                        ...prev,
+                                        campaigns: prev.campaigns.filter(c => c.id !== deletedId),
+                                        dbCampaigns: prev.dbCampaigns.filter(c => c.id !== deletedId)
+                                    }))
+                                }}
+                            />
+                        ))}
+                    </Grid>
 
-                            {filteredCampaigns.length === 0 && state.searchQuery && (
-                                <Box textAlign="center" py={12}>
-                                    <Text color="gray.500" fontSize="lg">
-                                        No campaigns found matching &quot;{state.searchQuery}&quot;
-                                    </Text>
-                                </Box>
-                            )}
+                    {filteredCampaigns.length === 0 && state.searchQuery && (
+                        <Box textAlign="center" py={12}>
+                            <Text color="gray.500" fontSize="lg">
+                                No campaigns found matching &quot;{state.searchQuery}&quot;
+                            </Text>
+                        </Box>
+                    )}
 
-                            {state.campaigns.length === 0 && (
-                                <Box textAlign="center" py={12}>
-                                    <VStack spacing={4}>
-                                        <Text color="gray.500" fontSize="lg">
-                                            {organization
-                                                ? `No campaigns yet in ${organization.name}. Create your first campaign to get started!`
-                                                : "No campaigns yet. Create your first campaign to get started!"
-                                            }
-                                        </Text>
-                                        <GradientButton onClick={() => router.push('/campaigns/new')}>
-                                            Create Your First Campaign
-                                        </GradientButton>
-                                    </VStack>
-                                </Box>
-                            )}
+                    {state.campaigns.length === 0 && (
+                        <Box textAlign="center" py={12}>
+                            <VStack spacing={4}>
+                                <Text color="gray.500" fontSize="lg">
+                                    {organization
+                                        ? `No campaigns yet in ${organization.name}. Create your first campaign to get started!`
+                                        : "No campaigns yet. Create your first campaign to get started!"
+                                    }
+                                </Text>
+                                <GradientButton onClick={() => router.push('/campaigns/new')}>
+                                    Create Your First Campaign
+                                </GradientButton>
+                            </VStack>
+                        </Box>
+                    )}
                 </Box>
             </VStack>
         </DashboardLayout>
