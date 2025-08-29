@@ -205,14 +205,12 @@ export default function LaunchPage() {
             console.log('Campaign created successfully:', data)
 
             // Clear localStorage data after successful launch
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem('campaignTargeting')
-                localStorage.removeItem('campaignPitchData')
-                localStorage.removeItem('campaignOutreachData')
-                localStorage.removeItem('campaignWorkflow')
-                localStorage.removeItem('campaignLaunch')
-                localStorage.removeItem('selectedLeads')
-            }
+            localStorage.removeItem('campaignTargeting')
+            localStorage.removeItem('campaignPitchData')
+            localStorage.removeItem('campaignOutreachData')
+            localStorage.removeItem('campaignWorkflow')
+            localStorage.removeItem('campaignLaunch')
+            localStorage.removeItem('selectedLeads')
 
             customToast.success({
                 title: 'Campaign Launched!',

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
     Box,
     HStack,
@@ -53,117 +53,26 @@ interface OrganizationSwitcherProps {
 }
 
 export default function OrganizationSwitcher({ onOrganizationChange }: OrganizationSwitcherProps) {
-    const { organization } = useOrganization()
-    const { userMemberships, setActive } = useOrganizationList()
-    const { user } = useUser()
     const { isOpen, onOpen, onClose } = useDisclosure()
-    const toast = useToast()
-    const customToast = createCustomToast(toast)
+    const { organization } = useOrganization();
 
-    const [isLoading, setIsLoading] = useState(false)
-    const [showCreateForm, setShowCreateForm] = useState(false)
-    const [formData, setFormData] = useState({
-        name: '',
-        slug: '',
-        industry: '',
-        companySize: ''
-    })
+    useEffect(() => {
+        const isFirstRun = useRef(true);
 
-    // Color mode values
-    const menuBg = useColorModeValue('white', 'gray.800')
-    const borderColor = useColorModeValue('gray.200', 'gray.600')
-    const hoverBg = useColorModeValue('gray.50', 'gray.700')
-
-    const handleOrganizationSwitch = async (orgId: string | null) => {
-        if (!setActive) {
-            console.error('setActive function is not available')
-            return
+        if (isFirstRun.current) {
+            isFirstRun.current = false;
+            return; // skip first run
         }
-
-        setIsLoading(true)
-        try {
-            await setActive({ organization: orgId })
-            onOrganizationChange?.(orgId)
-
-            customToast.success({
-                title: 'Organization Switched',
-                description: 'Successfully switched to the new organization',
-            })
-        } catch (error) {
-            customToast.error({
-                title: 'Switch Failed',
-                description: 'Failed to switch organization. Please try again.',
-            })
-        } finally {
-            setIsLoading(false)
+        const clearLocalStorage = () => {
+            localStorage.removeItem('campaignTargeting')
+            localStorage.removeItem('campaignPitchData')
+            localStorage.removeItem('campaignOutreachData')
+            localStorage.removeItem('campaignWorkflow')
+            localStorage.removeItem('campaignLaunch')
+            localStorage.removeItem('selectedLeads')
         }
-    }
-
-    const handleCreateOrganization = async () => {
-        if (!formData.name.trim()) {
-            customToast.warning({
-                title: 'Name required',
-                description: 'Please enter an organization name.',
-            });
-            return;
-        }
-
-        if ((userMemberships?.data?.length ?? 0) >= 2) {
-            customToast.error({
-                title: 'Limit Reached',
-                description: 'You can only create up to 2 organizations.',
-            });
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            const response = await fetch('/api/organizations', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: formData.name,
-                    slug: formData.slug,
-                    industry: formData.industry,
-                    companySize: formData.companySize,
-                    clerkOrgId: user?.id, // Include user ID to link organization
-                }),
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Failed to create organization');
-            }
-
-            customToast.success({
-                title: 'Organization Created',
-                description: 'Your organization has been successfully created and linked to your account.',
-            });
-
-            setShowCreateForm(false);
-            onClose();
-        } catch (err) {
-            const error = err as Error;
-            customToast.error({
-                title: 'Creation Failed',
-                description: error.message || 'Failed to create organization. Please try again.',
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // Get current organization display info
-    const currentOrgInfo = organization ? {
-        name: organization.name,
-        slug: organization.slug,
-        logoUrl: organization.imageUrl,
-        memberCount: organization.membersCount
-    } : null
-
+        clearLocalStorage();
+    }, [organization])
     return (
         <>
             {/* Clerk Organization Switcher outside the modal */}
