@@ -165,13 +165,14 @@ export interface WebhookProcessingResult {
 
 // Step timeline for UI visualization
 export interface StepTimelineItem {
-    id: string;
+    stepNodeId: string;
     stepType: string;
     timestamp: string;
     success: boolean;
     title: string;
     description?: string;
-    details?: Record<string, any>;
+    details?: any;
+    message: string;
     errorMessage?: string;
 }
 
@@ -221,7 +222,7 @@ export interface LeadActivityTimeline {
     steps: StepTimelineItem[]
     messages: Record<string, unknown>;
     likedPosts: any[];
-    commentedPosts: any[];
+    comments: any[];
     createdAt: string;
     updatedAt: string;
 }

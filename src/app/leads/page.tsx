@@ -30,6 +30,7 @@ import {
     ModalContent,
     ModalHeader,
     ModalOverlay,
+    others,
     Progress,
     Select,
     SimpleGrid,
@@ -66,7 +67,7 @@ import {
     Users
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 // Helper functions
 function getConnectionStatusColor(status: LinkedInConnectionStatus): string {
@@ -205,7 +206,7 @@ export default function LeadsPage() {
             const response = await fetch(`/api/leads?stats=true`)
             if (!response.ok) throw new Error('Failed to fetch lead stats')
             const result = await response.json();
-            if (result.success){
+            if (result.success) {
                 setStats(result.data)
             }
             // setStats()
@@ -603,6 +604,86 @@ export default function LeadsPage() {
                                                 </Box>
                                             </VStack>
                                         </SimpleGrid>
+                                        <Box justifyContent={"start"}>
+                                            <VStack align="stretch" spacing={4}>
+                                                <Text fontWeight="semibold" mb={2}>Step Progress</Text>
+                                                <VStack align="stretch" spacing={0}>
+                                                    {selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook')).map((step, idx) => (
+                                                        <React.Fragment key={idx}>
+                                                            {idx !== 0 && (
+                                                                <Box
+                                                                    alignSelf={'start'}
+                                                                    width="2px"
+                                                                    height="32px"
+                                                                    bg={step.success ? 'green.400' : step.errorMessage ? 'red.400' : 'orange.300'}
+                                                                    mx={2}
+                                                                />
+                                                            )}
+                                                            <HStack align="center" spacing={3}>
+                                                                <Box
+                                                                    boxSize={6}
+                                                                    borderRadius="full"
+                                                                    bg={step.success ? 'green.400' : step.errorMessage ? 'red.400' : 'orange.300'}
+                                                                    display="flex"
+                                                                    alignItems="center"
+                                                                    justifyContent="center"
+                                                                >
+                                                                    {step.success ? (
+                                                                        <Icon as={TrendingUp} color="white" boxSize={4} />
+                                                                    ) : step.errorMessage ? (
+                                                                        <Icon as={Clock} color="white" boxSize={4} />
+                                                                    ) : (
+                                                                        <Icon as={Activity} color="white" boxSize={4} />
+                                                                    )}
+                                                                </Box>
+                                                                <VStack align="start" spacing={0}>
+                                                                    <Text fontWeight="medium" fontSize="sm" textTransform={'capitalize'} color={step.success ? 'green.400' : step.errorMessage ? 'red.400' : 'orange.300'}>
+                                                                        {step.stepNodeId.startsWith('send-invite') ? 'Sent Invite' : step.stepNodeId.split('-')[0].split('_').join(' ')}
+                                                                    </Text>
+                                                                    <Text fontSize="xs" color={step.success ? 'green.400' : step.errorMessage ? 'red.400' : 'gray.400'}>
+                                                                        {step.success
+                                                                            ? 'Completed'
+                                                                            : step.errorMessage
+                                                                                ? `Failed: ${step.errorMessage}`
+                                                                                : '⚠️'}
+                                                                    </Text>
+                                                                    {step?.details?.comments?.map(it => (
+                                                                        <>
+                                                                            <HStack>
+                                                                                <Text fontWeight="xs" fontSize="xs" textTransform={'capitalize'} color={'grey.200'}>
+                                                                                    {it.comment}
+                                                                                </Text>
+                                                                                {it.reason && (
+                                                                                    <Text fontSize="xs" color={step.success ? 'green.400' : step.errorMessage ? 'red.400' : 'gray.400'}>
+                                                                                        {it.reason}
+                                                                                    </Text>
+                                                                                )}
+                                                                                {it.post && (
+                                                                                    <IconButton
+                                                                                        icon={<ExternalLink size={14} />}
+                                                                                        size="xs"
+                                                                                        variant="ghost"
+                                                                                        colorScheme="blue"
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation()
+                                                                                            window.open(it.post || '#', '_blank')
+                                                                                        }}
+                                                                                        aria-label="Open LinkedIn profile"
+                                                                                    />
+                                                                                )}
+                                                                            </HStack>
+                                                                        </>
+                                                                    ))}
+                                                                    <Text fontWeight="xs" fontSize="xs" textTransform={'capitalize'} color={'grey.200'}>
+                                                                        {step.message}
+                                                                    </Text>
+                                                                </VStack>
+                                                            </HStack>
+                                                        </React.Fragment>
+                                                    ))}
+                                                </VStack>
+                                            </VStack>
+                                        </Box>
                                     </VStack>
                                 )}
                             </ModalBody>
