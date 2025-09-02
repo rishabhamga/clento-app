@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
 
     // Parse the webhook payload
     const payload: SyndieWebhookPayload = await req.json()
+    console.log('full request', JSON.stringify(payload));
     console.log('Syndie webhook payload received:', {
       id: payload.id,
       connectionStatus: payload.connectionStatus,
