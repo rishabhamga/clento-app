@@ -76,23 +76,24 @@ import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
 
 // Types
-import { 
-    LeadListWithAccount, 
-    LeadListStats, 
+import {
+    LeadListWithAccount,
+    LeadListStats,
     CreateLeadListRequest,
     Database as DatabaseType
 } from '@/types/database'
+import { useOrgPlan } from '../../hooks/useOrgPlan'
 
 type UserAccount = DatabaseType['public']['Tables']['user_accounts']['Row']
 
 // Lead List Card Component
-const LeadListCard = ({ 
-    leadList, 
-    onView, 
+const LeadListCard = ({
+    leadList,
+    onView,
     onEdit,
-    onDelete, 
-    isLoading 
-}: { 
+    onDelete,
+    isLoading
+}: {
     leadList: LeadListWithAccount
     onView: (id: string) => void
     onEdit: (leadList: LeadListWithAccount) => void
@@ -101,7 +102,8 @@ const LeadListCard = ({
 }) => {
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
     const cardBorder = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
-    const textColor = useColorModeValue('gray.600', 'gray.400')
+    const textColor = useColorModeValue('gray.600', 'gray.400');
+
 
     const getStatusConfig = (status: string) => {
         switch (status) {
@@ -119,7 +121,7 @@ const LeadListCard = ({
 
     const statusConfig = getStatusConfig(leadList.status)
     const StatusIcon = statusConfig.icon
-    const completionRate = leadList.total_leads > 0 ? 
+    const completionRate = leadList.total_leads > 0 ?
         Math.round((leadList.processed_leads / leadList.total_leads) * 100) : 0
 
     return (
@@ -171,7 +173,7 @@ const LeadListCard = ({
                             isLoading={isLoading}
                             zIndex={10}
                         />
-                        <MenuList 
+                        <MenuList
                             zIndex={1500}
                             bg={cardBg}
                             border="1px solid"
@@ -190,8 +192,8 @@ const LeadListCard = ({
                                 Export CSV
                             </MenuItem>
                             <Divider />
-                            <MenuItem 
-                                icon={<Trash2 size={16} />} 
+                            <MenuItem
+                                icon={<Trash2 size={16} />}
                                 color="red.500"
                                 onClick={() => onDelete(leadList.id)}
                             >
@@ -230,10 +232,10 @@ const LeadListCard = ({
                             <Text fontSize="sm" color={textColor}>Processing Progress</Text>
                             <Text fontSize="sm" color={textColor}>{completionRate}%</Text>
                         </HStack>
-                        <Progress 
-                            value={completionRate} 
-                            colorScheme="purple" 
-                            size="sm" 
+                        <Progress
+                            value={completionRate}
+                            colorScheme="purple"
+                            size="sm"
                             borderRadius="full"
                         />
                     </Box>
@@ -251,8 +253,8 @@ const LeadListCard = ({
                             <Text fontSize="sm" color={textColor}>
                                 Connected to {leadList.connected_account.display_name}
                             </Text>
-                            <Badge 
-                                size="sm" 
+                            <Badge
+                                size="sm"
                                 colorScheme={leadList.connected_account.connection_status === 'connected' ? 'green' : 'red'}
                             >
                                 {leadList.connected_account.connection_status}
@@ -276,8 +278,8 @@ const LeadListCard = ({
                             <Text fontSize="sm" color={textColor}>
                                 Campaign: {leadList.campaign.name}
                             </Text>
-                            <Badge 
-                                size="sm" 
+                            <Badge
+                                size="sm"
                                 colorScheme={leadList.campaign.status === 'active' ? 'green' : 'gray'}
                             >
                                 {leadList.campaign.status}
@@ -336,14 +338,14 @@ const LeadListCard = ({
 }
 
 // Create Lead List Modal Component
-const CreateLeadListModal = ({ 
-    isOpen, 
-    onClose, 
-    onSubmit, 
+const CreateLeadListModal = ({
+    isOpen,
+    onClose,
+    onSubmit,
     accounts,
     campaigns,
-    isLoading 
-}: { 
+    isLoading
+}: {
     isOpen: boolean
     onClose: () => void
     onSubmit: (data: CreateLeadListRequest) => void
@@ -360,7 +362,7 @@ const CreateLeadListModal = ({
 
     const handleSubmit = () => {
         if (!formData.name.trim()) return
-        
+
         onSubmit({
             name: formData.name.trim(),
             description: formData.description.trim() || undefined,
@@ -459,6 +461,7 @@ const CreateLeadListModal = ({
 
 // Component that uses useSearchParams (needs to be wrapped in Suspense)
 function LeadListsPageContent() {
+    const { hasPlan } = useOrgPlan();
     const { user, isLoaded } = useUser()
     const { organization } = useOrganization()
     const router = useRouter()
@@ -567,7 +570,7 @@ function LeadListsPageContent() {
             }
 
             const result = await response.json()
-            
+
             setState(prev => ({
                 ...prev,
                 leadLists: [result.lead_list, ...prev.leadLists]
@@ -582,7 +585,7 @@ function LeadListsPageContent() {
             })
 
             onClose()
-            
+
             // Redirect to edit page for CSV upload
             router.push(`/lead-lists/${result.lead_list.id}/edit`)
 
@@ -683,7 +686,7 @@ function LeadListsPageContent() {
     const filteredLeadLists = state.leadLists.filter(list => {
         const matchesSearch = list.name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
             (list.description && list.description.toLowerCase().includes(state.searchQuery.toLowerCase()))
-        
+
         const matchesStatus = !state.statusFilter || list.status === state.statusFilter
 
         return matchesSearch && matchesStatus
@@ -717,8 +720,8 @@ function LeadListsPageContent() {
                 {/* Header */}
                 <HStack justify="space-between" align="center">
                     <VStack spacing={1} align="start">
-                        <Heading 
-                            size="xl" 
+                        <Heading
+                            size="xl"
                             bgGradient="linear(to-r, purple.400, blue.400)"
                             bgClip="text"
                             fontWeight="bold"
@@ -737,8 +740,8 @@ function LeadListsPageContent() {
                         >
                             Sample CSV
                         </Button>
-                        <GradientButton 
-                            leftIcon={<Plus size={16} />} 
+                        <GradientButton
+                            leftIcon={<Plus size={16} />}
                             variant="primary"
                             size="lg"
                             onClick={onOpen}
@@ -788,10 +791,10 @@ function LeadListsPageContent() {
                 {/* Stats Cards */}
                 {state.stats && (
                     <SimpleGrid columns={{ base: 2, md: 5 }} spacing={6}>
-                        <Card 
+                        <Card
                             bg={cardBg}
                             backdropFilter="blur(10px)"
-                            border="1px solid" 
+                            border="1px solid"
                             borderColor={cardBorder}
                             borderRadius="xl"
                             p={4}
@@ -807,10 +810,10 @@ function LeadListsPageContent() {
                             </VStack>
                         </Card>
 
-                        <Card 
+                        <Card
                             bg={cardBg}
                             backdropFilter="blur(10px)"
-                            border="1px solid" 
+                            border="1px solid"
                             borderColor={cardBorder}
                             borderRadius="xl"
                             p={4}
@@ -826,10 +829,10 @@ function LeadListsPageContent() {
                             </VStack>
                         </Card>
 
-                        <Card 
+                        <Card
                             bg={cardBg}
                             backdropFilter="blur(10px)"
-                            border="1px solid" 
+                            border="1px solid"
                             borderColor={cardBorder}
                             borderRadius="xl"
                             p={4}
@@ -845,10 +848,10 @@ function LeadListsPageContent() {
                             </VStack>
                         </Card>
 
-                        <Card 
+                        <Card
                             bg={cardBg}
                             backdropFilter="blur(10px)"
-                            border="1px solid" 
+                            border="1px solid"
                             borderColor={cardBorder}
                             borderRadius="xl"
                             p={4}
@@ -864,10 +867,10 @@ function LeadListsPageContent() {
                             </VStack>
                         </Card>
 
-                        <Card 
+                        <Card
                             bg={cardBg}
                             backdropFilter="blur(10px)"
-                            border="1px solid" 
+                            border="1px solid"
                             borderColor={cardBorder}
                             borderRadius="xl"
                             p={4}

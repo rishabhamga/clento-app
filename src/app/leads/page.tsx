@@ -15,6 +15,7 @@ import {
     Box,
     Button,
     Card,
+    CardBody,
     Container,
     Flex,
     Heading,
@@ -68,6 +69,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
+import { useOrgPlan } from '../../hooks/useOrgPlan'
 
 // Helper functions
 function getConnectionStatusColor(status: LinkedInConnectionStatus): string {
@@ -100,6 +102,7 @@ function formatConnectionStatus(status: LinkedInConnectionStatus): string {
 export default function LeadsPage() {
     const router = useRouter()
     const { organization } = useOrganization()
+    const { hasPlan } = useOrgPlan()
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
     const glassBg = useColorModeValue('rgba(255, 255, 255, 0.1)', 'rgba(26, 32, 44, 0.1)')
     const borderColor = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
@@ -137,6 +140,9 @@ export default function LeadsPage() {
 
     // Fetch leads with current filters and pagination
     const fetchLeads = async (newPage = 1, newFilters = filters) => {
+        if(!hasPlan){
+            return
+        }
         setLoading(true)
         try {
             const params = new URLSearchParams({
@@ -217,8 +223,10 @@ export default function LeadsPage() {
 
     // Initial data fetch
     useEffect(() => {
-        fetchLeads()
-        fetchStats()
+        if (hasPlan) {
+            fetchLeads()
+            fetchStats()
+        }
         // fetchFilterOptions()
     }, [])
 
@@ -697,8 +705,12 @@ export default function LeadsPage() {
                         </Flex>
                     )}
 
+                    {!hasPlan && (
+                        <LeadNoPlan/>
+                    )}
+
                     {/* Empty State */}
-                    {!loading && leads.length === 0 && (
+                    {hasPlan && !loading && leads.length === 0 && (
                         <Card
                             bg={cardBg}
                             border="1px solid"
@@ -923,5 +935,29 @@ export default function LeadsPage() {
                 </VStack>
             </Container>
         </DashboardLayout>
+    )
+}
+
+
+const LeadNoPlan = () => {
+    return (
+        < Card bg="purple.50" border="2px solid" borderColor="purple.200" >
+            <CardBody textAlign="center" py={12}>
+                <VStack spacing={4}>
+                    <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
+                        Not started
+                    </Badge>
+                    <Heading size="md" color="purple.700">
+                        We Haven't Started Your Sending
+                    </Heading>
+                    <Text color="purple.600" maxW="md">
+                        We haven't started your sending yet contact your POC for more Information.
+                    </Text>
+                    {/* <GradientButton size="lg">
+                        Upgrade to Pro
+                    </GradientButton> */}
+                </VStack>
+            </CardBody>
+        </Card >
     )
 }
