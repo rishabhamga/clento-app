@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     // Parse the webhook payload
     const payload: SyndieWebhookPayload = await req.json()
-    console.log('full request', JSON.stringify(payload));
+    // console.log('full request', JSON.stringify(payload));
     console.log('Syndie webhook payload received:', {
       id: payload.id,
       connectionStatus: payload.connectionStatus,
@@ -86,11 +86,6 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
       .eq('syndie_lead_id', payload.id)
       .single()
 
-    if (queryError && queryError.code !== 'PGRST116') {
-      // PGRST116 is "not found" error, which is expected for new leads
-      throw new Error(`Error querying existing lead: ${queryError.message}`)
-    }
-
     // Find campaign where syndie_campaign_ids array contains the payload.campaign.id
     const { data: clentoCampaign, error: clentoCampaignError } = await supabaseAdmin
       .from('campaigns')
@@ -104,15 +99,23 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
 
     if (existingLead) {
       // Update existing lead
+      console.log('existing lead')
       if(leadData.linkedin_connection_status === "replied"){
+        console.log('inside')
           if(existingLead.crm_entry === 0){
-              await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "SYNDIE_REPLY", linkedIn: leadData.linkedin_url || undefined })
-              await supabaseAdmin
-                .from('leads')
-                .update({ crm_entry: 1 })
-                .eq('syndie_lead_id', payload.id)
-                .select()
-                .single()
+              console.log("entrying into the db and crm")
+              try {
+                  await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "SYNDIE_REPLY", linkedIn: leadData.linkedin_url || undefined })
+                  console.log("crm done")
+                  await supabaseAdmin
+                    .from('leads')
+                    .update({ crm_entry: 1 })
+                    .eq('syndie_lead_id', payload.id)
+                    .select()
+                    .single()
+              } catch (error) {
+                    console.log(JSON.stringify(error));
+                }
           }
       }
       const { data: updatedLead, error: updateError } = await supabaseAdmin
@@ -141,18 +144,19 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
       // In production, you might need a different strategy to associate leads with users
 
       // Try to find user by campaign info or implement your user association logic
-      const userId = await findUserForLead(payload)
+    //   const userId = await findUserForLead(payload)
 
-      if (!userId) {
-        throw new Error('Unable to determine user for lead - no user association strategy implemented')
-      }
-
+    //   if (!userId) {
+    //     throw new Error('Unable to determine user for lead - no user association strategy implemented')
+    //   }
+    console.log('new lead');
       const newLeadData = {
         ...leadData,
         // user_id: userId, //This breaks -- yash
       }
 
       if(leadData.linkedin_connection_status === "replied"){
+            console.log('inside')
               await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "SYNDIE_REPLY", linkedIn: leadData.linkedin_url || undefined })
               await supabaseAdmin
                 .from('leads')
