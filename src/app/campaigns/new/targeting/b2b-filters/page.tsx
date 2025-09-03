@@ -1,7 +1,7 @@
 // src/app/campaigns/new/targeting/b2b-filters/ui-only.tsx
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
     Box,
     Container,
@@ -18,6 +18,7 @@ import {
     Flex,
     Spinner,
     Divider,
+    CardHeader,
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
 
@@ -29,7 +30,7 @@ import CSVUpload from '@/components/filters/CSVUpload'
 import ApolloFilters from '@/components/filters/ApolloFilters'
 import SearchResults from '@/components/results/SearchResults'
 import { useSearchFilters, ApolloSearchProvider, useApolloSearch, useSearchResults } from '../../../../../hooks/useApolloSearch'
-import { ApolloPeopleFilters, ApolloCompanyFilters } from '@/components/filters/ApolloFiltersNew'
+import { ApolloPeopleFilters, ApolloCompanyFilters, IntentSignals, IIntentSignals } from '@/components/filters/ApolloFiltersNew'
 import { ApolloFilterInput, CompanyFilterInput } from '../../../../../types/apollo'
 import { ApolloCompanyInfo } from '../../../../../lib/data-providers/apollo-provider'
 import { createCustomToast } from '../../../../../lib/utils/custom-toast'
@@ -63,7 +64,15 @@ function B2BFiltersInner() {
     const subtitleTextColor = useColorModeValue('whiteAlpha.900', 'gray.200')
     const customToast = createCustomToast(toast);
 
-
+    const defaultIntentSignals: IIntentSignals = {
+        jobPostings: [],
+        socialMediaKeywords: [],
+        searchQueries: [],
+        fundsRaisedMin: 0,
+        fundsRaisedMax: 1000000000,
+        techStack: []
+    }
+    const [intentSignals, setIntentSignals] = useState<IIntentSignals>(defaultIntentSignals);
     const { companyResults } = useSearchResults();
     const { search, isSearching, clearResults, setSearchResults, state } = useApolloSearch();
     const { searchType, filters, hasActiveFilters, updateFilter, resetFilters, setSearchType, peopleFilters, companyFilters } = useSearchFilters();
@@ -80,11 +89,20 @@ function B2BFiltersInner() {
             if (data.searchType && data.searchType !== searchType) {
                 setSearchType(data.searchType);
             }
+            if (data.intentSignals) {
+                setIntentSignals(data.intentSignals);
+            }
         }
     }, []);
 
     const handleFilterChange = (field: string, value: unknown) => {
         updateFilter(field, value)
+    }
+    const handleIntentSignalChange = (field: keyof IIntentSignals, value: string[]) => {
+        setIntentSignals(prev => ({
+            ...prev,
+            [field]: value
+        }));
     }
 
     const handleSearch = async () => {
@@ -111,7 +129,8 @@ function B2BFiltersInner() {
                 (state.companyResults && state.companyResults.length > 0),
             resultsCount: searchType === 'people'
                 ? (state.peopleResults?.length || 0)
-                : (state.companyResults?.length || 0)
+                : (state.companyResults?.length || 0),
+            intentSignals
         };
         localStorage.setItem('campaignTargeting', JSON.stringify(targetingConfig));
         customToast.success({
@@ -236,6 +255,7 @@ function B2BFiltersInner() {
                                                             onChange={handleFilterChange}
                                                         />
                                                     )}
+                                                    <IntentSignals intentSignals={intentSignals} onChange={handleIntentSignalChange} />
                                                 </VStack>
                                             </Box>
                                         </VStack>
