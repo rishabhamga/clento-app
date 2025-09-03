@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
     Box,
     VStack,
@@ -50,6 +50,14 @@ import { TechnologySelect } from './TechnologySelect'
 import { useApolloSearch } from '../../hooks/useApolloSearch'
 
 // Base component for adding tags (locations, industries, etc.)
+export interface IIntentSignals {
+    jobPostings: string[],
+    socialMediaKeywords: string[],
+    searchQueries: string[],
+    fundsRaisedMin: number,
+    fundsRaisedMax: number,
+    techStack: string[]
+}
 interface TagInputProps {
     label: string
     placeholder: string
@@ -863,4 +871,75 @@ const CompanyFiltersFull = ({ filters, onChange }: { filters: CompanyFilterInput
         </VStack>
     )
 
+}
+
+//Intent Signals
+export const IntentSignals = ({ intentSignals, onChange }: { intentSignals: IIntentSignals | undefined, onChange: (fields: keyof IIntentSignals, value: any) => void }) => {
+    const cardBg = useColorModeValue('white', 'gray.800');
+    const borderColor = useColorModeValue('gray.200', 'gray.600');
+    const [technologiesSuggestions, setTechnologiesSuggestions] =  useState<string[]>();
+
+    useEffect(() => {
+        getTechnologies().then(it => setTechnologiesSuggestions(it))
+    }, [])
+    return (
+        <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+            <CardHeader>
+                <Text fontSize="lg" fontWeight="semibold">Intent Filters</Text>
+                <Text fontSize="xs" fontWeight="semiBold" color="gray.600">Identify triggers like hiring, funding, and tech adoption to spot opportunities.</Text>
+            </CardHeader>
+            <CardBody pt={2}>
+                <VStack>
+                    <TagInput
+                        label="Job Postings"
+                        placeholder="Job Postings"
+                        values={intentSignals?.jobPostings || []}
+                        onAdd={(value) => onChange('jobPostings', [...(intentSignals?.jobPostings || []), value])}
+                        onRemove={(value) => onChange('jobPostings', (intentSignals?.jobPostings || []).filter(item => item !== value))}
+                        description="Filter companies hiring for specific roles or departments to identify growth priorities and potential needs. ex Senior Engineer etc"
+                        colorScheme="orange"
+                    />
+                    <TagInput
+                        label="Recently Posted Keywords on Social Media"
+                        placeholder="Keywords"
+                        values={intentSignals?.socialMediaKeywords || []}
+                        onAdd={(value) => onChange('socialMediaKeywords', [...(intentSignals?.socialMediaKeywords || []), value])}
+                        onRemove={(value) => onChange('socialMediaKeywords', (intentSignals?.socialMediaKeywords || []).filter(item => item !== value))}
+                        description="Track companies mentioning specific keywords in their social media posts to spot relevant activity or interest."
+                        colorScheme="orange"
+                    />
+                    <TagInput
+                        label="Search Queries"
+                        placeholder="Search query"
+                        values={intentSignals?.searchQueries || []}
+                        onAdd={(value) => onChange('searchQueries', [...(intentSignals?.searchQueries || []), value])}
+                        onRemove={(value) => onChange('searchQueries', (intentSignals?.searchQueries || []).filter(item => item !== value))}
+                        description="Monitor companies showing intent by searching for specific topics, products, or keywords online."
+                        colorScheme="orange"
+                    />
+                    <NumberRange
+                        label="Funds Raised Range"
+                        minValue={intentSignals?.fundsRaisedMin || 0}
+                        maxValue={intentSignals?.fundsRaisedMax || 1000000000}
+                        onMinChange={(value) => onChange('fundsRaisedMin', Math.floor(value))}
+                        onMaxChange={(value) => onChange('fundsRaisedMax', Math.floor(value))}
+                        min={0}
+                        max={1000000000}
+                        step={1000}
+                        description="Filter organizations by Total AmountTrack companies that have recently raised funding, signaling growth and potential new investments in tools or services."
+                    />
+                    <TagInput
+                        label="Technology Stack Used"
+                        placeholder="Technology Stack"
+                        values={intentSignals?.techStack || []}
+                        suggestions={technologiesSuggestions}
+                        onAdd={(value) => onChange('techStack', [...(intentSignals?.techStack || []), value])}
+                        onRemove={(value) => onChange('techStack', (intentSignals?.techStack || []).filter(item => item !== value))}
+                        description="Identify the technologies and tools a company is using to understand their needs and compatibility."
+                        colorScheme="orange"
+                    />
+                </VStack>
+            </CardBody>
+        </Card>
+    )
 }
