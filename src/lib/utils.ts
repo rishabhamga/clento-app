@@ -19,6 +19,16 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
 }
 
+const ValidateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(re.test(email)){
+        return email
+    }else{
+        const test = 'notfound@gmail.com'
+        return test
+    }
+}
+
 export const entryToCrm = async({ companyName, firstName, lastName, country, mobileNumber, email, source, linkedIn }: ICrmProps) => {
     const client_id = process.env.ZOHO_CLIENT_ID;
     const client_secret = process.env.ZOHO_CLIENT_SECRET;
@@ -47,7 +57,7 @@ export const entryToCrm = async({ companyName, firstName, lastName, country, mob
                     "Company": companyName ?? 'Not Provided',
                     "First_Name": firstName ?? 'first name',
                     "Last_Name": lastName ?? 'last name',
-                    "Email": email,
+                    "Email": ValidateEmail(email),
                     "Phone": mobileNumber ?? 'Not Provided',
                     "Country": country ?? 'Not Provided',
                     "Lead_Status": "Open",
@@ -59,8 +69,8 @@ export const entryToCrm = async({ companyName, firstName, lastName, country, mob
         try {
             const req = await axios.post(crmUrl, reqBody, { headers })
             console.log(req.data, "CRM RESPONSE");
-        } catch (err) {
-            console.log("an error occured", err)
+        } catch (err: any) {
+            console.log("an error occured", JSON.stringify(err.response.data, null, 2))
         }
     }
 }
