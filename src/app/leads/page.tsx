@@ -68,7 +68,7 @@ import {
     Users
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useOrgPlan } from '../../hooks/useOrgPlan'
 
 // Helper functions
@@ -101,6 +101,7 @@ function formatConnectionStatus(status: LinkedInConnectionStatus): string {
 
 export default function LeadsPage() {
     const router = useRouter()
+    // const isFirstRun = useRef(true);
     const { organization } = useOrganization()
     const { hasPlan } = useOrgPlan()
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
@@ -140,7 +141,7 @@ export default function LeadsPage() {
 
     // Fetch leads with current filters and pagination
     const fetchLeads = async (newPage = 1, newFilters = filters) => {
-        if(!hasPlan){
+        if (!hasPlan) {
             return
         }
         setLoading(true)
@@ -223,12 +224,17 @@ export default function LeadsPage() {
 
     // Initial data fetch
     useEffect(() => {
+        // if (isFirstRun.current) {
+        //     isFirstRun.current = false;
+        //     return; // skip first run
+        // }
         if (hasPlan) {
+            console.log("fetching leads");
             fetchLeads()
             fetchStats()
         }
         // fetchFilterOptions()
-    }, [])
+    }, [hasPlan])
 
     return (
         <DashboardLayout>
@@ -706,7 +712,7 @@ export default function LeadsPage() {
                     )}
 
                     {!hasPlan && (
-                        <LeadNoPlan/>
+                        <LeadNoPlan />
                     )}
 
                     {/* Empty State */}
