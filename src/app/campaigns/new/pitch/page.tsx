@@ -226,18 +226,26 @@ useEffect(() => {
                 const response = await fetch('/api/user/profile');
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.profile?.icp && typeof data.profile.icp === 'object') {
-                        setICPAnalysis(data.profile.icp);
-                        setWebsiteAnalysis(data.profile.icp);
-                        setWebsiteUrl(data.profile.website_url || '');
-                        setOfferingDescription(data.profile.icp.core_offer || '');
+                    // UPDATED: Use latestAnalysis instead of profile.icp
+                    if (data.latestAnalysis) {
+                        console.log('✅ Found latest analysis in profile response:', {
+                            analysisId: data.latestAnalysis.id,
+                            website: data.latestAnalysis.website_url,
+                            coreOffer: data.latestAnalysis.core_offer,
+                            confidence: data.latestAnalysis.confidence_score
+                        })
+                        
+                        setICPAnalysis(data.latestAnalysis);
+                        setWebsiteAnalysis(data.latestAnalysis);
+                        setWebsiteUrl(data.latestAnalysis.website_url || data.profile?.website_url || '');
+                        setOfferingDescription(data.latestAnalysis.core_offer || '');
                         setShowAnalysisSection(true);
 
                         // Extract pain points and proof points from personas if available
-                        if (data.profile.icp.target_personas && data.profile.icp.target_personas.length > 0) {
+                        if (data.latestAnalysis.target_personas && data.latestAnalysis.target_personas.length > 0) {
                             const allPainPoints: PainPoint[] = [];
                             const allProofPoints: ProofPoint[] = [];
-                            data.profile.icp.target_personas.forEach((persona: any, personaIndex: number) => {
+                            data.latestAnalysis.target_personas.forEach((persona: any, personaIndex: number) => {
                                 if (persona.pain_points) {
                                     persona.pain_points.forEach((point: string, index: number) => {
                                         allPainPoints.push({
@@ -260,6 +268,16 @@ useEffect(() => {
                             if (allPainPoints.length > 0) setPainPoints(allPainPoints);
                             if (allProofPoints.length > 0) setProofPoints(allProofPoints);
                         }
+                        
+                        console.log('✅ [LOADED FROM LATEST ANALYSIS] Analysis data loaded:', {
+                            hasICPAnalysis: !!data.latestAnalysis,
+                            coreOffer: data.latestAnalysis.core_offer,
+                            targetPersonasCount: data.latestAnalysis.target_personas?.length || 0
+                        });
+                    } else {
+                        // Fallback to profile website_url if no analysis
+                        setWebsiteUrl(data.profile?.website_url || '');
+                        console.log('📋 No latest analysis found, using profile data only')
                     }
                 }
             } catch (error) {
@@ -354,6 +372,26 @@ useEffect(() => {
                   coreOffer: resultData.analysis?.core_offer,
                   targetPersonasCount: resultData.analysis?.target_personas?.length || 0
                 })
+
+                // CRITICAL FIX: Clear localStorage to prevent stale data issues
+                localStorage.removeItem('campaignPitchData')
+                console.log('🧹 Cleared localStorage to prevent stale data from showing')
+
+                // CRITICAL FIX: Also refresh profile data to ensure consistency
+                try {
+                  console.log('🔄 Refreshing user profile data after analysis completion')
+                  const profileResponse = await fetch('/api/user/profile')
+                  if (profileResponse.ok) {
+                    const profileData = await profileResponse.json()
+                    console.log('✅ Profile refreshed, latest analysis integrated:', {
+                      profileUrl: profileData.profile?.website_url,
+                      hasICP: !!profileData.profile?.icp,
+                      coreOffer: profileData.profile?.icp?.core_offer
+                    })
+                  }
+                } catch (profileError) {
+                  console.warn('⚠️ Could not refresh profile data:', profileError)
+                }
 
                 // Extract pain points and proof points from personas
                 if (resultData.analysis.target_personas && resultData.analysis.target_personas.length > 0) {

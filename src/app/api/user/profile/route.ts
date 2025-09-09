@@ -42,20 +42,45 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .single()
 
+    // CRITICAL FIX: Also check for latest website analysis data
+    console.log('📊 Fetching latest website analysis for user:', user.id)
+    const { data: latestAnalysis, error: analysisError } = await supabase
+      .from('website_analysis')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('analysis_status', 'completed')
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (analysisError && analysisError.code !== 'PGRST116') {
+      console.warn('Error fetching latest analysis:', analysisError)
+    }
+
+    console.log('📊 Latest analysis data:', {
+      hasAnalysis: !!latestAnalysis,
+      analysisUrl: latestAnalysis?.website_url,
+      completedAt: latestAnalysis?.completed_at,
+      confidenceScore: latestAnalysis?.confidence_score
+    })
+
     if (profileError && profileError.code === 'PGRST116') {
-      // Profile doesn't exist yet, return default structure
-      return NextResponse.json({
-        profile: {
-          company_name: user.company_name || '',
-          website_url: user.website_url || '',
-          site_summary: '',
-          icp: {},
-          linkedin_connected: false,
-          completed: false,
-          onboarding_completed: false,
-          onboarding_step_completed: {}
-        }
-      })
+      // Profile doesn't exist yet, but we might have analysis data
+      const defaultProfile = {
+        company_name: user.company_name || '',
+        website_url: user.website_url || latestAnalysis?.website_url || '',
+        site_summary: '',
+        icp: {},
+        linkedin_connected: false,
+        completed: false,
+        onboarding_completed: false,
+        onboarding_step_completed: {}
+      }
+
+      // REMOVED: No longer storing analysis data in user_profile
+      // Analysis data comes directly from website_analysis table
+
+      return NextResponse.json({ profile: defaultProfile })
     }
 
     if (profileError) {
@@ -63,17 +88,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 })
     }
 
+    // SIMPLIFIED: user_profile only contains profile data, not analysis
+    // Analysis data is fetched separately from website_analysis table
+    console.log('📊 Returning profile data (analysis fetched separately)')
+
     return NextResponse.json({
       profile: {
         company_name: profile.company_name || user.company_name || '',
         website_url: profile.website_url || user.website_url || '',
         site_summary: profile.site_summary || '',
-        icp: profile.icp || {},
         linkedin_connected: profile.linkedin_connected || false,
         completed: profile.completed || false,
         onboarding_completed: profile.onboarding_completed || false,
         onboarding_step_completed: profile.onboarding_step_completed || {}
-      }
+      },
+      // Include latest analysis as separate field
+      latestAnalysis: latestAnalysis ? {
+        id: latestAnalysis.id,
+        website_url: latestAnalysis.website_url,
+        core_offer: latestAnalysis.core_offer,
+        industry: latestAnalysis.industry,
+        business_model: latestAnalysis.business_model,
+        icp_summary: latestAnalysis.icp_summary,
+        target_personas: latestAnalysis.target_personas || [],
+        case_studies: latestAnalysis.case_studies || [],
+        lead_magnets: latestAnalysis.lead_magnets || [],
+        competitive_advantages: latestAnalysis.competitive_advantages || [],
+        tech_stack: latestAnalysis.tech_stack || [],
+        social_proof: latestAnalysis.social_proof || { testimonials: [], client_logos: [], metrics: [] },
+        confidence_score: latestAnalysis.confidence_score,
+        pages_analyzed: latestAnalysis.pages_analyzed,
+        completed_at: latestAnalysis.completed_at
+      } : null
     })
 
   } catch (error) {
@@ -95,12 +141,14 @@ export async function POST(request: NextRequest) {
       company_name,
       website_url,
       site_summary,
-      icp,
       linkedin_connected,
       completed,
       onboarding_completed,
       onboarding_step_completed
     } = body
+    
+    // REMOVED: No longer accepting 'icp' field in user_profile
+    // Analysis data is stored only in website_analysis table
 
     // Get user record or create if doesn't exist
     const { data: initialUser, error } = await supabase
@@ -151,7 +199,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update user' }, { status: 500 })
     }
 
-    // Upsert user profile
+    // Upsert user profile (CLEANED: removed analysis fields)
     const { data: profile, error: profileError } = await supabase
       .from('user_profile')
       .upsert({
@@ -159,7 +207,6 @@ export async function POST(request: NextRequest) {
         company_name,
         website_url,
         site_summary,
-        icp: icp || {},
         linkedin_connected: linkedin_connected || false,
         completed: completed || false,
         onboarding_completed: onboarding_completed || false,
@@ -180,7 +227,6 @@ export async function POST(request: NextRequest) {
         company_name: profile.company_name,
         website_url: profile.website_url,
         site_summary: profile.site_summary,
-        icp: profile.icp,
         linkedin_connected: profile.linkedin_connected,
         completed: profile.completed,
         onboarding_completed: profile.onboarding_completed,

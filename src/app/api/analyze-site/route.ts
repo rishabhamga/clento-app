@@ -360,19 +360,42 @@ async function performAnalysisInBackground(analysisId: string, websiteUrl: strin
     if (shouldUseBrowserFree) {
       console.log('☁️ Using browser-free analysis (Cloud environment or forced)')
       const { AIICPService } = await import('@/lib/ai-icp-service')
-      const service = new AIICPService()
+      
+      // Use memory-optimized settings for cloud environments
+      const maxPages = 6  // Reduced from 15 to prevent memory issues
+      const timeout = 20000 // Reduced timeout
+      const service = new AIICPService(maxPages, timeout)
+      
+      // Force garbage collection if available
+      if (global.gc) {
+        console.log('🧹 Running garbage collection before analysis')
+        global.gc()
+      }
       
       try {
         analysis = await service.analyzeWebsiteNoBrowser(websiteUrl)
+        
+        // Force cleanup after analysis
+        if (global.gc) {
+          console.log('🧹 Running garbage collection after analysis')
+          global.gc()
+        }
       } catch (browserFreeError) {
         console.error('❌ Browser-free analysis failed:', browserFreeError)
-        console.log('🔄 Attempting fallback to standard analysis...')
+        console.log('🔄 Attempting minimal fallback analysis...')
         try {
-          analysis = await analyzeWebsiteICP(websiteUrl, true) // Use fast mode as fallback
-        } catch (standardError) {
-          console.error('❌ All analysis methods failed:', standardError)
-          const errorMessage = browserFreeError instanceof Error ? browserFreeError.message : 'Unknown browser-free analysis error'
-          throw new Error(`Website analysis failed: ${errorMessage}`)
+          // Try with even more conservative settings
+          const minimalService = new AIICPService(3, 15000)
+          analysis = await minimalService.analyzeWebsiteNoBrowser(websiteUrl)
+        } catch (minimalError) {
+          console.error('❌ Minimal analysis failed, trying fast standard analysis:', minimalError)
+          try {
+            analysis = await analyzeWebsiteICP(websiteUrl, true) // Use fast mode as last resort
+          } catch (standardError) {
+            console.error('❌ All analysis methods failed:', standardError)
+            const errorMessage = browserFreeError instanceof Error ? browserFreeError.message : 'Unknown browser-free analysis error'
+            throw new Error(`Website analysis failed: ${errorMessage}`)
+          }
         }
       }
     } else {
@@ -452,34 +475,9 @@ async function performAnalysisInBackground(analysisId: string, websiteUrl: strin
     } else {
       console.log('✅ Analysis completed and saved successfully')
       
-      // Also update the user profile with the latest analysis
-      console.log('🔄 Updating user profile...')
-      const { error: profileError } = await (supabase as any)
-        .from('user_profile')
-        .upsert({
-          user_id: userId,
-          website_url: websiteUrl,
-          core_offer: analysis.core_offer,
-          industry_details: { industry: analysis.industry, business_model: analysis.business_model },
-          target_personas: analysis.target_personas,
-          case_studies: analysis.case_studies,
-          lead_magnets: analysis.lead_magnets,
-          competitive_advantages: analysis.competitive_advantages,
-          tech_stack: analysis.tech_stack,
-          social_proof: analysis.social_proof,
-          ai_analysis_metadata: {
-            confidence_score: analysis.confidence_score,
-            analysis_completed_at: new Date().toISOString(),
-            analysis_duration_seconds: durationSeconds
-          },
-          updated_at: new Date().toISOString()
-        })
-
-      if (profileError) {
-        console.error('⚠️ Warning: Error updating user profile (not critical):', profileError)
-      } else {
-        console.log('✅ User profile updated successfully')
-      }
+      // REMOVED: No longer updating user_profile with analysis data
+      // Analysis data is stored only in website_analysis table (single source of truth)
+      console.log('✅ Analysis data stored in website_analysis table only (cleaned up architecture)')
     }
 
   } catch (error) {
