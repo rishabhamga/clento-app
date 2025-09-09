@@ -204,6 +204,9 @@ export default function LaunchPage() {
 
             console.log('Campaign created successfully:', data)
 
+            // Store campaign ID for workflow editing
+            localStorage.setItem('currentCampaignId', data.campaign.id)
+
             // Clear localStorage data after successful launch
             localStorage.removeItem('campaignTargeting')
             localStorage.removeItem('campaignPitchData')

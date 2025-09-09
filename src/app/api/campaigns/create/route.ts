@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
+import { saveWorkflowToGCS } from '@/lib/services/workflow-storage'
+import { FlowData } from '@/components/workflow/types/WorkflowTypes'
 
 const supabase = createClient(
   process.env.PUBLIC_SUPABASE_URL!,
@@ -128,6 +130,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Save workflow to Google Cloud Storage if workflow data exists
+    let workflowFileName: string | null = null;
+    if (workflow?.flowData && Object.keys(workflow.flowData).length > 0) {
+      console.log('💾 Saving workflow to Google Cloud Storage...');
+      
+      const workflowData: FlowData = workflow.flowData;
+      const storageResult = await saveWorkflowToGCS(workflowData);
+      
+      if (storageResult.success) {
+        workflowFileName = storageResult.fileName || null;
+        console.log('✅ Workflow saved to GCS:', workflowFileName);
+      } else {
+        console.error('❌ Failed to save workflow to GCS:', storageResult.error);
+        // Continue with campaign creation but log the error
+      }
+    }
+
     // Create the campaign with all settings from the launch page
     const { data: campaign, error: campaignError } = await supabase
       .from('campaigns')
@@ -138,6 +157,7 @@ export async function POST(request: NextRequest) {
         description: pitch?.offeringDescription || '',
         status: launch?.autopilot ? 'active' : 'draft',
         sequence_template: workflow?.templateId || 'custom',
+        workflow_json_file: workflowFileName, // Store GCS file path
         settings: {
           autopilot: launch?.autopilot || false,
           dailyLimit: launch?.dailyLimit || 50,
@@ -149,7 +169,7 @@ export async function POST(request: NextRequest) {
           targeting,
           pitch,
           outreach,
-          workflow,
+          workflow, // Keep for backward compatibility
           startedAt: launch?.autopilot ? new Date().toISOString() : null,
           // Store additional campaign metadata
           campaignType: targeting?.searchType || 'b2b',

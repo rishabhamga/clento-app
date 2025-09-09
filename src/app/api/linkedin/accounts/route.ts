@@ -85,7 +85,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verify account belongs to user and deactivate it
-    const { data: deletedAccount, error } = await supabaseAdmin
+    const { data: deletedAccount, error } = await (supabaseAdmin as any)
       .from('linkedin_accounts')
       .update({
         is_active: false,

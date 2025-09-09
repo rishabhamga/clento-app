@@ -200,7 +200,7 @@ async function saveLinkedInAccount(
 
     if (existingAccount) {
       // Update existing account
-      const { error } = await supabaseAdmin
+      const { error } = await (supabaseAdmin as any)
         .from('linkedin_accounts')
         .update({
           access_token: tokenData.access_token,
@@ -216,7 +216,7 @@ async function saveLinkedInAccount(
           health_check_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .eq('id', existingAccount.id)
+        .eq('id', (existingAccount as any).id)
 
       if (error) {
         console.error('Error updating LinkedIn account:', error)
@@ -224,7 +224,7 @@ async function saveLinkedInAccount(
       }
     } else {
       // Create new account
-      const { error } = await supabaseAdmin
+      const { error } = await (supabaseAdmin as any)
         .from('linkedin_accounts')
         .insert({
           user_id: userId,
@@ -248,11 +248,11 @@ async function saveLinkedInAccount(
       }
 
       // Update user profile to increment LinkedIn accounts count
-      await supabaseAdmin
+      await (supabaseAdmin as any)
         .from('user_profile')
         .upsert({
           user_id: userId,
-          linkedin_accounts_connected: supabaseAdmin.rpc('linkedin_accounts_connected', { user_uuid: userId }),
+          linkedin_accounts_connected: (supabaseAdmin as any).rpc('linkedin_accounts_connected', { user_uuid: userId }),
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
