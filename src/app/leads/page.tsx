@@ -191,8 +191,8 @@ export default function LeadsPage() {
 
             const result = await response.json()
             if (result.success) {
-                console.log(result.data);
                 setSelectedLeadTimeline(result.data)
+                console.log(result.data.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook') && it.success))
             }
         } catch (error) {
             console.error('Error fetching lead details:', error)
@@ -580,7 +580,7 @@ export default function LeadsPage() {
                                                             <Text fontWeight="bold" fontSize="sm">
                                                                 {selectedLeadTimeline.steps
                                                                     ? Math.round(
-                                                                        (selectedLeadTimeline.steps.filter(step => step.success).length / selectedLeadTimeline.steps.length) * 100
+                                                                        (selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook') && it.success).length / selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook')).length) * 100
                                                                     )
                                                                     : 0}%
                                                             </Text>
@@ -588,7 +588,7 @@ export default function LeadsPage() {
                                                         <Progress
                                                             value={selectedLeadTimeline.steps
                                                                 ? Math.round(
-                                                                    (selectedLeadTimeline.steps.filter(step => step.success).length / selectedLeadTimeline.steps.length) * 100
+                                                                    (selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook') && it.success).length / selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook')).length) * 100
                                                                 )
                                                                 : 0}
                                                             colorScheme="purple"
@@ -597,19 +597,19 @@ export default function LeadsPage() {
                                                         <SimpleGrid columns={3} spacing={4}>
                                                             <VStack>
                                                                 <Text fontSize="lg" fontWeight="bold">
-                                                                    {selectedLeadTimeline.steps.length || 0}
+                                                                    {selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook')).length || 0}
                                                                 </Text>
                                                                 <Text fontSize="xs" color="gray.600">Total Steps</Text>
                                                             </VStack>
                                                             <VStack>
                                                                 <Text fontSize="lg" fontWeight="bold" color="green.500">
-                                                                    {selectedLeadTimeline.steps.filter(step => step.success).length || 0}
+                                                                    {selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook') && it.success).length || 0}
                                                                 </Text>
                                                                 <Text fontSize="xs" color="gray.600">Completed</Text>
                                                             </VStack>
                                                             <VStack>
                                                                 <Text fontSize="lg" fontWeight="bold" color="red.500">
-                                                                    {selectedLeadTimeline.steps.filter(it => it.errorMessage !== null && it.errorMessage !== undefined || it.success === false).length || 0}
+                                                                    {selectedLeadTimeline.steps.filter(it => it.errorMessage !== null && it.errorMessage !== undefined || it.success === false && !it.stepNodeId.startsWith('notify_webhook')).length || 0}
                                                                 </Text>
                                                                 <Text fontSize="xs" color="gray.600">Failed</Text>
                                                             </VStack>
@@ -661,8 +661,8 @@ export default function LeadsPage() {
                                                                                 ? `Failed: ${step.errorMessage}`
                                                                                 : '⚠️'}
                                                                     </Text>
-                                                                    {step?.details?.comments?.map(it => (
-                                                                        <>
+                                                                    {step?.details?.comments?.map((it, key) => (
+                                                                        <React.Fragment key={key}>
                                                                             <HStack>
                                                                                 <Text fontWeight="xs" fontSize="xs" textTransform={'capitalize'} color={'grey.200'}>
                                                                                     {it.comment}
@@ -672,7 +672,7 @@ export default function LeadsPage() {
                                                                                         {it.reason}
                                                                                     </Text>
                                                                                 )}
-                                                                                {it.post && (
+                                                                                {!it.reason && it.post && (
                                                                                     <IconButton
                                                                                         icon={<ExternalLink size={14} />}
                                                                                         size="xs"
@@ -686,7 +686,7 @@ export default function LeadsPage() {
                                                                                     />
                                                                                 )}
                                                                             </HStack>
-                                                                        </>
+                                                                        </React.Fragment>
                                                                     ))}
                                                                     <Text fontWeight="xs" fontSize="xs" textTransform={'capitalize'} color={'grey.200'}>
                                                                         {step.message}
