@@ -6,7 +6,7 @@ import { syndieBaseUrl } from '../../../lib/utils';
 
 const getCampaigns = async (tokenData: { api_token: string }) => {
     try {
-        const res = await axios.get(syndieBaseUrl + '/api/campaigns', {
+        const res = await axios.get(syndieBaseUrl + '/api/campaigns' + '?includeAnalytics=true&includeDetailedActions=true', {
             headers: {
                 'Authorization': `Bearer ${tokenData.api_token}`,
                 'Content-Type': 'application/json',
@@ -18,7 +18,7 @@ const getCampaigns = async (tokenData: { api_token: string }) => {
             return
         }
         const campaignsArray: any[] = res.data.data
-        // Debug @Yash console.log(JSON.stringify(res.data.data, null, 4))
+        console.log(JSON.stringify(res.data.data, null, 4))
 
         return campaignsArray.filter(it => it.status !== 'paused' && it.status !== 'draft')
     } catch (err) {
