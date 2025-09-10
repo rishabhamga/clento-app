@@ -981,6 +981,10 @@ export interface CreateLeadListRequest {
   connected_account_id?: string
   campaign_id?: string
   organization_id: string
+  icp_id?: string
+  icpData?: any
+  file?: File
+  totalResults?: number
 }
 
 export interface UpdateLeadListRequest {

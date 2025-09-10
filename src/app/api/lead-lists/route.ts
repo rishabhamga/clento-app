@@ -200,7 +200,9 @@ export async function POST(request: NextRequest) {
       description,
       connected_account_id,
       campaign_id,
-      organization_id
+      organization_id,
+      icpData,
+      totalResults
     } = body
 
     console.log('📋 Lead Lists POST API: Creating lead list:', { name, connected_account_id, campaign_id, organization_id })
@@ -316,7 +318,9 @@ export async function POST(request: NextRequest) {
         campaign_id,
         name,
         description,
-        status: 'draft'
+        status: 'processing',
+        icpData,
+        total_leads: totalResults
       })
       .select('*')
       .single()
