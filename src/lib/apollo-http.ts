@@ -71,6 +71,7 @@ class ApolloHttpClient {
       },
       async (error) => {
         if (error.response) {
+            console.log(error.response);
           const { status, headers, data } = error.response
 
           // Update rate limit info even on errors

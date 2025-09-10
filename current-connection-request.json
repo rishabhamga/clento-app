@@ -1,0 +1,198 @@
+{
+  "nodes": [
+    {
+      "id": "profile_visit-1756055708404",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 0
+      },
+      "data": {
+        "type": "profile_visit",
+        "label": "Visit Profile",
+        "isConfigured": true,
+        "config": {}
+      },
+      "measured": {
+        "width": 220,
+        "height": 70
+      },
+      "selected": false
+    },
+    {
+      "id": "like_post-1756055712838",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 150
+      },
+      "data": {
+        "type": "like_post",
+        "label": "Like Recent Post",
+        "isConfigured": true,
+        "config": {
+          "postCount": 1,
+          "recentPostWithin": 7
+        }
+      },
+      "measured": {
+        "width": 220,
+        "height": 70
+      },
+      "selected": false
+    },
+    {
+      "id": "comment_post-1756055715489",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 300
+      },
+      "data": {
+        "type": "comment_post",
+        "label": "Comment on Post",
+        "isConfigured": true,
+        "config": {
+          "useAI": true,
+          "language": "english",
+          "length": "medium(2-3 sentences)",
+          "commentTone": "agreeable",
+          "customGuidelines": "",
+          "postCount": 1,
+          "recentPostWithin": 7
+        }
+      },
+      "measured": {
+        "width": 220,
+        "height": 70
+      },
+      "selected": false
+    },
+    {
+      "id": "add-step-1756055840474",
+      "type": "addStep",
+      "position": {
+        "x": -45.111041292585824,
+        "y": -285.1521589956604
+      },
+      "data": {},
+      "measured": {
+        "width": 220,
+        "height": 40
+      },
+      "selected": true,
+      "dragging": false
+    },
+    {
+      "id": "send_invite-1756055882045",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 450
+      },
+      "data": {
+        "type": "send_invite",
+        "label": "Connection Request",
+        "isConfigured": true,
+        "config": {
+          "useAI": true,
+          "tone": "warm",
+          "formality": "casual",
+          "approach": "direct",
+          "focus": "personal",
+          "intention": "networking",
+          "callToAction": "subtle",
+          "personalization": "specific",
+          "language": "english",
+          "mentionPost": false,
+          "customGuidelines": ""
+        }
+      },
+      "measured": {
+        "width": 220,
+        "height": 70
+      },
+      "selected": false
+    },
+    {
+      "id": "add-step-1756055882045",
+      "type": "addStep",
+      "position": {
+        "x": 100,
+        "y": 600
+      },
+      "data": {},
+      "measured": {
+        "width": 220,
+        "height": 40
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-profile_visit-1756055708404-add-step-1756055708404",
+      "source": "profile_visit-1756055708404",
+      "target": "like_post-1756055712838",
+      "type": "buttonedge",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        },
+        "isPositive": false,
+        "isConditionalPath": false
+      }
+    },
+    {
+      "id": "e-like_post-1756055712838-add-step-1756055712838",
+      "source": "like_post-1756055712838",
+      "target": "comment_post-1756055715489",
+      "type": "buttonedge",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        },
+        "isPositive": false,
+        "isConditionalPath": false
+      }
+    },
+    {
+      "id": "e-comment_post-1756055715489-add-step-1756055862324",
+      "source": "comment_post-1756055715489",
+      "target": "send_invite-1756055882045",
+      "type": "buttonedge",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        },
+        "isPositive": false,
+        "isConditionalPath": false
+      }
+    },
+    {
+      "id": "e-send_invite-1756055882045-add-step-1756055882045",
+      "source": "send_invite-1756055882045",
+      "target": "add-step-1756055882045",
+      "type": "buttonedge",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        },
+        "isPositive": false,
+        "isConditionalPath": false
+      }
+    }
+  ],
+  "timestamp": "2025-08-24T17:20:22.938Z"
+}

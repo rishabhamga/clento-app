@@ -26,6 +26,7 @@ export interface ProviderConfig {
 
 export interface UnifiedSearchFilters {
   // Person-level filters
+  orgIds?: string[]
   jobTitles?: string[]
   seniorities?: string[]
   locations?: string[]

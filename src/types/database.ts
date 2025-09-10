@@ -84,11 +84,23 @@ export interface Database {
           location: string | null;
           phone: string | null;
           status: 'new' | 'contacted' | 'replied' | 'positive' | 'neutral' | 'negative' | 'unsubscribed';
-          source: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor';
+          source: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor' | 'syndie';
           enrichment_data: Record<string, unknown>;
           smartlead_campaign_id: string | null;
+          syndie_campaign_id: string | null;
+          organization_id: string | null;
+          clento_campaign_id?: string | null;
           last_email_event: string | null;
           last_event_timestamp: string | null;
+          crm_entry?: number | null;
+          // Lead list integration
+          lead_list_id: string | null;
+          // Syndie integration fields
+          syndie_lead_id: string | null;
+          linkedin_connection_status: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
+          steps: Record<string, unknown>[];
+          campaign_info: Record<string, unknown>;
+          seat_info: Record<string, unknown>;
           created_at: string;
           updated_at: string;
         };
@@ -104,11 +116,23 @@ export interface Database {
           location?: string | null;
           phone?: string | null;
           status?: 'new' | 'contacted' | 'replied' | 'positive' | 'neutral' | 'negative' | 'unsubscribed';
-          source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor';
+          source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor' | 'syndie';
           enrichment_data?: Record<string, unknown>;
           smartlead_campaign_id?: string | null;
+          syndie_campaign_id?: string | null;
+          clento_campaign_id?: string | null;
+          organization_id: string | null;
           last_email_event?: string | null;
           last_event_timestamp?: string | null;
+          crm_entry?: number | null;
+          // Lead list integration
+          lead_list_id?: string | null;
+          // Syndie integration fields
+          syndie_lead_id?: string | null;
+          linkedin_connection_status?: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested';
+          steps?: Record<string, unknown>[];
+          campaign_info?: Record<string, unknown>;
+          seat_info?: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
         };
@@ -124,11 +148,23 @@ export interface Database {
           location?: string | null;
           phone?: string | null;
           status?: 'new' | 'contacted' | 'replied' | 'positive' | 'neutral' | 'negative' | 'unsubscribed';
-          source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor';
+          source?: 'manual' | 'zoominfo' | 'apollo' | 'clearbit' | 'website_visitor' | 'syndie';
           enrichment_data?: Record<string, unknown>;
           smartlead_campaign_id?: string | null;
+          syndie_campaign_id?: string | null;
+          clento_campaign_id?: string | null;
+          organization_id: string | null;
           last_email_event?: string | null;
           last_event_timestamp?: string | null;
+          crm_entry?: number | null;
+          // Lead list integration
+          lead_list_id?: string | null;
+          // Syndie integration fields
+          syndie_lead_id?: string | null;
+          linkedin_connection_status?: 'not_connected' | 'pending' | 'connected' | 'replied' | 'bounced' | 'not_interested' | 'accepted' | 'sent';
+          steps?: Record<string, unknown>[];
+          campaign_info?: Record<string, unknown>;
+          seat_info?: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
         };
@@ -346,6 +382,280 @@ export interface Database {
           updated_at?: string;
         };
       };
+      company_active_jobs: {
+        Row: {
+          id: string;
+          user_id: string;
+          organization_id: string;
+          job_id: string;
+          company_name: string;
+          company_website: string | null;
+          linkedin_url: string;
+          department: string;
+          job_titles: string[] | null;
+          match_count: number;
+          job_data: Record<string, unknown>;
+          linkedin_jobs: Record<string, unknown>[];
+          career_page_jobs: Record<string, unknown>[];
+          processing_status: string;
+          error_message: string | null;
+          scraped_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          organization_id: string;
+          job_id: string;
+          company_name: string;
+          company_website?: string | null;
+          linkedin_url: string;
+          department: string;
+          job_titles?: string[] | null;
+          match_count?: number;
+          job_data?: Record<string, unknown>;
+          linkedin_jobs?: Record<string, unknown>[];
+          career_page_jobs?: Record<string, unknown>[];
+          processing_status?: string;
+          error_message?: string | null;
+          scraped_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          organization_id?: string;
+          job_id?: string;
+          company_name?: string;
+          company_website?: string | null;
+          linkedin_url?: string;
+          department?: string;
+          job_titles?: string[] | null;
+          match_count?: number;
+          job_data?: Record<string, unknown>;
+          linkedin_jobs?: Record<string, unknown>[];
+          career_page_jobs?: Record<string, unknown>[];
+          processing_status?: string;
+          error_message?: string | null;
+          scraped_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      job_filter_requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          organization_id: string;
+          job_id: string;
+          original_filename: string;
+          total_companies: number;
+          processed_companies: number;
+          successful_companies: number;
+          failed_companies: number;
+          departments: string[];
+          job_titles: string[] | null;
+          processing_status: string;
+          csv_output_url: string | null;
+          error_message: string | null;
+          started_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          organization_id: string;
+          job_id: string;
+          original_filename: string;
+          total_companies?: number;
+          processed_companies?: number;
+          successful_companies?: number;
+          failed_companies?: number;
+          departments: string[];
+          job_titles?: string[] | null;
+          processing_status?: string;
+          csv_output_url?: string | null;
+          error_message?: string | null;
+          started_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          organization_id?: string;
+          job_id?: string;
+          original_filename?: string;
+          total_companies?: number;
+          processed_companies?: number;
+          successful_companies?: number;
+          failed_companies?: number;
+          departments?: string[];
+          job_titles?: string[] | null;
+          processing_status?: string;
+          csv_output_url?: string | null;
+          error_message?: string | null;
+          started_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      user_accounts: {
+        Row: {
+          id: string;
+          user_id: string;
+          organization_id: string | null;
+          unipile_account_id: string | null;
+          provider: 'linkedin' | 'email' | 'twitter' | 'facebook' | 'instagram' | 'whatsapp' | 'telegram' | 'messenger';
+          account_type: 'personal' | 'business' | 'page';
+          display_name: string;
+          username: string | null;
+          email: string | null;
+          profile_picture_url: string | null;
+          connection_status: 'connected' | 'disconnected' | 'expired' | 'error' | 'pending' | 'credentials';
+          last_sync_at: string | null;
+          expires_at: string | null;
+          unipile_data: Record<string, unknown>;
+          capabilities: Record<string, unknown>[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          organization_id?: string | null;
+          unipile_account_id?: string | null;
+          provider: 'linkedin' | 'email' | 'twitter' | 'facebook' | 'instagram' | 'whatsapp' | 'telegram' | 'messenger';
+          account_type?: 'personal' | 'business' | 'page';
+          display_name: string;
+          username?: string | null;
+          email?: string | null;
+          profile_picture_url?: string | null;
+          connection_status?: 'connected' | 'disconnected' | 'expired' | 'error' | 'pending' | 'credentials';
+          last_sync_at?: string | null;
+          expires_at?: string | null;
+          unipile_data?: Record<string, unknown>;
+          capabilities?: Record<string, unknown>[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          organization_id?: string | null;
+          unipile_account_id?: string | null;
+          provider?: 'linkedin' | 'email' | 'twitter' | 'facebook' | 'instagram' | 'whatsapp' | 'telegram' | 'messenger';
+          account_type?: 'personal' | 'business' | 'page';
+          display_name?: string;
+          username?: string | null;
+          email?: string | null;
+          profile_picture_url?: string | null;
+          connection_status?: 'connected' | 'disconnected' | 'expired' | 'error' | 'pending' | 'credentials';
+          last_sync_at?: string | null;
+          expires_at?: string | null;
+          unipile_data?: Record<string, unknown>;
+          capabilities?: Record<string, unknown>[];
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      organizations: {
+        Row: {
+          id: string;
+          clerk_org_id: string;
+          name: string;
+          slug: string | null;
+          permissible_seats: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          clerk_org_id: string;
+          name: string;
+          slug?: string | null;
+          permissible_seats?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          clerk_org_id?: string;
+          name?: string;
+          slug?: string | null;
+          permissible_seats?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      lead_lists: {
+        Row: {
+          id: string;
+          user_id: string;
+          organization_id: string;
+          connected_account_id: string | null;
+          name: string;
+          description: string | null;
+          total_leads: number;
+          processed_leads: number;
+          failed_leads: number;
+          original_filename: string | null;
+          csv_file_url: string | null;
+          sample_csv_url: string | null;
+          status: 'draft' | 'processing' | 'completed' | 'failed';
+          processing_started_at: string | null;
+          processing_completed_at: string | null;
+          error_message: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          organization_id: string;
+          connected_account_id?: string | null;
+          name: string;
+          description?: string | null;
+          total_leads?: number;
+          processed_leads?: number;
+          failed_leads?: number;
+          original_filename?: string | null;
+          csv_file_url?: string | null;
+          sample_csv_url?: string | null;
+          status?: 'draft' | 'processing' | 'completed' | 'failed';
+          processing_started_at?: string | null;
+          processing_completed_at?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          organization_id?: string;
+          connected_account_id?: string | null;
+          name?: string;
+          description?: string | null;
+          total_leads?: number;
+          processed_leads?: number;
+          failed_leads?: number;
+          original_filename?: string | null;
+          csv_file_url?: string | null;
+          sample_csv_url?: string | null;
+          status?: 'draft' | 'processing' | 'completed' | 'failed';
+          processing_started_at?: string | null;
+          processing_completed_at?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -370,7 +680,7 @@ export interface Database {
 export interface Lead {
   id: string
   external_id: string
-  
+
   // Personal information
   first_name?: string
   last_name?: string
@@ -379,25 +689,25 @@ export interface Lead {
   phone?: string
   headline?: string
   photo_url?: string
-  
+
   // Professional information
   title?: string
   seniority?: string
   years_experience?: number
   time_in_current_role?: string
-  
+
   // Professional categorization from Apollo
   departments?: string[]
   subdepartments?: string[]
   functions?: string[]
-  
+
   // Company information
   company: string
   company_id?: string
   industry?: string
   employee_count?: number
   revenue?: number
-  
+
   // Enhanced company details
   company_website?: string
   company_linkedin?: string
@@ -406,37 +716,37 @@ export interface Lead {
   company_phone?: string
   company_alexa_ranking?: number
   company_primary_domain?: string
-  
+
   // Company growth metrics
   company_headcount_six_month_growth?: number
   company_headcount_twelve_month_growth?: number
   company_headcount_twenty_four_month_growth?: number
-  
+
   // Location information
   location?: string
   city?: string
   state?: string
   country?: string
-  
+
   // Social profiles
   linkedin_url?: string
   twitter_url?: string
   facebook_url?: string
   github_url?: string
-  
+
   // Employment history
   employment_history?: EmploymentRecord[]
-  
+
   // Email verification
   email_status?: 'verified' | 'likely' | 'guessed' | 'unavailable'
-  
+
   // Data source information
   source: string
   verified: boolean
   confidence: number
   technologies: string[]
   keywords?: string[]
-  
+
   // Metadata
   created_at: string
   updated_at: string
@@ -516,7 +826,7 @@ export interface EmailVerification {
   smtp_check_passed?: boolean
   disposable_email: boolean
   cost: number
-} 
+}
 
 // Smartlead Integration Types
 export interface SmartleadEmailEvent {
@@ -588,4 +898,111 @@ export interface LeadWithSmartleadData extends Lead {
   last_event_timestamp?: string
   email_events?: SmartleadEmailEvent[]
   campaign_stats?: SmartleadCampaignStats
-} 
+}
+
+// Lead Lists Types
+export interface LeadList {
+  id: string
+  user_id: string
+  organization_id: string
+  connected_account_id?: string | null
+  campaign_id?: string | null
+  name: string
+  description?: string | null
+  total_leads: number
+  processed_leads: number
+  failed_leads: number
+  original_filename?: string | null
+  csv_file_url?: string | null
+  sample_csv_url?: string | null
+  status: 'draft' | 'processing' | 'completed' | 'failed'
+  processing_started_at?: string | null
+  processing_completed_at?: string | null
+  error_message?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LeadListWithAccount extends LeadList {
+  connected_account?: {
+    id: string
+    provider: string
+    display_name: string
+    connection_status: string
+    profile_picture_url?: string | null
+  } | null
+  campaign?: {
+    id: string
+    name: string
+    description?: string | null
+    status: string
+  } | null
+}
+
+export interface LeadListStats {
+  total_lists: number
+  total_leads: number
+  processing_lists: number
+  completed_lists: number
+  failed_lists: number
+}
+
+export interface CSVPreviewData {
+  headers: string[]
+  rows: string[][]
+  total_rows: number
+  sample_size: number
+}
+
+export interface CSVColumnMapping {
+  csv_column: string
+  mapped_field: string
+  required: boolean
+  sample_data?: string[]
+}
+
+export interface LeadListProcessingJob {
+  id: string
+  lead_list_id: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  progress: number
+  total_rows: number
+  processed_rows: number
+  successful_rows: number
+  failed_rows: number
+  error_details?: string[]
+  started_at?: string
+  completed_at?: string
+}
+
+export interface CreateLeadListRequest {
+  name: string
+  description?: string
+  connected_account_id?: string
+  campaign_id?: string
+  organization_id: string
+  icp_id?: string
+  icpData?: any
+  file?: File
+  totalResults?: number
+}
+
+export interface UpdateLeadListRequest {
+  name?: string
+  description?: string
+  connected_account_id?: string
+  campaign_id?: string
+  status?: 'draft' | 'processing' | 'completed' | 'failed'
+}
+
+export interface UploadCSVRequest {
+  file: File
+  lead_list_id: string
+}
+
+export interface ProcessCSVRequest {
+  lead_list_id: string
+  column_mapping: CSVColumnMapping[]
+  skip_duplicates?: boolean
+  validate_emails?: boolean
+}

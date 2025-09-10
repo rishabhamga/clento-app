@@ -33,7 +33,7 @@ import {
     CardBody,
     Button
 } from '@chakra-ui/react'
-import { Search } from 'lucide-react'
+import { Search, Activity, Users, MessageCircle, TrendingUp, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -59,9 +59,7 @@ interface Campaign {
         current: number
         total: number
     }
-    country: string
-    flag: string
-    isPrivate: boolean
+    createdAt: string
     status: string
 }
 
@@ -116,6 +114,18 @@ export default function Dashboard() {
 
     const searchBg = useColorModeValue('white', 'gray.800')
     const searchBorder = useColorModeValue('gray.200', 'gray.700')
+    const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
+    const cardBorder = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
+
+    const handleCreateCampaign = () => {
+        localStorage.removeItem('campaignTargeting')
+        localStorage.removeItem('campaignPitchData')
+        localStorage.removeItem('campaignOutreachData')
+        localStorage.removeItem('campaignWorkflow')
+        localStorage.removeItem('campaignLaunch')
+        localStorage.removeItem('selectedLeads')
+        router.push('/campaigns/new')
+    }
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -179,11 +189,7 @@ export default function Dashboard() {
                         type = 'Local'
                     }
 
-                    const country = campaign.settings?.country || 'US'
-                    let flag = '🇺🇸'
-                    if (country === 'Global') flag = '🌍'
-                    else if (country === 'UK') flag = '🇬🇧'
-                    else if (country === 'CA') flag = '🇨🇦'
+
 
                     return {
                         id: campaign.id,
@@ -193,9 +199,7 @@ export default function Dashboard() {
                             current: leadCount,
                             total: totalLeads
                         },
-                        country,
-                        flag,
-                        isPrivate: campaign.settings?.isPrivate || false,
+                        createdAt: campaign.created_at,
                         status: campaign.status
                     }
                 })
@@ -221,16 +225,7 @@ export default function Dashboard() {
         }
     }, [isLoaded, user, organization?.id])
 
-    const handleTogglePrivate = (campaignId: string) => {
-        setState((prev) => ({
-            ...prev,
-            campaigns: prev.campaigns.map((campaign) =>
-                campaign.id === campaignId
-                    ? { ...campaign, isPrivate: !campaign.isPrivate }
-                    : campaign
-            )
-        }))
-    }
+
 
     const filteredCampaigns = state.campaigns.filter((campaign) =>
         campaign.name.toLowerCase().includes(state.searchQuery.toLowerCase())
@@ -283,157 +278,201 @@ export default function Dashboard() {
     return (
         <DashboardLayout>
             <VStack spacing={8} align="stretch">
+                {/* Campaigns Header */}
+                <HStack justify="space-between" align="center">
+                    <VStack spacing={1} align="start">
+                        <Heading
+                            size="xl"
+                            bgGradient="linear(to-r, purple.400, blue.400)"
+                            bgClip="text"
+                            fontWeight="bold"
+                        >
+                            Campaigns
+                        </Heading>
+                        <Text color="gray.600" fontSize="lg">
+                            Manage your outreach campaigns and track performance
+                        </Text>
+                    </VStack>
+                    <GradientButton
+                        leftIcon={<Plus size={16} />}
+                        variant="primary"
+                        size="lg"
+                        onClick={() => handleCreateCampaign()}
+                    >
+                        Create a Campaign
+                    </GradientButton>
+                </HStack>
+
+                {/* Search Bar */}
+                <InputGroup maxW="400px" mb={6}>
+                    <InputLeftElement>
+                        <Icon as={Search} boxSize={5} color="gray.400" />
+                    </InputLeftElement>
+                    <Input
+                        placeholder="Search campaigns"
+                        value={state.searchQuery}
+                        onChange={(e) => setState((prev) => ({ ...prev, searchQuery: e.target.value }))}
+                        bg={searchBg}
+                        border="1px"
+                        borderColor={searchBorder}
+                        borderRadius="lg"
+                        _focus={{
+                            borderColor: "purple.400",
+                            boxShadow: "0 0 0 1px var(--chakra-colors-purple-400)"
+                        }}
+                    />
+                </InputGroup>
+
                 {/* Dashboard Stats */}
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4} mb={6}>
-                    <StatCard label="Active Campaigns" number={state.dashboardStats.activeCampaigns} helpText="Currently running" />
-                    <StatCard label="Total Leads" number={state.dashboardStats.totalLeads} helpText="In all campaigns" />
-                    <StatCard label="Messages Sent" number={state.dashboardStats.totalMessages} helpText="Across all campaigns" />
-                    <StatCard label="Response Rate" number={state.dashboardStats.responseRate} helpText="Average across campaigns" />
+                <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6} mb={8}>
+                    <Card
+                        bg={cardBg}
+                        backdropFilter="blur(10px)"
+                        border="1px solid"
+                        borderColor={cardBorder}
+                        borderRadius="xl"
+                        p={4}
+                        _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                        transition="all 0.2s ease"
+                    >
+                        <VStack spacing={1}>
+                            <Icon as={Activity} boxSize={5} color="purple.500" />
+                            <Text fontSize="2xl" fontWeight="bold">
+                                {state.dashboardStats.activeCampaigns}
+                            </Text>
+                            <Text fontSize="xs" color="gray.600">Active Campaigns</Text>
+                        </VStack>
+                    </Card>
+
+                    <Card
+                        bg={cardBg}
+                        backdropFilter="blur(10px)"
+                        border="1px solid"
+                        borderColor={cardBorder}
+                        borderRadius="xl"
+                        p={4}
+                        _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                        transition="all 0.2s ease"
+                    >
+                        <VStack spacing={1}>
+                            <Icon as={Users} boxSize={5} color="green.500" />
+                            <Text fontSize="2xl" fontWeight="bold">
+                                {state.dashboardStats.totalLeads}
+                            </Text>
+                            <Text fontSize="xs" color="gray.600">Total Leads</Text>
+                        </VStack>
+                    </Card>
+
+                    <Card
+                        bg={cardBg}
+                        backdropFilter="blur(10px)"
+                        border="1px solid"
+                        borderColor={cardBorder}
+                        borderRadius="xl"
+                        p={4}
+                        _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                        transition="all 0.2s ease"
+                    >
+                        <VStack spacing={1}>
+                            <Icon as={MessageCircle} boxSize={5} color="blue.500" />
+                            <Text fontSize="2xl" fontWeight="bold">
+                                {state.dashboardStats.totalMessages}
+                            </Text>
+                            <Text fontSize="xs" color="gray.600">Messages Sent</Text>
+                        </VStack>
+                    </Card>
+
+                    <Card
+                        bg={cardBg}
+                        backdropFilter="blur(10px)"
+                        border="1px solid"
+                        borderColor={cardBorder}
+                        borderRadius="xl"
+                        p={4}
+                        _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                        transition="all 0.2s ease"
+                    >
+                        <VStack spacing={1}>
+                            <Icon as={TrendingUp} boxSize={5} color="orange.500" />
+                            <Text fontSize="2xl" fontWeight="bold">
+                                {state.dashboardStats.responseRate}%
+                            </Text>
+                            <Text fontSize="xs" color="gray.600">Response Rate</Text>
+                        </VStack>
+                    </Card>
                 </SimpleGrid>
 
-                {/* Tabs */}
-                <Tabs colorScheme="purple" variant="enclosed">
-                    <TabList>
-                        <Tab>{organization ? 'Organization Campaigns' : 'My Campaigns'}</Tab>
-                        <Tab>Team Campaigns</Tab>
-                        <Tab>Templates</Tab>
-                    </TabList>
+                {/* Campaigns Section */}
+                <Box>
 
-                    <TabPanels>
-                        <TabPanel px={0}>
-                            {/* Header */}
-                            <HStack justify="space-between" align="center" mb={6}>
-                                <VStack spacing={2} align="start">
-                                    <HStack spacing={3} align="center">
-                                        <Heading size="lg" color="gray.800">
-                                            Campaigns
-                                        </Heading>
-                                        <Badge colorScheme="purple" borderRadius="full" px={2}>
-                                            {state.campaigns.length}
-                                        </Badge>
-                                    </HStack>
-                                    {organization && (
-                                        <Text fontSize="sm" color="gray.600">
-                                            Organization workspace • {organization.membersCount} member{organization.membersCount !== 1 ? 's' : ''}
-                                        </Text>
-                                    )}
-                                </VStack>
+                    {/* Campaign Grid */}
+                    <Grid
+                        templateColumns="repeat(auto-fill, minmax(300px, 1fr))"
+                        gap={6}
+                        w="100%"
+                    >
+                        {filteredCampaigns.map((campaign) => (
+                            <CampaignCard
+                                key={campaign.id}
+                                id={campaign.id}
+                                name={campaign.name}
+                                type={campaign.type}
+                                leads={campaign.leads}
+                                createdAt={campaign.createdAt}
+                                onClick={() => router.push(`/campaigns/${campaign.id}`)}
+                                onMenuClick={() => {
+                                    // For now, just navigate to campaign view
+                                    router.push(`/campaigns/${campaign.id}`)
+                                }}
+                                onDelete={(deletedId) => {
+                                    // Remove the deleted campaign from the state
+                                    setState(prev => ({
+                                        ...prev,
+                                        campaigns: prev.campaigns.filter(c => c.id !== deletedId),
+                                        dbCampaigns: prev.dbCampaigns.filter(c => c.id !== deletedId)
+                                    }))
+                                }}
+                            />
+                        ))}
+                    </Grid>
 
-                                <GradientButton size="lg" onClick={() => router.push('/campaigns/new')}>
-                                    Create a Campaign
-                                </GradientButton>
-                            </HStack>
+                    {filteredCampaigns.length === 0 && state.searchQuery && (
+                        <Box textAlign="center" py={12}>
+                            <Text color="gray.500" fontSize="lg">
+                                No campaigns found matching &quot;{state.searchQuery}&quot;
+                            </Text>
+                        </Box>
+                    )}
 
-                            {/* Search Bar */}
-                            <InputGroup maxW="400px" mb={6}>
-                                <InputLeftElement>
-                                    <Icon as={Search} boxSize={5} color="gray.400" />
-                                </InputLeftElement>
-                                <Input
-                                    placeholder="Search campaigns"
-                                    value={state.searchQuery}
-                                    onChange={(e) => setState((prev) => ({ ...prev, searchQuery: e.target.value }))}
-                                    bg={searchBg}
-                                    border="1px"
-                                    borderColor={searchBorder}
-                                    borderRadius="lg"
-                                    _focus={{
-                                        borderColor: "purple.400",
-                                        boxShadow: "0 0 0 1px var(--chakra-colors-purple-400)"
-                                    }}
-                                />
-                            </InputGroup>
-
-                            {/* Campaign Grid */}
-                            <Grid
-                                templateColumns="repeat(auto-fill, minmax(300px, 1fr))"
-                                gap={6}
-                                w="100%"
-                            >
-                                {filteredCampaigns.map((campaign) => (
-                                    <CampaignCard
-                                        key={campaign.id}
-                                        name={campaign.name}
-                                        type={campaign.type}
-                                        leads={campaign.leads}
-                                        country={campaign.country}
-                                        flag={campaign.flag}
-                                        isPrivate={campaign.isPrivate}
-                                        onTogglePrivate={() => handleTogglePrivate(campaign.id)}
-                                        onClick={() => router.push(`/campaigns/${campaign.id}`)}
-                                    />
-                                ))}
-                            </Grid>
-
-                            {filteredCampaigns.length === 0 && state.searchQuery && (
-                                <Box textAlign="center" py={12}>
-                                    <Text color="gray.500" fontSize="lg">
-                                        No campaigns found matching &quot;{state.searchQuery}&quot;
-                                    </Text>
-                                </Box>
-                            )}
-
-                            {state.campaigns.length === 0 && (
-                                <Box textAlign="center" py={12}>
-                                    <VStack spacing={4}>
-                                        <Text color="gray.500" fontSize="lg">
-                                            {organization
-                                                ? `No campaigns yet in ${organization.name}. Create your first campaign to get started!`
-                                                : "No campaigns yet. Create your first campaign to get started!"
-                                            }
-                                        </Text>
-                                        <GradientButton onClick={() => router.push('/campaigns/new')}>
-                                            Create Your First Campaign
-                                        </GradientButton>
-                                    </VStack>
-                                </Box>
-                            )}
-                        </TabPanel>
-
-                        <TabPanel>
-                            <VStack spacing={4} align="center" py={8}>
-                                <Text color="gray.600" fontSize="lg">
-                                    Collaborate with your team on campaigns
+                    {state.campaigns.length === 0 && (
+                        <Box textAlign="center" py={12}>
+                            <VStack spacing={4}>
+                                <Text color="gray.500" fontSize="lg">
+                                    {organization
+                                        ? `No campaigns yet in ${organization.name}. Create your first campaign to get started!`
+                                        : "No campaigns yet. Create your first campaign to get started!"
+                                    }
                                 </Text>
-                                <Text color="gray.500" fontSize="sm">
-                                    Team campaigns are available with Pro subscription
-                                </Text>
-                                <GradientButton size="lg">
-                                    Upgrade to Pro
+                                <GradientButton onClick={() => router.push('/campaigns/new')}>
+                                    Create Your First Campaign
                                 </GradientButton>
                             </VStack>
-                        </TabPanel>
-
-                        <TabPanel>
-                            <VStack spacing={4} align="center" py={8}>
-                                <Text color="gray.600" fontSize="lg">
-                                    Save time with pre-built campaign templates
-                                </Text>
-                                <Text color="gray.500" fontSize="sm">
-                                    Campaign templates are available with Pro subscription
-                                </Text>
-                                <GradientButton size="lg">
-                                    Upgrade to Pro
-                                </GradientButton>
-                            </VStack>
-                        </TabPanel>
-                    </TabPanels>
-                </Tabs>
+                        </Box>
+                    )}
+                </Box>
             </VStack>
         </DashboardLayout>
     )
 }
 
-// Sample campaign data matching Artisan's design
+// Sample campaign data
 const sampleCampaigns: Campaign[] = [
     {
         id: '1',
         name: 'Tech Companies 50/150',
         type: 'Standard',
         leads: { current: 290, total: 12863 },
-        country: 'US',
-        flag: '🇺🇸',
-        isPrivate: true,
+        createdAt: '2024-08-01T00:00:00Z',
         status: 'active'
     },
     {
@@ -441,9 +480,7 @@ const sampleCampaigns: Campaign[] = [
         name: 'Web Visitor',
         type: 'Watchtower',
         leads: { current: 213, total: 8026 },
-        country: 'Global',
-        flag: '🌍',
-        isPrivate: true,
+        createdAt: '2024-07-25T00:00:00Z',
         status: 'active'
     },
     {
@@ -451,9 +488,7 @@ const sampleCampaigns: Campaign[] = [
         name: 'Belmar',
         type: 'Standard',
         leads: { current: 0, total: 3180 },
-        country: 'US',
-        flag: '🇺🇸',
-        isPrivate: true,
+        createdAt: '2024-07-20T00:00:00Z',
         status: 'active'
     },
     {
@@ -461,9 +496,7 @@ const sampleCampaigns: Campaign[] = [
         name: 'Cambray',
         type: 'Standard',
         leads: { current: 0, total: 15526 },
-        country: 'UK',
-        flag: '🇬🇧',
-        isPrivate: true,
+        createdAt: '2024-07-15T00:00:00Z',
         status: 'active'
     }
 ]

@@ -1,833 +1,1799 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  Box,
-  Container,
-  VStack,
-  HStack,
-  Heading,
-  Text,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
-  Card,
-  CardHeader,
-  CardBody,
-  SimpleGrid,
-  Progress,
-  Badge,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  IconButton,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Spinner,
-  Alert,
-  AlertIcon,
-  useColorModeValue,
-  useToast,
-  Avatar,
-  Image,
-  Link,
-  Collapse,
-  useDisclosure,
-  Divider,
-  Wrap,
-  WrapItem,
-  Tooltip,
-  Stack,
-  Button,
-  useClipboard
+    Box,
+    Container,
+    VStack,
+    HStack,
+    Heading,
+    Text,
+    Card,
+    CardHeader,
+    CardBody,
+    SimpleGrid,
+    Badge,
+    Button,
+    Spinner,
+    Alert,
+    AlertIcon,
+    useColorModeValue,
+    useToast,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalCloseButton,
+    useDisclosure,
+    Icon,
+    Select,
+    Textarea,
+    Flex,
+    Wrap,
+    WrapItem,
+    Divider,
+    Grid,
+    List,
+    ListItem,
+    ListIcon,
+    Tag,
+    TagLabel,
+    Accordion,
+    AccordionItem,
+    AccordionButton,
+    AccordionIcon,
+    AccordionPanel,
+    Switch,
+    FormLabel,
+    Slider,
+    SliderTrack,
+    SliderFilledTrack,
+    SliderThumb,
+    Checkbox
 } from '@chakra-ui/react'
-import { ChevronDownIcon, MoreHorizontal, RefreshCw, ExternalLink, Mail, Phone, MapPin, Building, Calendar, ChevronDown, ChevronUp, Linkedin, Twitter, Facebook, Github, Globe, Briefcase, Award, Target, Copy, Check } from 'lucide-react'
-import { FiActivity, FiBarChart2, FiCalendar, FiClock, FiMail, FiPause, FiPlay, FiSettings, FiUserCheck } from 'react-icons/fi'
+import { keyframes } from '@emotion/react'
+import { ArrowLeft, Lock, Target, MessageSquare, Workflow, Rocket, Globe, Edit3, PenTool, Users, Settings2Icon } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
-import SearchResults from '@/components/results/SearchResults'
-import { ApolloSearchProvider, useApolloSearch } from '@/hooks/useApolloSearch'
-import { format } from 'date-fns'
-import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
+import { CampaignStepper } from '@/components/ui/CampaignStepper'
+import { FiBookOpen, FiGift, FiSettings, FiStar, FiTrendingUp, FiUsers } from 'react-icons/fi'
+import { CheckCircleIcon, UpDownIcon, WarningIcon } from '@chakra-ui/icons'
 
-interface CampaignProgress {
-  totalLeads: number
-  completionPercentage: number
-  responseRate: number
-  leadsByStatus: Record<string, number>
-  stepsByStatus: Record<string, number>
-  messageStats: Record<string, number>
-  startDate: string
-  lastActivity: string
-  recentActivity: any[]
-}
+// Enhanced animations matching campaign creation pages
+const float = keyframes`
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+`
+
+const glow = keyframes`
+  0%, 100% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(102, 126, 234, 0.5); }
+`
+
+const shimmer = keyframes`
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+`
 
 interface Campaign {
-  id: string
-  name: string
-  description?: string
-  status: 'active' | 'paused' | 'completed' | 'draft'
-  created_at: string
-  updated_at: string
-  settings?: any
+    id: string
+    name: string
+    description: string
+    status: string
+    created_at: string
+    sequence_template: string
+    settings: any
 }
 
-function getCampaignStatusColor(status: string) {
-  switch (status) {
-    case 'active':
-      return 'green'
-    case 'paused':
-      return 'yellow'
-    case 'completed':
-      return 'blue'
-    case 'draft':
-      return 'gray'
-    default:
-      return 'gray'
-  }
-}
-
-function getSeniorityColor(seniority: string) {
-  switch (seniority.toLowerCase()) {
-    case 'entry':
-      return 'green'
-    case 'senior':
-      return 'blue'
-    case 'manager':
-      return 'purple'
-    case 'director':
-      return 'orange'
-    case 'vp':
-    case 'executive':
-      return 'red'
-    default:
-      return 'gray'
-  }
-}
-
-function formatGrowthPercentage(growth?: number) {
-  if (!growth) return null
-  const percentage = Math.round(growth * 100)
-  return percentage > 0 ? `+${percentage}%` : `${percentage}%`
-}
-
-function CampaignDetailInner() {
-  const params = useParams()
-  const router = useRouter()
-  const toast = useToast()
-  const customToast = createCustomToast(toast)
-  const [campaign, setCampaign] = useState<Campaign | null>(null)
-  const [progress, setProgress] = useState<CampaignProgress | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [selectedLeads, setSelectedLeads] = useState<any[]>([])
-  const [loadingLeads, setLoadingLeads] = useState(false)
-  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
-
-  const bgColor = useColorModeValue('gray.50', 'gray.900')
-  const cardBg = useColorModeValue('white', 'gray.800')
-  const borderColor = useColorModeValue('gray.200', 'gray.700')
-
-  // Get Apollo search context to populate with leads
-  const { setSearchResults } = useApolloSearch()
-
-  useEffect(() => {
-    const fetchCampaignData = async () => {
-      setLoading(true)
-      try {
-        // Fetch campaign progress
-        const response = await fetch(`/api/campaigns/progress?campaignId=${params.id}`)
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch campaign data')
-        }
-        
-        const data = await response.json()
-        setCampaign(data.campaign)
-        setProgress(data.progress)
-      } catch (err) {
-        console.error('Error fetching campaign:', err)
-        setError('Unable to load campaign data. Please try refreshing the page.')
-      } finally {
-        setLoading(false)
-      }
+const steps = [
+    {
+        id: 'targeting',
+        title: 'Targeting',
+        description: 'Define your ideal prospects',
+        icon: Target
+    },
+    {
+        id: 'pitch',
+        title: 'Pitch',
+        description: 'Create your value proposition',
+        icon: MessageSquare
+    },
+    {
+        id: 'outreach',
+        title: 'Outreach',
+        description: 'Configure messaging',
+        icon: MessageSquare
+    },
+    {
+        id: 'workflow',
+        title: 'Workflow',
+        description: 'Set up sequences',
+        icon: Workflow
+    },
+    {
+        id: 'launch',
+        title: 'Launch',
+        description: 'Start your campaign',
+        icon: Rocket
     }
-
-    if (params.id) {
-      fetchCampaignData()
-    }
-  }, [params.id])
-
-  useEffect(() => {
-    const fetchCampaignLeads = async () => {
-      if (!params.id) return
-
-      setLoadingLeads(true)
-      try {
-        const response = await fetch(`/api/leads?campaignId=${params.id}&limit=10`)
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch campaign leads')
-        }
-        
-        const data = await response.json()
-        
-        // Transform the leads data to match SearchResults component format
-        const transformedLeads = (data.leads || []).map((leadData: any) => {
-          const lead = leadData.leads || leadData;
-          
-          // Parse enrichment data if available
-          const enrichmentData = lead.enrichment_data ? JSON.parse(lead.enrichment_data) : {};
-          
-          return {
-            // Basic identification
-            id: lead.id || `lead-${Math.random()}`,
-            external_id: lead.external_id || '',
-            
-            // Name fields
-            first_name: lead.first_name || enrichmentData.first_name || '',
-            last_name: lead.last_name || enrichmentData.last_name || '',
-            full_name: lead.full_name || lead.name || `${lead.first_name || enrichmentData.first_name || ''} ${lead.last_name || enrichmentData.last_name || ''}`.trim() || 'Unknown Name',
-            
-            // Contact information
-            email: lead.email || '',
-            email_status: lead.email_status || enrichmentData.email_status || 'unknown',
-            phone: lead.phone || enrichmentData.phone_numbers?.[0] || '',
-            linkedin_url: lead.linkedin_url || enrichmentData.linkedin_url || '',
-            
-            // Professional details
-            title: lead.title || enrichmentData.job_title || '',
-            company: lead.company || enrichmentData.job_company_name || '',
-            headline: enrichmentData.headline || `${lead.title || enrichmentData.job_title || ''} at ${lead.company || enrichmentData.job_company_name || ''}`,
-            seniority: enrichmentData.job_seniority || enrichmentData.seniority || 'unknown',
-            departments: enrichmentData.departments || [],
-            subdepartments: enrichmentData.subdepartments || [],
-            
-            // Location
-            location: lead.location || enrichmentData.location_name || '',
-            country: enrichmentData.location_country || '',
-            state: enrichmentData.location_region || '',
-            city: enrichmentData.location_locality || '',
-            
-            // Experience and skills
-            experience_level: enrichmentData.work_experience?.length || 0,
-            skills: enrichmentData.skills || [],
-            technologies: enrichmentData.technologies || [],
-            
-            // Additional details
-            photo_url: enrichmentData.photo_url || null,
-            summary: enrichmentData.summary || '',
-            interests: enrichmentData.interests || [],
-            
-            // Company details
-            company_size: enrichmentData.job_company_size || null,
-            company_industry: enrichmentData.job_company_industry || '',
-            company_revenue: enrichmentData.job_company_revenue || null,
-            company_founded: enrichmentData.job_company_founded || null,
-            
-            // Data quality
-            confidence: lead.confidence || enrichmentData.pdl_id ? 0.9 : 0.6,
-            last_updated: lead.last_updated || lead.updated_at || new Date().toISOString(),
-            data_source: lead.source || 'database',
-            
-            // Campaign status
-            campaign_status: leadData.campaign_status || leadData.status || 'unknown',
-            
-            // Keep all original data for backward compatibility
-            ...lead,
-            ...enrichmentData
-          }
-        })
-        
-        setSelectedLeads(transformedLeads)
-        
-        // Also populate the Apollo search context with the leads
-        setSearchResults(transformedLeads)
-      } catch (err) {
-        console.error('Error fetching leads:', err)
-      } finally {
-        setLoadingLeads(false)
-      }
-    }
-
-    fetchCampaignLeads()
-  }, [params.id])
-
-  const handleStatusChange = async (newStatus: 'active' | 'paused' | 'completed') => {
-    if (!campaign) return
-    
-    setIsUpdating(true)
-    try {
-      const response = await fetch('/api/campaigns/progress', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          campaignId: campaign.id,
-          status: newStatus
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update campaign status')
-      }
-
-      const data = await response.json()
-      setCampaign(data.campaign)
-      
-      customToast.success({
-        title: 'Campaign updated',
-        description: `Campaign status changed to ${newStatus}`,
-      })
-    } catch (err) {
-      console.error('Error updating campaign:', err)
-      customToast.error({
-        title: 'Update failed',
-        description: 'Failed to update campaign status',
-      })
-    } finally {
-      setIsUpdating(false)
-    }
-  }
-
-  const refreshCampaignData = async () => {
-    // Refetch campaign data
-    const response = await fetch(`/api/campaigns/progress?campaignId=${params.id}`)
-    if (response.ok) {
-      const data = await response.json()
-      setCampaign(data.campaign)
-      setProgress(data.progress)
-    }
-  }
-
-  const handleLeadSelect = (leadId: string, selected: boolean) => {
-    setSelectedLeadIds(prev => 
-      selected 
-        ? [...prev, leadId]
-        : prev.filter(id => id !== leadId)
-    )
-  }
-
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <Container maxW="7xl" py={8}>
-          <VStack spacing={8}>
-            <Spinner size="xl" />
-            <Text>Loading campaign...</Text>
-          </VStack>
-        </Container>
-      </DashboardLayout>
-    )
-  }
-
-  if (error) {
-    return (
-      <DashboardLayout>
-        <Container maxW="7xl" py={8}>
-          <Alert status="error" borderRadius="lg">
-            <AlertIcon />
-            <VStack spacing={2} align="start">
-              <Text fontWeight="bold">Error Loading Campaign</Text>
-              <Text>{error}</Text>
-            </VStack>
-          </Alert>
-        </Container>
-      </DashboardLayout>
-    )
-  }
-
-  if (!campaign || !progress) {
-    return (
-      <DashboardLayout>
-        <Container maxW="7xl" py={8}>
-          <Alert status="warning" borderRadius="lg">
-            <AlertIcon />
-            <Text>Campaign not found</Text>
-          </Alert>
-        </Container>
-      </DashboardLayout>
-    )
-  }
-
-  return (
-    <DashboardLayout>
-      <Container maxW="7xl" py={8}>
-        <VStack spacing={8} align="stretch">
-          {/* Campaign Header */}
-          <HStack justify="space-between" align="start" wrap="wrap" gap={4}>
-            <VStack spacing={2} align="start">
-              <HStack spacing={3} align="center">
-                <Heading size="lg">{campaign.name}</Heading>
-                <Badge 
-                  colorScheme={getCampaignStatusColor(campaign.status)} 
-                  px={3} 
-                  py={1}
-                  textTransform="uppercase"
-                  fontWeight="bold"
-                >
-                  {campaign.status}
-                </Badge>
-              </HStack>
-              {campaign.description && (
-                <Text color="gray.600" maxW="2xl">
-                  {campaign.description}
-                </Text>
-              )}
-              <HStack spacing={4} fontSize="sm" color="gray.500">
-                <HStack spacing={1}>
-                  <FiCalendar />
-                  <Text>Created {format(new Date(campaign.created_at), 'MMM d, yyyy')}</Text>
-                </HStack>
-                <HStack spacing={1}>
-                  <FiActivity />
-                  <Text>Last activity {format(new Date(progress.lastActivity || campaign.updated_at), 'MMM d, yyyy')}</Text>
-                </HStack>
-              </HStack>
-            </VStack>
-            
-            {/* Campaign Actions */}
-            <HStack spacing={3}>
-              <Menu>
-                <MenuButton 
-                  as={Button} 
-                  variant="outline" 
-                  size="sm"
-                  rightIcon={<ChevronDownIcon />}
-                  isLoading={isUpdating}
-                >
-                  Change Status
-                </MenuButton>
-                <MenuList>
-                  <MenuItem 
-                    icon={<FiPlay />}
-                    onClick={() => handleStatusChange('active')}
-                    isDisabled={campaign.status === 'active'}
-                  >
-                    Activate Campaign
-                  </MenuItem>
-                  <MenuItem 
-                    icon={<FiPause />}
-                    onClick={() => handleStatusChange('paused')}
-                    isDisabled={campaign.status === 'paused'}
-                  >
-                    Pause Campaign
-                  </MenuItem>
-                  <MenuItem 
-                    icon={<FiUserCheck />}
-                    onClick={() => handleStatusChange('completed')}
-                    isDisabled={campaign.status === 'completed'}
-                  >
-                    Mark Complete
-                  </MenuItem>
-                </MenuList>
-              </Menu>
-              
-              <IconButton 
-                aria-label="Campaign settings" 
-                icon={<FiSettings />} 
-                variant="outline" 
-                size="sm" 
-              />
-              
-              <Menu>
-                <MenuButton as={IconButton} icon={<MoreHorizontal />} variant="outline" size="sm" />
-                <MenuList>
-                  <MenuItem>Duplicate Campaign</MenuItem>
-                  <MenuItem>Export Results</MenuItem>
-                  <MenuItem color="red.500">Delete Campaign</MenuItem>
-                </MenuList>
-              </Menu>
-            </HStack>
-          </HStack>
-
-          {/* Stats Overview */}
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
-            <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-              <CardBody>
-                <Stat>
-                  <StatLabel>Total Leads</StatLabel>
-                  <StatNumber>{progress?.totalLeads || 0}</StatNumber>
-                  <StatHelpText>In this campaign</StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-            
-            <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-              <CardBody>
-                <Stat>
-                  <StatLabel>Completion</StatLabel>
-                  <StatNumber>{progress?.completionPercentage || 0}%</StatNumber>
-                  <Progress 
-                    value={progress?.completionPercentage || 0} 
-                    colorScheme="purple" 
-                    size="sm" 
-                    mt={2} 
-                    borderRadius="full" 
-                  />
-                </Stat>
-              </CardBody>
-            </Card>
-            
-            <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-              <CardBody>
-                <Stat>
-                  <StatLabel>Response Rate</StatLabel>
-                  <StatNumber>{progress?.responseRate || 0}%</StatNumber>
-                  <StatHelpText>
-                    {Object.keys(progress?.messageStats || {})
-                      .filter(key => key.startsWith('inbound_'))
-                      .reduce((sum, key) => sum + (progress?.messageStats[key] || 0), 0)} 
-                    responses
-                  </StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-            
-            <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-              <CardBody>
-                <Stat>
-                  <StatLabel>Messages Sent</StatLabel>
-                  <StatNumber>
-                    {Object.keys(progress?.messageStats || {})
-                      .filter(key => key.startsWith('outbound_'))
-                      .reduce((sum, key) => sum + (progress?.messageStats[key] || 0), 0)}
-                  </StatNumber>
-                  <StatHelpText>0 steps completed</StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
-
-          {/* Recent Activity */}
-          {progress.recentActivity && progress.recentActivity.length > 0 && (
-            <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
-              <CardHeader>
-                <HStack justify="space-between">
-                  <Heading size="md">Recent Activity</Heading>
-                  <IconButton 
-                    aria-label="Refresh data" 
-                    icon={<RefreshCw />} 
-                    size="sm" 
-                    onClick={refreshCampaignData}
-                  />
-                </HStack>
-              </CardHeader>
-              <CardBody>
-                <Table variant="simple" size="sm">
-                  <Thead>
-                    <Tr>
-                      <Th>Lead</Th>
-                      <Th>Action</Th>
-                      <Th>Status</Th>
-                      <Th>Date</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {progress.recentActivity.map((activity: any) => (
-                      <Tr key={activity.id}>
-                        <Td>
-                          {activity.lead ? (
-                            <VStack align="start" spacing={0}>
-                              <Text fontWeight="medium">{activity.lead.full_name}</Text>
-                              <Text fontSize="xs" color="gray.500">{activity.lead.company}</Text>
-                            </VStack>
-                          ) : (
-                            'Unknown Lead'
-                          )}
-                        </Td>
-                        <Td>{activity.channel === 'email' ? 'Email' : 'LinkedIn'}</Td>
-                        <Td>
-                          <Badge colorScheme={
-                            activity.status === 'completed' ? 'green' : 
-                            activity.status === 'scheduled' ? 'blue' :
-                            activity.status === 'failed' ? 'red' : 'gray'
-                          }>
-                            {activity.status}
-                          </Badge>
-                        </Td>
-                        <Td>{format(new Date(activity.updated_at || activity.send_time), 'MMM d, h:mm a')}</Td>
-                      </Tr>
-                    ))}
-                  </Tbody>
-                </Table>
-              </CardBody>
-            </Card>
-          )}
-
-          {/* Campaign Details Tabs */}
-          <Card bg={cardBg} shadow="sm">
-            <CardBody>
-              <Tabs colorScheme="purple">
-                <TabList>
-                  <Tab>Overview</Tab>
-                  <Tab>Leads</Tab>
-                  <Tab>Messages</Tab>
-                  <Tab>Settings</Tab>
-                </TabList>
-
-                <TabPanels>
-                  {/* Overview Tab */}
-                  <TabPanel>
-                    <VStack spacing={6} align="stretch">
-                      <Heading size="md" color={useColorModeValue('gray.800', 'white')}>Campaign Overview</Heading>
-                      
-                      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                        <Card variant="outline">
-                          <CardHeader pb={0}>
-                            <Heading size="sm">Campaign Settings</Heading>
-                          </CardHeader>
-                          <CardBody>
-                            <VStack spacing={3} align="stretch">
-                              <HStack justify="space-between">
-                                <Text fontWeight="medium">Status</Text>
-                                <Badge colorScheme={getCampaignStatusColor(campaign.status)}>
-                                  {campaign.status}
-                                </Badge>
-                              </HStack>
-                              
-                              <HStack justify="space-between">
-                                <Text fontWeight="medium">Start Date</Text>
-                                <Text>{format(new Date(progress.startDate || campaign.created_at), 'MMM d, yyyy')}</Text>
-                              </HStack>
-                              
-                              <HStack justify="space-between">
-                                <Text fontWeight="medium">Total Leads</Text>
-                                <Text>{progress.totalLeads}</Text>
-                              </HStack>
-                            </VStack>
-                          </CardBody>
-                        </Card>
-                        
-                        <Card variant="outline">
-                          <CardHeader pb={0}>
-                            <Heading size="sm">Workflow Summary</Heading>
-                          </CardHeader>
-                          <CardBody>
-                            <VStack spacing={3} align="stretch">
-                              <HStack justify="space-between">
-                                <Text fontWeight="medium">Template</Text>
-                                <Text>{(campaign as any).sequence_template || 'Custom'}</Text>
-                              </HStack>
-                              
-                              <HStack justify="space-between">
-                                <Text fontWeight="medium">Steps</Text>
-                                <Text>{campaign.settings?.workflow?.customSteps?.length || 0} touchpoints</Text>
-                              </HStack>
-                              
-                              <HStack justify="space-between">
-                                <Text fontWeight="medium">Duration</Text>
-                                <Text>
-                                  {campaign.settings?.workflow?.customSteps?.length > 0 
-                                    ? Math.max(...campaign.settings.workflow.customSteps.map((step: any) => step.delay || 0)) + 1
-                                    : 0} days
-                                </Text>
-                              </HStack>
-                            </VStack>
-                          </CardBody>
-                        </Card>
-                      </SimpleGrid>
-                      
-                      {/* Activity Feed Placeholder */}
-                      <Card variant="outline">
-                        <CardHeader pb={0}>
-                          <Heading size="sm">Recent Activity</Heading>
-                        </CardHeader>
-                        <CardBody>
-                          <Text color="gray.500">No recent activity to display</Text>
-                        </CardBody>
-                      </Card>
-                    </VStack>
-                  </TabPanel>
-                  
-                  {/* Leads Tab */}
-                  <TabPanel>
-                    <VStack spacing={6} align="stretch">
-                      <HStack justify="space-between" wrap="wrap">
-                        <Heading size="md">Campaign Leads</Heading>
-                        <HStack spacing={3}>
-                          {selectedLeadIds.length > 0 && (
-                            <Badge colorScheme="purple" px={3} py={1} borderRadius="full">
-                              {selectedLeadIds.length} selected
-                            </Badge>
-                          )}
-                          <GradientButton size="sm">Add Leads</GradientButton>
-                        </HStack>
-                      </HStack>
-                      
-                      {loadingLeads ? (
-                        <VStack py={8}>
-                          <Spinner />
-                          <Text>Loading leads...</Text>
-                        </VStack>
-                      ) : selectedLeads.length > 0 ? (
-                        <>
-                          {/* Leads Summary */}
-                          <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4}>
-                            <Card size="sm" variant="outline">
-                              <CardBody>
-                                <VStack spacing={1}>
-                                  <Text fontSize="2xl" fontWeight="bold" color="purple.500">
-                                    {selectedLeads.length}
-                                  </Text>
-                                  <Text fontSize="sm" color="gray.600">Total Leads</Text>
-                                </VStack>
-                              </CardBody>
-                            </Card>
-                            
-                            <Card size="sm" variant="outline">
-                              <CardBody>
-                                <VStack spacing={1}>
-                                  <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                                    {selectedLeads.filter(l => l.email_status === 'verified').length}
-                                  </Text>
-                                  <Text fontSize="sm" color="gray.600">Verified Emails</Text>
-                                </VStack>
-                              </CardBody>
-                            </Card>
-                            
-                            <Card size="sm" variant="outline">
-                              <CardBody>
-                                <VStack spacing={1}>
-                                  <Text fontSize="2xl" fontWeight="bold" color="blue.500">
-                                    {selectedLeads.filter(l => l.linkedin_url).length}
-                                  </Text>
-                                  <Text fontSize="sm" color="gray.600">LinkedIn Profiles</Text>
-                                </VStack>
-                              </CardBody>
-                            </Card>
-                            
-                            <Card size="sm" variant="outline">
-                              <CardBody>
-                                <VStack spacing={1}>
-                                  <Text fontSize="2xl" fontWeight="bold" color="teal.500">
-                                    {[...new Set(selectedLeads.map(l => l.country).filter(Boolean))].length}
-                                  </Text>
-                                  <Text fontSize="sm" color="gray.600">Countries</Text>
-                                </VStack>
-                              </CardBody>
-                            </Card>
-                            
-                            <Card size="sm" variant="outline">
-                              <CardBody>
-                                <VStack spacing={1}>
-                                  <Text fontSize="2xl" fontWeight="bold" color="orange.500">
-                                    {selectedLeads.filter(l => l.campaign_status === 'contacted').length}
-                                  </Text>
-                                  <Text fontSize="sm" color="gray.600">Contacted</Text>
-                                </VStack>
-                              </CardBody>
-                            </Card>
-                          </SimpleGrid>
-                          
-                          {/* Use SearchResults component for leads display */}
-                          <SearchResults />
-                        </>
-                      ) : (
-                        <Card variant="outline">
-                          <CardBody>
-                            <VStack py={8} spacing={4}>
-                              <Box
-                                w="80px"
-                                h="80px"
-                                bg="purple.100"
-                                borderRadius="full"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                              >
-                                <Spinner size="lg" color="purple.500" />
-                              </Box>
-                              <VStack spacing={2}>
-                                <Text fontWeight="medium" fontSize="lg" color="purple.600">
-                                  Clento AI is working on it
-                                </Text>
-                                <Text color="gray.500" textAlign="center" maxW="md">
-                                  Clento AI is working to get the best leads based on your set ICP, 
-                                  how you selected filters, and your campaign objectives.
-                                </Text>
-                              </VStack>
-                              <Text fontSize="sm" color="gray.400" textAlign="center">
-                                We'll notify you when your leads are ready
-                              </Text>
-                            </VStack>
-                          </CardBody>
-                        </Card>
-                      )}
-                    </VStack>
-                  </TabPanel>
-                  
-                  {/* Messages Tab */}
-                  <TabPanel>
-                    <VStack spacing={6} align="stretch">
-                      <Heading size="md">Message Performance</Heading>
-                      <Card variant="outline">
-                        <CardBody>
-                          <VStack py={8} spacing={4}>
-                            <Box
-                              w="80px"
-                              h="80px"
-                              bg="purple.100"
-                              borderRadius="full"
-                              display="flex"
-                              alignItems="center"
-                              justifyContent="center"
-                            >
-                              <Spinner size="lg" color="purple.500" />
-                            </Box>
-                            <VStack spacing={2}>
-                              <Text fontWeight="medium" fontSize="lg" color="purple.600">
-                                Clento AI is personalizing messages
-                              </Text>
-                              <Text color="gray.500" textAlign="center" maxW="md">
-                                Clento AI is finding data about the leads to personalize the messages to send to them 
-                                based on their profiles, interests, and company information.
-                              </Text>
-                            </VStack>
-                            <Text fontSize="sm" color="gray.400" textAlign="center">
-                              Personalized messages will be ready once lead analysis is complete
-                            </Text>
-                          </VStack>
-                        </CardBody>
-                      </Card>
-                    </VStack>
-                  </TabPanel>
-                  
-                  {/* Settings Tab */}
-                  <TabPanel>
-                    <VStack spacing={6} align="stretch">
-                      <Heading size="md">Campaign Settings</Heading>
-                      <Text color="gray.500">Campaign configuration options will be displayed here.</Text>
-                    </VStack>
-                  </TabPanel>
-                </TabPanels>
-              </Tabs>
-            </CardBody>
-          </Card>
-        </VStack>
-      </Container>
-    </DashboardLayout>
-  )
-}
+]
 
 export default function CampaignDetailPage() {
-  return (
-    <ApolloSearchProvider>
-      <CampaignDetailInner />
-    </ApolloSearchProvider>
-  )
-} 
+    const params = useParams()
+    const router = useRouter()
+    const toast = useToast()
+    const [campaign, setCampaign] = useState<Campaign | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [currentStep, setCurrentStep] = useState(0)
+    const { isOpen, onOpen, onClose } = useDisclosure()
+    const personaBg = useColorModeValue('gray.50', 'gray.700')
+    const personaBorderColor = useColorModeValue('gray.200', 'gray.600')
+
+    // Enhanced glassmorphism colors matching campaign creation
+    const cardBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')
+    const glassBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
+    const borderColor = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
+    const grayBg = useColorModeValue('rgba(247, 250, 252, 0.9)', 'rgba(45, 55, 72, 0.9)')
+    const gradientBg = useColorModeValue(
+        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'linear-gradient(135deg, #4a5568 0%, #2d3748 100%)'
+    )
+    const accentGradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+
+    useEffect(() => {
+        const fetchCampaign = async () => {
+            try {
+                const response = await fetch(`/api/campaigns/view/${params.id}`)
+                if (!response.ok) throw new Error('Failed to fetch campaign')
+
+                const data = await response.json()
+                console.log('🔍 Campaign Data from API:', data)
+                console.log('🔍 Campaign Settings:', data.campaignData?.settings)
+                setCampaign(data.campaignData)
+            } catch (error) {
+                console.error('Error fetching campaign:', error)
+                toast({
+                    title: 'Error',
+                    description: 'Failed to load campaign details',
+                    status: 'error',
+                    duration: 3000,
+                    isClosable: true,
+                })
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        if (params.id) {
+            fetchCampaign()
+        }
+    }, [params.id, toast])
+
+    const handleEditAttempt = () => {
+        onOpen()
+    }
+
+    const renderTargetingContent = () => {
+        const targeting = campaign?.settings?.targeting || {}
+        const filters = campaign?.settings?.targeting?.filters || {}
+
+        const filterLabels = {
+            hasEmail: "Has Email",
+            keywords: "Keywords",
+            jobTitles: "Job Titles",
+            industries: "Industries",
+            newsEvents: "News Events",
+            revenueMax: "Revenue Max",
+            revenueMin: "Revenue Min",
+            webTraffic: "Web Traffic",
+            jobPostings: "Job Postings",
+            seniorities: "Seniorities",
+            intentTopics: "Intent Topics",
+            technologies: "Technologies",
+            fundingStages: "Funding Stages",
+            companyDomains: "Company Domains",
+            foundedYearMax: "Founded Year Max",
+            foundedYearMin: "Founded Year Min",
+            technologyUids: "Technology UIDs",
+            personLocations: "Person Locations",
+            companyHeadcount: "Company Headcount",
+            fundingAmountMax: "Funding Amount Max",
+            fundingAmountMin: "Funding Amount Min",
+            excludeTechnologyUids: "Exclude Technology UIDs",
+            organizationJobTitles: "Organization Job Titles",
+            organizationLocations: "Organization Locations",
+            excludePersonLocations: "Exclude Person Locations",
+            organizationNumJobsMax: "Organization Num Jobs Max",
+            organizationNumJobsMin: "Organization Num Jobs Min",
+            organizationJobLocations: "Organization Job Locations",
+            organizationJobPostedAtMax: "Organization Job Posted At Max",
+            organizationJobPostedAtMin: "Organization Job Posted At Min",
+            excludeOrganizationLocations: "Exclude Organization Locations",
+        }
+
+        function isFilterActive(value) {
+            if (value === null) return false;
+            if (Array.isArray(value) && value.length === 0) return false;
+            return value !== undefined && value !== '';
+        }
+
+        const activeFilters = Object.entries(filters)
+            .filter(([key, value]) => isFilterActive(value) && key !== 'page' && key !== 'perPage');
+
+        return (
+            <Container maxW="7xl" py={8}>
+                <VStack spacing={8} align="stretch">
+                    {/* Header Section */}
+                    <VStack spacing={4} textAlign="center">
+                        <Heading
+                            size="2xl"
+                            fontWeight="bold"
+                            bgGradient="linear(to-r, purple.400, blue.400)"
+                            bgClip="text"
+                        >
+                            Ideal Customer Profile Preview
+                        </Heading>
+                        <Text fontSize="xl" color="gray.600" maxW="2xl">
+                            View your configured ideal customer targeting criteria
+                        </Text>
+                    </VStack>
+
+                    {/* Targeting Filters Display */}
+                    <Card
+                        bg={glassBg}
+                        borderRadius="2xl"
+                        border="1px solid"
+                        borderColor={borderColor}
+                        backdropFilter="blur(20px)"
+                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                        _hover={{
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                            transition: 'all 0.3s ease-in-out'
+                        }}
+                        transition="all 0.3s ease-in-out"
+                    >
+                        <CardHeader pb={2}>
+                            <HStack spacing={3} justify="space-between">
+                                <HStack spacing={3}>
+                                    <Box
+                                        p={3}
+                                        borderRadius="xl"
+                                        bg={accentGradient}
+                                        color="white"
+                                        boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                    >
+                                        <Users size="20" />
+                                    </Box>
+                                    <VStack align="start" spacing={0}>
+                                        <Heading size="md" color="gray.800">Selected Filters</Heading>
+                                        <Text fontSize="sm" color="gray.600">Your targeting configuration</Text>
+                                    </VStack>
+                                </HStack>
+                                <Button
+                                    size="sm"
+                                    leftIcon={<Lock size={16} />}
+                                    onClick={handleEditAttempt}
+                                    variant="outline"
+                                    borderColor="purple.200"
+                                    _hover={{ borderColor: 'purple.400' }}
+                                >
+                                    Edit
+                                </Button>
+                            </HStack>
+                        </CardHeader>
+                        <CardBody pt={0}>
+                            {activeFilters.length === 0 ? (
+                                <Box py={6} textAlign="center">
+                                    <Text fontSize="lg" color="red.500" fontWeight="bold">
+                                        Oops, no filters found on your ICPs
+                                    </Text>
+                                </Box>
+                            ) : (
+                                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                                    {activeFilters.map(([key, value]) => (
+                                        <Box key={key}>
+                                            <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>
+                                                {filterLabels[key] || key}
+                                            </Text>
+                                            {Array.isArray(value) ? (
+                                                <HStack wrap="wrap" spacing={2}>
+                                                    {value.map((item, idx) => (
+                                                        <Tag
+                                                            key={idx}
+                                                            size="sm"
+                                                            borderRadius="full"
+                                                            variant="subtle"
+                                                            colorScheme="purple"
+                                                        >
+                                                            <TagLabel>{item}</TagLabel>
+                                                        </Tag>
+                                                    ))}
+                                                </HStack>
+                                            ) : (
+                                                <Text fontSize="sm" color="gray.800">
+                                                    {String(value)}
+                                                </Text>
+                                            )}
+                                        </Box>
+                                    ))}
+                                </SimpleGrid>
+                            )}
+                        </CardBody>
+                    </Card>
+                </VStack>
+            </Container>
+        )
+    }
+
+    const renderPitchContent = () => {
+        const pitch = campaign?.settings?.pitch || {}
+        const offering = campaign?.settings?.offering || {}
+        const painPoints = pitch?.painPoints || []
+        const proofPoints = pitch?.proofPoints || []
+
+        const hasCoreOffering = Boolean(offering.description || pitch.coreOffering || campaign?.description);
+        const hasIcpSummary = Boolean(pitch?.websiteAnalysis?.icpSummary);
+
+        return (
+            <Container maxW="7xl" py={8}>
+                <VStack spacing={8} align="stretch">
+                    {/* Header Section */}
+                    <VStack spacing={4} textAlign="center">
+                        <Heading
+                            size="2xl"
+                            fontWeight="bold"
+                            bgGradient="linear(to-r, purple.400, blue.400)"
+                            bgClip="text"
+                        >
+                            Create Your Pitch
+                        </Heading>
+                        <Text fontSize="xl" color="gray.600" maxW="2xl">
+                            Analyze your website and create compelling messaging that converts prospects into customers
+                        </Text>
+                    </VStack>
+
+                    {/* Core Offering */}
+                    {hasCoreOffering && (
+                        <Card
+                            bg={glassBg}
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            backdropFilter="blur(20px)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            _hover={{
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack spacing={3} justify="space-between">
+                                    <HStack spacing={3}>
+                                        <Box
+                                            p={3}
+                                            borderRadius="xl"
+                                            bg={accentGradient}
+                                            color="white"
+                                            boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                        >
+                                            <Target size="20" />
+                                        </Box>
+                                        <VStack align="start" spacing={0}>
+                                            <Heading size="md" color="gray.800">Core Offering</Heading>
+                                            <Text fontSize="sm" color="gray.600">Your primary value proposition</Text>
+                                        </VStack>
+                                    </HStack>
+                                    <Button
+                                        size="sm"
+                                        leftIcon={<Lock size={16} />}
+                                        onClick={handleEditAttempt}
+                                        variant="outline"
+                                        borderColor="purple.200"
+                                        _hover={{ borderColor: 'purple.400' }}
+                                    >
+                                        Edit
+                                    </Button>
+                                </HStack>
+                            </CardHeader>
+                            <CardBody pt={0}>
+                                <Text fontSize="md" color="gray.800" lineHeight="1.6">
+                                    {offering.description || pitch.coreOffering || campaign?.description}
+                                </Text>
+                            </CardBody>
+                        </Card>
+                    )}
+
+                    {/* Ideal Customer Profile */}
+                    {hasIcpSummary && (
+                        <Card
+                            bg={glassBg}
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            backdropFilter="blur(20px)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            _hover={{
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack spacing={3} justify="space-between">
+                                    <HStack spacing={3}>
+                                        <Box
+                                            p={3}
+                                            borderRadius="xl"
+                                            bg={accentGradient}
+                                            color="white"
+                                            boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                        >
+                                            <Users size="20" />
+                                        </Box>
+                                        <VStack align="start" spacing={0}>
+                                            <Heading size="md" color="gray.800">Ideal Customer Profile</Heading>
+                                            <Text fontSize="sm" color="gray.600">Your Ideal Customer</Text>
+                                        </VStack>
+                                    </HStack>
+                                    <Button
+                                        size="sm"
+                                        leftIcon={<Lock size={16} />}
+                                        onClick={handleEditAttempt}
+                                        variant="outline"
+                                        borderColor="purple.200"
+                                        _hover={{ borderColor: 'purple.400' }}
+                                    >
+                                        Edit
+                                    </Button>
+                                </HStack>
+                            </CardHeader>
+                            <CardBody pt={0}>
+                                <Text fontSize="md" color="gray.800" lineHeight="1.6">
+                                    {pitch?.websiteAnalysis?.icpSummary}
+                                </Text>
+                            </CardBody>
+                        </Card>
+                    )}
+
+                    {/* Target Personas */}
+                    {pitch?.websiteAnalysis?.targetPersonas && pitch?.websiteAnalysis?.targetPersonas.length > 0 && (
+                        <Card
+                            bg={glassBg}
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            backdropFilter="blur(20px)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            _hover={{
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack spacing={3} justify="space-between">
+                                    <HStack spacing={3}>
+                                        <Box
+                                            p={3}
+                                            borderRadius="xl"
+                                            bg={accentGradient}
+                                            color="white"
+                                            boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                        >
+                                            <Target size="20" />
+                                        </Box>
+                                        <VStack align="start" spacing={0}>
+                                            <Heading size="md" color="gray.800">Target Personas</Heading>
+                                        </VStack>
+                                    </HStack>
+                                    <Button
+                                        size="sm"
+                                        leftIcon={<Lock size={16} />}
+                                        onClick={handleEditAttempt}
+                                        variant="outline"
+                                        borderColor="purple.200"
+                                        _hover={{ borderColor: 'purple.400' }}
+                                    >
+                                        Edit
+                                    </Button>
+                                </HStack>
+                            </CardHeader>
+                            <CardBody>
+                                <Grid templateColumns={"repeat(auto-fit, minmax(400px, 1fr))"} gap={4}>
+                                    {pitch?.websiteAnalysis?.targetPersonas.map((persona, index) => (
+                                        <Box key={index} p={4} bg={personaBg} borderRadius="md" border="1px" borderColor={personaBorderColor}>
+                                            <VStack align="start" spacing={3}>
+                                                {persona.title && <Heading size="sm" color="blue.600">{persona.title}</Heading>}
+                                                <HStack wrap="wrap">
+                                                    {persona.company_size && <Badge colorScheme="blue">{persona.company_size}</Badge>}
+                                                    {persona.industry && <Badge colorScheme="green">{persona.industry}</Badge>}
+                                                    {persona.demographics?.seniority_level && <Badge colorScheme="purple">{persona.demographics.seniority_level}</Badge>}
+                                                </HStack>
+
+                                                <Box>
+                                                    <Text fontWeight="semibold" fontSize="sm" color="red.600">Pain Points:</Text>
+                                                    <List spacing={1} fontSize="sm">
+                                                        {persona.pain_points.slice(0, 3).map((point, i) => (
+                                                            <ListItem key={i}>
+                                                                <ListIcon as={WarningIcon} color="red.400" />
+                                                                {point}
+                                                            </ListItem>
+                                                        ))}
+                                                    </List>
+                                                </Box>
+
+                                                <Box>
+                                                    <Text fontWeight="semibold" fontSize="sm" color="green.600">Desired Outcomes:</Text>
+                                                    <List spacing={1} fontSize="sm">
+                                                        {persona.desired_outcomes.slice(0, 3).map((outcome, i) => (
+                                                            <ListItem key={i}>
+                                                                <ListIcon as={CheckCircleIcon} color="green.400" />
+                                                                {outcome}
+                                                            </ListItem>
+                                                        ))}
+                                                    </List>
+                                                </Box>
+                                            </VStack>
+                                        </Box>
+                                    ))}
+                                </Grid>
+                            </CardBody>
+                        </Card>
+                    )}
+
+                    {/* Competetive Advantages */}
+                    {pitch?.websiteAnalysis?.competitiveAdvantages && pitch?.websiteAnalysis?.competitiveAdvantages.length > 0 && (
+                        <Card
+                            bg={glassBg}
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            backdropFilter="blur(20px)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            _hover={{
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack spacing={3} justify="space-between">
+                                    <HStack spacing={3}>
+                                        <Box
+                                            p={3}
+                                            borderRadius="xl"
+                                            bg={accentGradient}
+                                            color="white"
+                                            boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                        >
+                                            <UpDownIcon boxSize={4} />
+                                        </Box>
+                                        <VStack align="start" spacing={0}>
+                                            <Heading size="md" color="gray.800">Competitive Advantages</Heading>
+                                        </VStack>
+                                    </HStack>
+                                    <Button
+                                        size="sm"
+                                        leftIcon={<Lock size={16} />}
+                                        onClick={handleEditAttempt}
+                                        variant="outline"
+                                        borderColor="purple.200"
+                                        _hover={{ borderColor: 'purple.400' }}
+                                    >
+                                        Edit
+                                    </Button>
+                                </HStack>
+                            </CardHeader>
+                            <CardBody>
+                                <Wrap spacing={2}>
+                                    {pitch?.websiteAnalysis?.competitiveAdvantages.map((advantage, index) => (
+                                        <WrapItem key={index}>
+                                            <Tag size="lg" colorScheme="orange" borderRadius="full">
+                                                <TagLabel>{advantage}</TagLabel>
+                                            </Tag>
+                                        </WrapItem>
+                                    ))}
+                                </Wrap>
+                            </CardBody>
+                        </Card>
+                    )}
+
+                    {/* Technology Stack */}
+                    {pitch?.websiteAnalysis?.techStack && pitch?.websiteAnalysis?.techStack.length > 0 && (
+                        <Card
+                            bg={glassBg}
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            backdropFilter="blur(20px)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            _hover={{
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack spacing={3} justify="space-between">
+                                    <HStack spacing={3}>
+                                        <Box
+                                            p={3}
+                                            borderRadius="xl"
+                                            bg={accentGradient}
+                                            color="white"
+                                            boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                        >
+                                            <Settings2Icon size="20" />
+                                        </Box>
+                                        <VStack align="start" spacing={0}>
+                                            <Heading size="md" color="gray.800">Tech Stack</Heading>
+                                        </VStack>
+                                    </HStack>
+                                    <Button
+                                        size="sm"
+                                        leftIcon={<Lock size={16} />}
+                                        onClick={handleEditAttempt}
+                                        variant="outline"
+                                        borderColor="purple.200"
+                                        _hover={{ borderColor: 'purple.400' }}
+                                    >
+                                        Edit
+                                    </Button>
+                                </HStack>
+                            </CardHeader>
+                            <CardBody>
+                                <Wrap spacing={2}>
+                                    {pitch?.websiteAnalysis?.techStack.map((stack, index) => (
+                                        <WrapItem key={index}>
+                                            <Tag size="md" colorScheme="gray" borderRadius="full">
+                                                <TagLabel>{stack}</TagLabel>
+                                            </Tag>
+                                        </WrapItem>
+                                    ))}
+                                </Wrap>
+                            </CardBody>
+                        </Card>
+                    )}
+
+
+                    {/* Customer Pain Points */}
+                    {painPoints.length > 0 && (
+                        <Card
+                            bg={glassBg}
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            backdropFilter="blur(20px)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            _hover={{
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack spacing={3} justify="space-between">
+                                    <HStack spacing={3}>
+                                        <Box
+                                            p={3}
+                                            borderRadius="xl"
+                                            bg="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+                                            color="white"
+                                            boxShadow="0 8px 20px rgba(240, 147, 251, 0.4)"
+                                        >
+                                            <Text fontSize="lg">😣</Text>
+                                        </Box>
+                                        <VStack align="start" spacing={0}>
+                                            <Heading size="md" color="gray.800">Customer Pain Points</Heading>
+                                            <Text fontSize="sm" color="gray.600">Problems your solution addresses</Text>
+                                        </VStack>
+                                    </HStack>
+                                    <Button
+                                        size="sm"
+                                        leftIcon={<Lock size={16} />}
+                                        onClick={handleEditAttempt}
+                                        variant="outline"
+                                        borderColor="purple.200"
+                                        _hover={{ borderColor: 'purple.400' }}
+                                    >
+                                        Edit
+                                    </Button>
+                                </HStack>
+                            </CardHeader>
+                            <CardBody pt={0}>
+                                <VStack spacing={3} align="stretch">
+                                    {painPoints.map((point, index) => (
+                                        <Box
+                                            key={index}
+                                            p={4}
+                                            borderRadius="xl"
+                                            bg="rgba(248, 113, 113, 0.1)"
+                                            border="1px solid"
+                                            borderColor="red.200"
+                                        >
+                                            <HStack spacing={3}>
+                                                <Text fontWeight="bold" color="red.500">{index + 1}</Text>
+                                                <Text fontSize="sm" color="gray.800">{point.description}</Text>
+                                            </HStack>
+                                        </Box>
+                                    ))}
+                                </VStack>
+                            </CardBody>
+                        </Card>
+                    )}
+
+                    {/* Success Stories & Proof */}
+                    {proofPoints.length > 0 && (
+                        <Card
+                            bg={glassBg}
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            backdropFilter="blur(20px)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            _hover={{
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                            transition="all 0.3s ease-in-out"
+                        >
+                            <CardHeader pb={2}>
+                                <HStack spacing={3} justify="space-between">
+                                    <HStack spacing={3}>
+                                        <Box
+                                            p={3}
+                                            borderRadius="xl"
+                                            bg="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+                                            color="white"
+                                            boxShadow="0 8px 20px rgba(79, 172, 254, 0.4)"
+                                        >
+                                            <Text fontSize="lg">🏆</Text>
+                                        </Box>
+                                        <VStack align="start" spacing={0}>
+                                            <Heading size="md" color="gray.800">Success Stories & Proof</Heading>
+                                            <Text fontSize="sm" color="gray.600">Evidence of your solution's effectiveness</Text>
+                                        </VStack>
+                                    </HStack>
+                                    <Button
+                                        size="sm"
+                                        leftIcon={<Lock size={16} />}
+                                        onClick={handleEditAttempt}
+                                        variant="outline"
+                                        borderColor="purple.200"
+                                        _hover={{ borderColor: 'purple.400' }}
+                                    >
+                                        Edit
+                                    </Button>
+                                </HStack>
+                            </CardHeader>
+                            <CardBody pt={0}>
+                                <VStack spacing={3} align="stretch">
+                                    {proofPoints.map((point, index) => (
+                                        <Box
+                                            key={index}
+                                            p={4}
+                                            borderRadius="xl"
+                                            bg="rgba(34, 197, 94, 0.1)"
+                                            border="1px solid"
+                                            borderColor="green.200"
+                                        >
+                                            <HStack spacing={3}>
+                                                <Text fontWeight="bold" color="green.500">{index + 1}</Text>
+                                                <Text fontSize="sm" color="gray.800">{point.description}</Text>
+                                            </HStack>
+                                        </Box>
+                                    ))}
+                                </VStack>
+                            </CardBody>
+                        </Card>
+                    )}
+
+                    {/* Expandable Sections */}
+                    {((pitch?.websiteAnalysis?.caseStudies && pitch?.websiteAnalysis?.caseStudies.length > 0) ||
+                        (pitch?.websiteAnalysis?.leadMagnets && pitch?.websiteAnalysis?.leadMagnets.length > 0) ||
+                        (pitch?.websiteAnalysis?.socialProof && pitch?.websiteAnalysis?.socialProof.testimonials && pitch?.websiteAnalysis?.socialProof.testimonials.length > 0)) && (
+                            <Card bg={cardBg} shadow="lg" borderWidth="1px" borderColor={borderColor} w="full">
+                                <CardBody>
+                                    <Accordion allowMultiple>
+                                        {/* Case Studies */}
+                                        {pitch?.websiteAnalysis?.caseStudies && pitch?.websiteAnalysis?.caseStudies.length > 0 && (
+                                            <AccordionItem>
+                                                <AccordionButton>
+                                                    <Box flex="1" textAlign="left">
+                                                        <HStack>
+                                                            <Icon as={FiBookOpen} color="blue.500" />
+                                                            <Heading size="md">Case Studies ({pitch?.websiteAnalysis?.caseStudies.length})</Heading>
+                                                        </HStack>
+                                                    </Box>
+                                                    <AccordionIcon />
+                                                </AccordionButton>
+                                                <AccordionPanel pb={4}>
+                                                    <VStack spacing={4} align="stretch">
+                                                        {pitch?.websiteAnalysis?.caseStudies.map((study, index) => (
+                                                            <Box key={index} p={4} bg="blue.50" borderRadius="md" border="1px" borderColor="blue.200">
+                                                                <VStack align="start" spacing={2}>
+                                                                    <Heading size="sm" color="blue.700">{study.title}</Heading>
+                                                                    <Badge colorScheme="blue">{study.industry}</Badge>
+                                                                    <Text fontSize="sm"><strong>Challenge:</strong> {study.challenge}</Text>
+                                                                    <Text fontSize="sm"><strong>Solution:</strong> {study.solution}</Text>
+                                                                    {study.results.length > 0 && (
+                                                                        <Box>
+                                                                            <Text fontSize="sm" fontWeight="semibold">Results:</Text>
+                                                                            <List spacing={1} fontSize="sm">
+                                                                                {study.results.map((result, i) => (
+                                                                                    <ListItem key={i}>
+                                                                                        <ListIcon as={CheckCircleIcon} color="green.500" />
+                                                                                        {result}
+                                                                                    </ListItem>
+                                                                                ))}
+                                                                            </List>
+                                                                        </Box>
+                                                                    )}
+                                                                </VStack>
+                                                            </Box>
+                                                        ))}
+                                                    </VStack>
+                                                </AccordionPanel>
+                                            </AccordionItem>
+                                        )}
+
+                                        {/* Lead Magnets */}
+                                        {pitch?.websiteAnalysis?.leadMagnets && pitch?.websiteAnalysis?.leadMagnets.length > 0 && (
+                                            <AccordionItem>
+                                                <AccordionButton>
+                                                    <Box flex="1" textAlign="left">
+                                                        <HStack>
+                                                            <Icon as={FiGift} color="purple.500" />
+                                                            <Heading size="md">Lead Magnets ({pitch?.websiteAnalysis?.leadMagnets.length})</Heading>
+                                                        </HStack>
+                                                    </Box>
+                                                    <AccordionIcon />
+                                                </AccordionButton>
+                                                <AccordionPanel pb={4}>
+                                                    <Grid templateColumns="repeat(auto-fit, minmax(300px, 1fr))" gap={4}>
+                                                        {pitch?.websiteAnalysis?.leadMagnets.map((magnet, index) => (
+                                                            <Box key={index} p={4} bg="purple.50" borderRadius="md" border="1px" borderColor="purple.200">
+                                                                <VStack align="start" spacing={2}>
+                                                                    <HStack>
+                                                                        <Heading size="sm" color="purple.700">{magnet.title}</Heading>
+                                                                        <Badge colorScheme="purple">{magnet.type}</Badge>
+                                                                    </HStack>
+                                                                    <Text fontSize="sm">{magnet.description}</Text>
+                                                                    <Text fontSize="sm"><strong>Target:</strong> {magnet.target_audience}</Text>
+                                                                    <Text fontSize="sm"><strong>CTA:</strong> {magnet.call_to_action}</Text>
+                                                                </VStack>
+                                                            </Box>
+                                                        ))}
+                                                    </Grid>
+                                                </AccordionPanel>
+                                            </AccordionItem>
+                                        )}
+
+                                        {/* Social Proof */}
+                                        {pitch?.websiteAnalysis?.socialProof && ((pitch?.websiteAnalysis?.socialProof.testimonials && pitch?.websiteAnalysis?.socialProof.testimonials.length > 0) || (pitch?.websiteAnalysis?.socialProof.metrics && pitch?.websiteAnalysis?.socialProof.metrics.length > 0)) && (
+                                            <AccordionItem>
+                                                <AccordionButton>
+                                                    <Box flex="1" textAlign="left">
+                                                        <HStack>
+                                                            <Icon as={FiStar} color="yellow.500" />
+                                                            <Heading size="md">Social Proof</Heading>
+                                                        </HStack>
+                                                    </Box>
+                                                    <AccordionIcon />
+                                                </AccordionButton>
+                                                <AccordionPanel pb={4}>
+                                                    <VStack spacing={4} align="stretch">
+                                                        {/* Testimonials */}
+                                                        {pitch?.websiteAnalysis?.socialProof.testimonials && pitch?.websiteAnalysis?.socialProof.testimonials.length > 0 && (
+                                                            <Box>
+                                                                <Heading size="sm" mb={3}>Testimonials</Heading>
+                                                                <VStack spacing={3}>
+                                                                    {pitch?.websiteAnalysis?.socialProof.testimonials.map((testimonial, index) => (
+                                                                        <Box key={index} p={3} bg="yellow.50" borderRadius="md" border="1px" borderColor="yellow.200" w="full">
+                                                                            <Text fontSize="sm" fontStyle="italic">"{testimonial.quote}"</Text>
+                                                                            <Text fontSize="xs" mt={2} color="gray.600">
+                                                                                - {testimonial.author}
+                                                                                {testimonial.company && `, ${testimonial.company}`}
+                                                                                {testimonial.position && ` (${testimonial.position})`}
+                                                                            </Text>
+                                                                        </Box>
+                                                                    ))}
+                                                                </VStack>
+                                                            </Box>
+                                                        )}
+
+                                                        {/* Metrics */}
+                                                        {pitch?.websiteAnalysis?.socialProof.metrics && pitch?.websiteAnalysis?.socialProof.metrics.length > 0 && (
+                                                            <Box>
+                                                                <Heading size="sm" mb={3}>Key Metrics</Heading>
+                                                                <Wrap spacing={2}>
+                                                                    {pitch?.websiteAnalysis?.socialProof.metrics.map((metric, index) => (
+                                                                        <WrapItem key={index}>
+                                                                            <Tag size="lg" colorScheme="green">
+                                                                                <TagLabel>{metric.metric}: {metric.value}</TagLabel>
+                                                                            </Tag>
+                                                                        </WrapItem>
+                                                                    ))}
+                                                                </Wrap>
+                                                            </Box>
+                                                        )}
+                                                    </VStack>
+                                                </AccordionPanel>
+                                            </AccordionItem>
+                                        )}
+                                    </Accordion>
+                                </CardBody>
+                            </Card>
+                        )}
+                </VStack>
+            </Container>
+        )
+    }
+
+    const renderOutreachContent = () => {
+        const outreach = campaign?.settings?.outreach || {}
+        const messaging = campaign?.settings?.messaging || {}
+        const language = campaign?.settings?.campaign_language || 'English'
+        const signOffs = campaign?.settings?.sign_offs || ['BEST', 'REGARDS', 'THANKS']
+
+        return (
+            <Container maxW="7xl" py={8}>
+                <VStack spacing={8} align="stretch">
+                    {/* Header Section */}
+                    <VStack spacing={4} textAlign="center">
+                        <Heading
+                            size="2xl"
+                            fontWeight="bold"
+                            bgGradient="linear(to-r, purple.400, blue.400)"
+                            bgClip="text"
+                        >
+                            Outreach Configuration
+                        </Heading>
+                        <Text fontSize="xl" color="gray.600" maxW="2xl">
+                            Configure your messaging settings and personalization options with AI-powered precision
+                        </Text>
+                    </VStack>
+
+                    {/* Campaign Language */}
+                    <Card
+                        bg={glassBg}
+                        borderRadius="2xl"
+                        border="1px solid"
+                        borderColor={borderColor}
+                        backdropFilter="blur(20px)"
+                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                        _hover={{
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                            transition: 'all 0.3s ease-in-out'
+                        }}
+                        transition="all 0.3s ease-in-out"
+                    >
+                        <CardHeader pb={2}>
+                            <HStack spacing={3} justify="space-between">
+                                <HStack spacing={3}>
+                                    <Box
+                                        p={3}
+                                        borderRadius="xl"
+                                        bg={accentGradient}
+                                        color="white"
+                                        boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                    >
+                                        <Globe size="20" />
+                                    </Box>
+                                    <VStack align="start" spacing={0}>
+                                        <Heading size="md" color="gray.800">Campaign Language</Heading>
+                                        <Text fontSize="sm" color="gray.600">Choose your preferred communication language</Text>
+                                    </VStack>
+                                </HStack>
+                                <Button
+                                    size="sm"
+                                    leftIcon={<Lock size={16} />}
+                                    onClick={handleEditAttempt}
+                                    variant="outline"
+                                    borderColor="purple.200"
+                                    _hover={{ borderColor: 'purple.400' }}
+                                >
+                                    Edit
+                                </Button>
+                            </HStack>
+                        </CardHeader>
+                        <CardBody pt={0}>
+                            <Box
+                                p={4}
+                                borderRadius="xl"
+                                border="2px solid"
+                                borderColor="purple.200"
+                                bg="white"
+                                fontSize="lg"
+                                fontWeight="600"
+                                color="gray.800"
+                            >
+                                {language}
+                            </Box>
+                        </CardBody>
+                    </Card>
+
+                    {/* Message Sign Offs */}
+                    <Card
+                        bg={glassBg}
+                        borderRadius="2xl"
+                        border="1px solid"
+                        borderColor={borderColor}
+                        backdropFilter="blur(20px)"
+                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                        _hover={{
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                            transition: 'all 0.3s ease-in-out'
+                        }}
+                        transition="all 0.3s ease-in-out"
+                    >
+                        <CardHeader pb={2}>
+                            <HStack spacing={3} justify="space-between">
+                                <HStack spacing={3}>
+                                    <Box
+                                        p={3}
+                                        borderRadius="xl"
+                                        bg={accentGradient}
+                                        color="white"
+                                        boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                    >
+                                        <Edit3 size="20" />
+                                    </Box>
+                                    <VStack align="start" spacing={0}>
+                                        <Heading size="md" color="gray.800">Message Sign Offs In {language.split(' ')[0]}</Heading>
+                                        <Text fontSize="sm" color="gray.600">Customize your message endings</Text>
+                                    </VStack>
+                                </HStack>
+                                <Button
+                                    size="sm"
+                                    leftIcon={<Lock size={16} />}
+                                    onClick={handleEditAttempt}
+                                    variant="outline"
+                                    borderColor="purple.200"
+                                    _hover={{ borderColor: 'purple.400' }}
+                                >
+                                    Edit
+                                </Button>
+                            </HStack>
+                        </CardHeader>
+                        <CardBody pt={0}>
+                            <VStack spacing={4} align="stretch">
+                                <Flex wrap="wrap" gap={3}>
+                                    {signOffs.map((signOff, index) => (
+                                        <Badge
+                                            key={index}
+                                            px={4}
+                                            py={2}
+                                            borderRadius="xl"
+                                            bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                                            color="white"
+                                            fontSize="sm"
+                                            fontWeight="600"
+                                            boxShadow="0 4px 15px rgba(102, 126, 234, 0.4)"
+                                            textTransform="none"
+                                        >
+                                            {signOff}
+                                        </Badge>
+                                    ))}
+                                </Flex>
+                            </VStack>
+                        </CardBody>
+                    </Card>
+
+                    {/* Tone of Voice */}
+                    <Card
+                        bg={glassBg}
+                        borderRadius="2xl"
+                        border="1px solid"
+                        borderColor={borderColor}
+                        backdropFilter="blur(20px)"
+                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                        _hover={{
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                            transition: 'all 0.3s ease-in-out'
+                        }}
+                        transition="all 0.3s ease-in-out"
+                    >
+                        <CardHeader pb={2}>
+                            <HStack spacing={3} justify="space-between">
+                                <HStack spacing={3}>
+                                    <Box
+                                        p={3}
+                                        borderRadius="xl"
+                                        bg={accentGradient}
+                                        color="white"
+                                        boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                    >
+                                        <PenTool size="20" />
+                                    </Box>
+                                    <VStack align="start" spacing={0}>
+                                        <Heading size="md" color="gray.800">Tone of Voice</Heading>
+                                        <Text fontSize="sm" color="gray.600">Define your communication style</Text>
+                                    </VStack>
+                                </HStack>
+                                <Button
+                                    size="sm"
+                                    leftIcon={<Lock size={16} />}
+                                    onClick={handleEditAttempt}
+                                    variant="outline"
+                                    borderColor="purple.200"
+                                    _hover={{ borderColor: 'purple.400' }}
+                                >
+                                    Edit
+                                </Button>
+                            </HStack>
+                        </CardHeader>
+                        <CardBody pt={0}>
+                            <Box
+                                p={4}
+                                borderRadius="xl"
+                                border="2px solid"
+                                borderColor="purple.200"
+                                bg="white"
+                                fontSize="lg"
+                                fontWeight="600"
+                                color="gray.800"
+                            >
+                                {campaign?.settings?.tone_of_voice || 'Urgent'}
+                            </Box>
+                        </CardBody>
+                    </Card>
+
+                    {/* Call to action */}
+                    <Card
+                        bg={glassBg}
+                        borderRadius="2xl"
+                        border="1px solid"
+                        borderColor={borderColor}
+                        backdropFilter="blur(20px)"
+                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                        _hover={{
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                            transition: 'all 0.3s ease-in-out'
+                        }}
+                        transition="all 0.3s ease-in-out"
+                    >
+                        <CardHeader pb={2}>
+                            <HStack spacing={3} justify="space-between">
+                                <HStack spacing={3}>
+                                    <Box
+                                        p={3}
+                                        borderRadius="xl"
+                                        bg={accentGradient}
+                                        color="white"
+                                        boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                    >
+                                        <Target size={20} />
+                                    </Box>
+                                    <VStack align="start" spacing={0}>
+                                        <Heading size="md" color="gray.800">Call To Action</Heading>
+                                        <Text fontSize="sm" color="gray.600">Your campaign's calls to action</Text>
+                                    </VStack>
+                                </HStack>
+                                <Button
+                                    size="sm"
+                                    leftIcon={<Lock size={16} />}
+                                    onClick={handleEditAttempt}
+                                    variant="outline"
+                                    borderColor="green.200"
+                                    _hover={{ borderColor: 'green.400' }}
+                                >
+                                    Edit
+                                </Button>
+                            </HStack>
+                        </CardHeader>
+                        <CardBody pt={0}>
+                            <VStack spacing={3} align="stretch">
+                                {(outreach?.callsToAction.length > 0 && outreach?.callsToAction).map((point: string, index: number) => (
+                                    <Box
+                                        key={index}
+                                        p={4}
+                                        borderRadius="xl"
+                                        bg="rgba(34, 197, 94, 0.1)"
+                                        border="1px solid"
+                                        borderColor="green.200"
+                                    >
+                                        <HStack spacing={3}>
+                                            <Text fontWeight="bold" color="green.500">{index + 1}</Text>
+                                            <Text fontSize="sm" color="gray.800">{point}</Text>
+                                        </HStack>
+                                    </Box>
+                                ))}
+                            </VStack>
+                        </CardBody>
+                    </Card>
+
+                    {/* Message Personalization */}
+                    <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+                        <CardHeader pb={2}>
+                            <HStack spacing={3} justify="space-between">
+                                <HStack spacing={3}>
+                                    <Box
+                                        p={3}
+                                        borderRadius="xl"
+                                        bg={accentGradient}
+                                        color="white"
+                                        boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                    >
+                                        <FiSettings />
+                                    </Box>
+                                    <VStack align="start" spacing={0}>
+                                        <Heading size="md" color="gray.800">Message Personalization</Heading>
+                                    </VStack>
+                                </HStack>
+                                <Button
+                                    size="sm"
+                                    leftIcon={<Lock size={16} />}
+                                    onClick={handleEditAttempt}
+                                    variant="outline"
+                                    borderColor="green.200"
+                                    _hover={{ borderColor: 'green.400' }}
+                                >
+                                    Edit
+                                </Button>
+                            </HStack>
+                        </CardHeader>
+                        <CardBody>
+                            <VStack spacing={6} align="stretch">
+                                <Box>
+                                    <FormLabel>Select Maximum Resource Age</FormLabel>
+                                    <HStack spacing={4}>
+                                        <Text fontSize="sm">2</Text>
+                                        <Slider
+                                            value={outreach.maxResourceAge}
+                                            min={2}
+                                            max={12}
+                                            step={1}
+                                            flex={1}
+                                        >
+                                            <SliderTrack>
+                                                <SliderFilledTrack />
+                                            </SliderTrack>
+                                            <SliderThumb />
+                                        </Slider>
+                                        <Text fontSize="sm">12</Text>
+                                        <Text fontWeight="semibold">{outreach.maxResourceAge} Months</Text>
+                                    </HStack>
+                                </Box>
+
+                                <Box>
+                                    <FormLabel mb={4}>Personalization Sources</FormLabel>
+                                    <SimpleGrid columns={2} spacing={4}>
+                                        {[
+                                            { name: 'Website Scrape', description: 'Analyze the lead\'s website for achievements, goals, product updates, and recent blog posts.' },
+                                            { name: 'X Posts', description: 'Highlight recent X (formerly Twitter) posts published by your prospects.' },
+                                            { name: 'LinkedIn Posts', description: 'Feature recent LinkedIn updates shared by your prospects.' },
+                                            { name: 'Press Release', description: 'Reference recent press releases and announcements.' },
+                                            { name: 'Funding Announcement', description: 'Mention recent funding rounds and investment news.' }
+                                        ].map((source) => (
+                                            <Card key={source.name} variant="outline" p={4}>
+                                                <VStack align="start" spacing={2}>
+                                                    <HStack>
+                                                        <Checkbox
+                                                            isChecked={outreach.personalizationSources.includes(source.name)}
+                                                        />
+                                                        <Text fontWeight="semibold" fontSize="sm">{source.name}</Text>
+                                                    </HStack>
+                                                    <Text fontSize="xs" color="gray.600">{source.description}</Text>
+                                                </VStack>
+                                            </Card>
+                                        ))}
+                                    </SimpleGrid>
+                                </Box>
+                            </VStack>
+                        </CardBody>
+                    </Card>
+                </VStack>
+            </Container>
+        )
+    }
+
+    const renderWorkflowContent = () => {
+        const workflow = campaign?.settings?.workflow || {}
+        const sequence = campaign?.settings?.sequence || {}
+
+        return (
+            <Container maxW="7xl" py={8}>
+                <VStack spacing={8} align="stretch">
+                    {/* Header Section */}
+                    <VStack spacing={4} textAlign="center">
+                        <Heading
+                            size="2xl"
+                            fontWeight="bold"
+                            bgGradient="linear(to-r, purple.400, blue.400)"
+                            bgClip="text"
+                        >
+                            Workflow Configuration
+                        </Heading>
+                        <Text fontSize="xl" color="gray.600" maxW="2xl">
+                            Review your automated sequence and workflow settings
+                        </Text>
+                    </VStack>
+
+                    {/* Sequence Details */}
+                    <Card
+                        bg={glassBg}
+                        borderRadius="2xl"
+                        border="1px solid"
+                        borderColor={borderColor}
+                        backdropFilter="blur(20px)"
+                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                        _hover={{
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                            transition: 'all 0.3s ease-in-out'
+                        }}
+                        transition="all 0.3s ease-in-out"
+                    >
+                        <CardHeader pb={2}>
+                            <HStack spacing={3} justify="space-between">
+                                <HStack spacing={3}>
+                                    <Box
+                                        p={3}
+                                        borderRadius="xl"
+                                        bg={accentGradient}
+                                        color="white"
+                                        boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                    >
+                                        <Workflow size="20" />
+                                    </Box>
+                                    <VStack align="start" spacing={0}>
+                                        <Heading size="md" color="gray.800">Sequence Setup</Heading>
+                                        <Text fontSize="sm" color="gray.600">Your automation workflow configuration</Text>
+                                    </VStack>
+                                </HStack>
+                                <Button
+                                    size="sm"
+                                    leftIcon={<Lock size={16} />}
+                                    onClick={handleEditAttempt}
+                                    variant="outline"
+                                    borderColor="purple.200"
+                                    _hover={{ borderColor: 'purple.400' }}
+                                >
+                                    Edit
+                                </Button>
+                            </HStack>
+                        </CardHeader>
+                        <CardBody pt={0}>
+                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Sequence Type</Text>
+                                    <Text fontSize="md" color="gray.800">
+                                        {campaign?.sequence_template || workflow.sequenceType || 'aggressive-multi'}
+                                    </Text>
+                                </Box>
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Total Steps</Text>
+                                    <Text fontSize="md" color="gray.800">
+                                        {sequence.steps?.length ? `${sequence.steps.length} touchpoints` : workflow.totalSteps || '4 touchpoints'}
+                                    </Text>
+                                </Box>
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Duration</Text>
+                                    <Text fontSize="md" color="gray.800">
+                                        {workflow.duration || sequence.duration || '6 days'}
+                                    </Text>
+                                </Box>
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Channels</Text>
+                                    <Text fontSize="md" color="gray.800">
+                                        {workflow.channels?.join(' + ') || sequence.channels?.join(' + ') || 'LinkedIn + Email'}
+                                    </Text>
+                                </Box>
+                            </SimpleGrid>
+                        </CardBody>
+                    </Card>
+                </VStack>
+            </Container>
+        )
+    }
+
+    const renderLaunchContent = () => {
+        const launch = campaign?.settings?.launch || {}
+        const stats = campaign?.settings?.stats || {}
+
+        return (
+            <Container maxW="7xl" py={8}>
+                <VStack spacing={8} align="stretch">
+                    {/* Header Section */}
+                    <VStack spacing={4} textAlign="center">
+                        <Heading
+                            size="2xl"
+                            fontWeight="bold"
+                            bgGradient="linear(to-r, purple.400, blue.400)"
+                            bgClip="text"
+                        >
+                            Campaign Launch
+                        </Heading>
+                        <Text fontSize="xl" color="gray.600" maxW="2xl">
+                            Review your campaign status and launch configuration
+                        </Text>
+                    </VStack>
+
+                    {/* Launch Status */}
+                    <Card
+                        bg={glassBg}
+                        borderRadius="2xl"
+                        border="1px solid"
+                        borderColor={borderColor}
+                        backdropFilter="blur(20px)"
+                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                        _hover={{
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 35px 60px -12px rgba(102, 126, 234, 0.4)',
+                            transition: 'all 0.3s ease-in-out'
+                        }}
+                        transition="all 0.3s ease-in-out"
+                    >
+                        <CardHeader pb={2}>
+                            <HStack spacing={3} justify="space-between">
+                                <HStack spacing={3}>
+                                    <Box
+                                        p={3}
+                                        borderRadius="xl"
+                                        bg={accentGradient}
+                                        color="white"
+                                        boxShadow="0 8px 20px rgba(102, 126, 234, 0.4)"
+                                    >
+                                        <Rocket size="20" />
+                                    </Box>
+                                    <VStack align="start" spacing={0}>
+                                        <Heading size="md" color="gray.800">Campaign Status</Heading>
+                                        <Text fontSize="sm" color="gray.600">Current launch configuration</Text>
+                                    </VStack>
+                                </HStack>
+                                <Button
+                                    size="sm"
+                                    leftIcon={<Lock size={16} />}
+                                    onClick={handleEditAttempt}
+                                    variant="outline"
+                                    borderColor="purple.200"
+                                    _hover={{ borderColor: 'purple.400' }}
+                                >
+                                    Edit
+                                </Button>
+                            </HStack>
+                        </CardHeader>
+                        <CardBody pt={0}>
+                            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Status</Text>
+                                    <Badge
+                                        colorScheme={campaign?.status === 'active' ? 'green' : 'yellow'}
+                                        variant="subtle"
+                                        fontSize="md"
+                                        px={3}
+                                        py={1}
+                                        borderRadius="lg"
+                                    >
+                                        {campaign?.status?.toUpperCase() || 'DRAFT'}
+                                    </Badge>
+                                </Box>
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Start Date</Text>
+                                    <Text fontSize="md" color="gray.800">
+                                        {launch.startDate
+                                            ? new Date(launch.startDate).toLocaleDateString()
+                                            : campaign?.created_at
+                                                ? new Date(campaign.created_at).toLocaleDateString()
+                                                : 'Not set'}
+                                    </Text>
+                                </Box>
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Total Leads</Text>
+                                    <Text fontSize="md" color="gray.800">
+                                        {stats.totalLeads || campaign?.settings?.totalLeads || campaign?.settings?.leadCount || '0'}
+                                    </Text>
+                                </Box>
+                                <Box>
+                                    <Text fontSize="sm" fontWeight="semibold" color="gray.600" mb={2}>Template</Text>
+                                    <Text fontSize="md" color="gray.800">
+                                        {campaign?.sequence_template || launch.template || 'aggressive-multi'}
+                                    </Text>
+                                </Box>
+                            </SimpleGrid>
+                        </CardBody>
+                    </Card>
+                </VStack>
+            </Container>
+        )
+    }
+
+    const renderStepContent = () => {
+        switch (currentStep) {
+            case 0: return renderTargetingContent()
+            case 1: return renderPitchContent()
+            case 2: return renderOutreachContent()
+            case 3: return renderWorkflowContent()
+            case 4: return renderLaunchContent()
+            default: return renderTargetingContent()
+        }
+    }
+
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <Container maxW="7xl" py={8}>
+                    <VStack spacing={6} justify="center" h="400px">
+                        <Spinner size="xl" color="purple.500" />
+                        <Text>Loading campaign details...</Text>
+                    </VStack>
+                </Container>
+            </DashboardLayout>
+        )
+    }
+
+    if (!campaign) {
+        return (
+            <DashboardLayout>
+                <Container maxW="7xl" py={8}>
+                    <Alert status="error">
+                        <AlertIcon />
+                        Campaign not found
+                    </Alert>
+                </Container>
+            </DashboardLayout>
+        )
+    }
+
+    return (
+        <DashboardLayout>
+            {/* Campaign Progress Header - exactly like campaign creation */}
+            <Box
+                bgGradient="linear(135deg, #667eea 0%, #764ba2 100%)"
+                minH="100vh"
+                position="relative"
+                overflow="hidden"
+            >
+                {/* Background Animation */}
+                <Box
+                    position="absolute"
+                    top="0"
+                    left="0"
+                    right="0"
+                    bottom="0"
+                    background="radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                     radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)"
+                    animation={`${float} 6s ease-in-out infinite`}
+                    zIndex="0"
+                />
+
+                <Container maxW="7xl" py={6} position="relative" zIndex="1">
+                    <VStack spacing={8} align="stretch">
+                        {/* Header with Back Button */}
+                        <HStack spacing={4}>
+                            <Button
+                                leftIcon={<ArrowLeft size={16} />}
+                                variant="ghost"
+                                color="white"
+                                _hover={{ bg: 'rgba(255, 255, 255, 0.1)' }}
+                                onClick={() => router.back()}
+                            >
+                                Back
+                            </Button>
+                            <VStack spacing={1} align="start" flex={1}>
+                                <Heading
+                                    size="xl"
+                                    color="white"
+                                    fontWeight="bold"
+                                >
+                                    {campaign.name}
+                                </Heading>
+                                <Text color="whiteAlpha.800" fontSize="lg">
+                                    Campaign Overview
+                                </Text>
+                            </VStack>
+                            <Badge
+                                colorScheme={campaign.status === 'active' ? 'green' : 'yellow'}
+                                variant="solid"
+                                fontSize="sm"
+                                px={3}
+                                py={1}
+                            >
+                                {campaign.status.toUpperCase()}
+                            </Badge>
+                        </HStack>
+
+                        {/* Progress Stepper - exactly like campaign creation */}
+                        <Box
+                            bg="rgba(255, 255, 255, 0.95)"
+                            backdropFilter="blur(20px)"
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor="rgba(255, 255, 255, 0.3)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            p={6}
+                            w="full"
+                        >
+                            {/* Custom stepper without extra wrapper */}
+                            <VStack spacing={4} align="stretch">
+                                <Flex justify="space-between" align="center" mb={2}>
+                                    <Text fontSize="sm" fontWeight="medium" color="gray.600">
+                                        Progress
+                                    </Text>
+                                    <Text fontSize="sm" fontWeight="bold" color="purple.600">
+                                        {Math.round(((currentStep + 1) / 5) * 100)}%
+                                    </Text>
+                                </Flex>
+                                <Box
+                                    h="3px"
+                                    bg="gray.200"
+                                    borderRadius="full"
+                                    overflow="hidden"
+                                    position="relative"
+                                    mb={4}
+                                >
+                                    <Box
+                                        h="full"
+                                        bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                                        borderRadius="full"
+                                        width={`${((currentStep + 1) / 5) * 100}%`}
+                                        transition="width 0.3s ease"
+                                    />
+                                </Box>
+
+                                {/* Manual stepper to avoid text overlap */}
+                                <HStack spacing={0} justify="space-between" align="center">
+                                    {steps.map((step, index) => {
+                                        const isCompleted = index < currentStep
+                                        const isActive = index === currentStep
+
+                                        return (
+                                            <React.Fragment key={index}>
+                                                <VStack spacing={2} align="center" flex={1}>
+                                                    <Box
+                                                        w={10}
+                                                        h={10}
+                                                        borderRadius="full"
+                                                        bg={
+                                                            isCompleted ? "linear-gradient(135deg, #48bb78 0%, #38a169 100%)" :
+                                                                isActive ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" :
+                                                                    "gray.200"
+                                                        }
+                                                        color="white"
+                                                        display="flex"
+                                                        alignItems="center"
+                                                        justifyContent="center"
+                                                        fontWeight="bold"
+                                                        fontSize="sm"
+                                                        border="2px solid"
+                                                        borderColor={
+                                                            isCompleted ? "green.300" :
+                                                                isActive ? "purple.300" :
+                                                                    "gray.300"
+                                                        }
+                                                        boxShadow={
+                                                            isActive ? "0 0 20px rgba(102, 126, 234, 0.4)" :
+                                                                isCompleted ? "0 0 15px rgba(72, 187, 120, 0.3)" :
+                                                                    "0 2px 8px rgba(0, 0, 0, 0.1)"
+                                                        }
+                                                    >
+                                                        {isCompleted ? "✓" : index + 1}
+                                                    </Box>
+                                                    <VStack spacing={0} align="center" minH="45px" justify="start">
+                                                        <Text
+                                                            fontSize="sm"
+                                                            fontWeight="bold"
+                                                            color={
+                                                                isCompleted ? "green.600" :
+                                                                    isActive ? "purple.600" :
+                                                                        "gray.500"
+                                                            }
+                                                            textAlign="center"
+                                                            lineHeight="tight"
+                                                            noOfLines={1}
+                                                        >
+                                                            {step.title}
+                                                        </Text>
+                                                        <Text
+                                                            fontSize="xs"
+                                                            color="gray.600"
+                                                            textAlign="center"
+                                                            lineHeight="tight"
+                                                            noOfLines={2}
+                                                            px={1}
+                                                        >
+                                                            {step.description}
+                                                        </Text>
+                                                    </VStack>
+                                                </VStack>
+                                                {index < steps.length - 1 && (
+                                                    <Box
+                                                        flex="0 0 auto"
+                                                        h="2px"
+                                                        w="8"
+                                                        bg={index < currentStep ? "linear-gradient(90deg, #48bb78, #38a169)" : "gray.200"}
+                                                        mx={2}
+                                                        borderRadius="full"
+                                                    />
+                                                )}
+                                            </React.Fragment>
+                                        )
+                                    })}
+                                </HStack>
+                            </VStack>
+                        </Box>
+
+                        {/* Step Content */}
+                        <Box
+                            bg="rgba(255, 255, 255, 0.95)"
+                            backdropFilter="blur(20px)"
+                            borderRadius="2xl"
+                            border="1px solid"
+                            borderColor="rgba(255, 255, 255, 0.3)"
+                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                            overflow="hidden"
+                        >
+                            {renderStepContent()}
+                        </Box>
+
+                        {/* Navigation - exactly like campaign creation */}
+                        <HStack justify="space-between" pt={4}>
+                            <Button
+                                variant="outline"
+                                size="lg"
+                                color="white"
+                                borderColor="whiteAlpha.300"
+                                _hover={{ borderColor: 'white', bg: 'rgba(255, 255, 255, 0.1)' }}
+                                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                                isDisabled={currentStep === 0}
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                size="lg"
+                                bg="white"
+                                color="purple.600"
+                                _hover={{ bg: 'whiteAlpha.900' }}
+                                onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+                                isDisabled={currentStep === steps.length - 1}
+                            >
+                                Next
+                            </Button>
+                        </HStack>
+                    </VStack>
+                </Container>
+
+                {/* Edit Attempt Modal */}
+                <Modal isOpen={isOpen} onClose={onClose} size="md">
+                    <ModalOverlay backdropFilter="blur(10px)" />
+                    <ModalContent bg={cardBg} borderRadius="xl">
+                        <ModalHeader>
+                            <VStack spacing={2} align="center">
+                                <Icon as={Lock} boxSize={8} color="purple.500" />
+                                <Text>Campaign Editing Restricted</Text>
+                            </VStack>
+                        </ModalHeader>
+                        <ModalCloseButton />
+                        <ModalBody pb={6}>
+                            <VStack spacing={4} align="center" textAlign="center">
+                                <Text color="gray.600">
+                                    Campaign editing is currently restricted. To make changes to this campaign,
+                                    please connect with your account executive.
+                                </Text>
+                                <GradientButton variant="primary" onClick={onClose}>
+                                    Contact Account Executive
+                                </GradientButton>
+                            </VStack>
+                        </ModalBody>
+                    </ModalContent>
+                </Modal>
+            </Box>
+        </DashboardLayout>
+    )
+}

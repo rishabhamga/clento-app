@@ -1,40 +1,38 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { createCustomToast } from '@/lib/utils/custom-toast'
 import {
-    Box,
-    Container,
-    VStack,
-    HStack,
-    Heading,
-    Text,
-    Spinner,
     Alert,
     AlertIcon,
-    useToast,
+    Box,
+    Button,
     Card,
     CardHeader,
-    Button,
+    Container,
+    Divider,
+    FormLabel,
+    HStack,
+    Heading,
+    Input,
+    Select,
+    SimpleGrid,
+    Spacer,
+    Spinner,
+    Table,
     TableContainer,
+    Tbody,
+    Td,
+    Text,
+    Th,
     Thead,
     Tr,
-    Td,
-    Tbody,
-    Table,
-    Input,
-    Th,
-    Select,
-    Spacer,
-    Divider,
-    SimpleGrid,
+    VStack,
+    useToast
 } from '@chakra-ui/react'
-import { createCustomToast } from '@/lib/utils/custom-toast'
-import { useUser } from '@clerk/nextjs'
+import { useParams } from 'next/navigation'
+import Papa from 'papaparse'
+import { useEffect, useRef, useState } from 'react'
 import { Organization } from '../page'
-import Papa from 'papaparse';
-import { DbCampaign } from '../../dashboard/page'
-import { title } from 'process'
 
 export interface CampaignData {
     id: string;
@@ -239,9 +237,7 @@ export interface TargetingFilters {
 }
 
 function OrgDetailPage() {
-    const { user } = useUser()
     const params = useParams()
-    const router = useRouter()
     const toast = useToast()
     const customToast = createCustomToast(toast)
     const [organization, setOrganization] = useState<Organization | null>(null)
@@ -249,11 +245,31 @@ function OrgDetailPage() {
     const [error, setError] = useState<string | null>(null)
     const [headers, setHeaders] = useState<string[]>();
     const [csvData, setCsvData] = useState<string[][]>([]);
-    const [listName, setListName] = useState<string>();
     const [campaignsMeta, setCampaignsMeta] = useState<{ id: string, name: string }[]>();
-    const [selectedCampaign, setSelectedCampaign] = useState<string>();
+    const [viewCampaignId, setViewCampaignId] = useState<string>();
+    const [uploadCampaignId, setUploadCampaignId] = useState<string>();
     const [selectedCampaignData, setSelectedCampaignData] = useState<CampaignData | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [timezone, setTimezone] = useState<string>('America/Los_Angeles');
+    const [dayOfWeek, setDayOfWeek] = useState<number[]>([1, 2, 3, 4, 5]);
+    const [startHour, setStartHour] = useState<string>('09:00');
+    const [endHour, setEndHour] = useState<string>('17:00');
+    const [minTimeBetweenEmails, setMinTimeBetweenEmails] = useState<number>(10);
+    const [maxNewLeadsPerDay, setMaxNewLeadsPerDay] = useState<number>(20);
+    const [scheduleStartTime, setScheduleStartTime] = useState<string>(new Date().toISOString());
+    const [timezones, setTimezones] = useState<{ value: string; label: string }[]>([]);
+    const [domainsInput, setDomainsInput] = useState<string>();
+
+    // Email personalization state
+    const [emailPersonalizationFile, setEmailPersonalizationFile] = useState<File | null>(null);
+    const [emailPersonalizationJobId, setEmailPersonalizationJobId] = useState<string | null>(null);
+    const [emailPersonalizationStatus, setEmailPersonalizationStatus] = useState<string>('idle');
+    const [emailPersonalizationProgress, setEmailPersonalizationProgress] = useState<number>(0);
+    const [emailPersonalizationErrors, setEmailPersonalizationErrors] = useState<any[]>([]);
+    const emailFileInputRef = useRef<HTMLInputElement>(null);
+
+    // Campaign domains state
+    const [campaignDomains, setCampaignDomains] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -278,11 +294,9 @@ function OrgDetailPage() {
         const handleFetchCampaignData = async () => {
             setLoading(true);
             try {
-                const response = await fetch(`/api/console/campaigns/${selectedCampaign}`);
+                const response = await fetch(`/api/console/campaigns/${viewCampaignId}`);
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(data?.campaignData, "this is here");
-
                     setSelectedCampaignData(data?.campaignData);
                 }
             } catch (err) {
@@ -291,10 +305,24 @@ function OrgDetailPage() {
                 setLoading(false);
             }
         };
-        if (selectedCampaign) {
+        if (viewCampaignId) {
             handleFetchCampaignData();
         }
-    }, [selectedCampaign])
+    }, [viewCampaignId])
+
+    useEffect(() => {
+        const fetchTimezones = async () => {
+            const response = await fetch('/smartlead-timezones.csv');
+            const csvText = await response.text();
+            const parsed = Papa.parse(csvText, { header: true });
+            const options = parsed.data.map((row: any) => ({
+                value: row['Timezone (use this)'],
+                label: row.label,
+            }));
+            setTimezones(options);
+        };
+        fetchTimezones();
+    }, [])
 
     function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0];
@@ -310,50 +338,168 @@ function OrgDetailPage() {
                     }
                 },
             });
-
-            setListName('');
         }
     }
+
+    // Email personalization functions
+    const handleEmailPersonalizationFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            if (!file.name.endsWith('.csv')) {
+                customToast.error({ title: "Invalid File Type", description: "Please upload a CSV file." });
+                return;
+            }
+            setEmailPersonalizationFile(file);
+            customToast.success({ title: "File Selected", description: `${file.name} ready for processing` });
+        }
+    };
+
+    const startEmailPersonalization = async () => {
+        if (!emailPersonalizationFile) {
+            customToast.error({ title: "No File Selected", description: "Please select a CSV file first." });
+            return;
+        }
+
+        if (!viewCampaignId) {
+            customToast.error({ title: "No Campaign Selected", description: "Please select a campaign first." });
+            return;
+        }
+
+        try {
+            setEmailPersonalizationStatus('processing');
+            setEmailPersonalizationProgress(0);
+            setEmailPersonalizationErrors([]);
+
+            const formData = new FormData();
+            formData.append('file', emailPersonalizationFile);
+            formData.append('campaignId', viewCampaignId);
+
+            const response = await fetch('/api/email-personalization', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to start email personalization');
+            }
+
+            const { jobId, rowCount } = await response.json();
+            setEmailPersonalizationJobId(jobId);
+
+            customToast.success({
+                title: "Processing Started",
+                description: `Processing ${rowCount} leads. This may take several minutes.`
+            });
+
+            pollEmailPersonalizationStatus(jobId);
+        } catch (error) {
+            console.error('Email personalization failed:', error);
+            customToast.error({
+                title: "Processing Failed",
+                description: error instanceof Error ? error.message : "Unknown error occurred"
+            });
+            setEmailPersonalizationStatus('failed');
+        }
+    };
+
+    const pollEmailPersonalizationStatus = async (jobId: string) => {
+        try {
+            const response = await fetch(`/api/email-personalization/${jobId}/status`);
+
+            if (!response.ok) {
+                throw new Error('Failed to get job status');
+            }
+
+            const statusData = await response.json();
+            setEmailPersonalizationProgress(statusData.progress);
+
+            if (statusData.recentErrors) {
+                setEmailPersonalizationErrors(statusData.recentErrors);
+            }
+
+            if (statusData.status === 'completed') {
+                setEmailPersonalizationStatus('completed');
+                customToast.success({
+                    title: "Processing Complete!",
+                    description: `Successfully processed ${statusData.results.successCount} leads. Click download to get your results.`
+                });
+            } else if (statusData.status === 'failed') {
+                setEmailPersonalizationStatus('failed');
+                customToast.error({ title: "Processing Failed", description: "Please try again or contact support." });
+            } else if (statusData.status === 'processing') {
+                setTimeout(() => pollEmailPersonalizationStatus(jobId), 3000);
+            }
+        } catch (error) {
+            console.error('Status polling failed:', error);
+            setEmailPersonalizationStatus('failed');
+            customToast.error({ title: "Status Check Failed", description: "Please refresh the page and try again." });
+        }
+    };
+
+    const downloadEmailPersonalizationResults = () => {
+        if (emailPersonalizationJobId && emailPersonalizationStatus === 'completed') {
+            const downloadUrl = `/api/email-personalization/${emailPersonalizationJobId}/download`;
+            window.open(downloadUrl, '_blank');
+
+            customToast.success({
+                title: "Download Started",
+                description: "Your personalized emails are being downloaded."
+            });
+        }
+    };
+
+    const downloadSampleCSV = () => {
+        const sampleUrl = '/api/email-personalization/sample-csv';
+        window.open(sampleUrl, '_blank');
+
+        customToast.success({
+            title: "Sample Downloaded",
+            description: "Use this format for your lead uploads."
+        });
+    };
 
     const handleUpload = async () => {
-
-        if (!listName?.trim()) {
-            customToast.error({ title: "List name is required" })
-            return
-        }
-        if (!fileInputRef.current?.files) {
-            customToast.error({ title: "No File Found" })
-            return
-        }
-        if (!params.id) {
-            customToast.error({ title: "Org Id not found" })
-            return
-        }
-        if (!selectedCampaign) {
-            customToast.error({ title: "No Campaign Selected" })
-            return
+        if (!fileInputRef.current?.files?.[0] || !uploadCampaignId) {
+            customToast.error({ title: 'Error', description: 'Please provide all required fields' });
+            return;
         }
 
-        const data = new FormData();
-        data.append("csv", fileInputRef.current.files?.[0]);
-        data.append("orgId", Array.isArray(params?.id) ? params.id[0] : params.id ?? '');
-        data.append("listName", listName);
-        data.append("campaignId", selectedCampaign);
+        const formData = new FormData();
+        formData.append('orgId', Array.isArray(params.id) ? params.id[0] : params.id!);
+        formData.append('campaignId', uploadCampaignId);
+        formData.append('csv', fileInputRef.current.files[0]);
+        formData.append('timezone', timezone);
+        formData.append('dayOfWeek', JSON.stringify(dayOfWeek));
+        formData.append('startHour', startHour);
+        formData.append('endHour', endHour);
+        formData.append('minTimeBetweenEmails', minTimeBetweenEmails.toString());
+        formData.append('maxNewLeadsPerDay', maxNewLeadsPerDay.toString());
+        formData.append('scheduleStartTime', scheduleStartTime);
+        formData.append('scheduleStartTime', scheduleStartTime);
+        formData.append('campaignDomains', JSON.stringify(campaignDomains));
 
-        const response = await fetch(`/api/console/orgs/${params.id}`, {
-            method: 'POST',
-            body: data
-        });
-        if (response.ok) {
-            fileInputRef.current.value = "";
-            setCsvData([]);
-            setHeaders([]);
-            setListName("");
-            customToast.success({ title: 'List Uploaded' })
-        } else {
-            customToast.error({ title: 'An error occured' })
+        try {
+            const response = await fetch('/api/console/orgs/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                customToast.success({ title: 'Success', description: 'List uploaded successfully' });
+                setHeaders(undefined);
+                setCsvData([]);
+                setUploadCampaignId(undefined);
+                fileInputRef.current && (fileInputRef.current.value = '');
+            } else {
+                const errorData = await response.json();
+                customToast.error({ title: 'Error', description: errorData.error || 'Failed to upload list' });
+            }
+        } catch (error) {
+            console.error('Error uploading list:', error);
+            customToast.error({ title: 'Error', description: 'An unexpected error occurred' });
         }
-    }
+    };
 
     // Render campaign details
     const renderCampaignDetails = () => {
@@ -450,14 +596,15 @@ function OrgDetailPage() {
                 <Divider my={6} />
 
                 <Heading size="md" mb={2} color="teal.600">Targeting</Heading>
-                <Spacer height={20}/>
+                <Spacer height={20} />
+                <Spacer height={20} />
                 <SimpleGrid columns={[1, 2]} spacing={4} mb={4}>
                     {Object.entries(selectedCampaignData.settings?.targeting?.filters || {}).map(([key, value]) => {
                         if (key === 'page' || key === 'perPage') return null;
                         if (Array.isArray(value)) {
                             if (value.length === 0) return null;
                             return (
-                                <HStack key={key} style={{alignItems: "start", border: "1px solid", borderRadius: "8px", padding: "12px"}}>
+                                <HStack key={key} style={{ alignItems: "start", border: "1px solid", borderRadius: "8px", padding: "12px" }}>
                                     <Text fontWeight="bold">{key}:</Text>
                                     <Text>{value.join(', ')}</Text>
                                 </HStack>
@@ -469,7 +616,7 @@ function OrgDetailPage() {
                             !(typeof value === 'object' && Object.keys(value).length === 0)
                         ) {
                             return (
-                                <HStack key={key} style={{alignItems: "start", border: "1px solid", borderRadius: "8px", padding: "12px"}}>
+                                <HStack key={key} style={{ alignItems: "start", border: "1px solid", borderRadius: "8px", padding: "12px" }}>
                                     <Text fontWeight="bold">{key}:</Text>
                                     <Text>{value.toString()}</Text>
                                 </HStack>
@@ -585,6 +732,33 @@ function OrgDetailPage() {
         );
     };
 
+    const handleAddDomain = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        const input = event.target as HTMLInputElement;
+        const domain = input.value.trim();
+
+        if (event.key === 'Enter' && domain !== '') {
+            // Validate domain format
+            const domainRegex = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!domainRegex.test(domain)) {
+                customToast.error({ title: "Invalid Domain", description: "Please enter a valid domain." });
+                return;
+            }
+
+            // Check for duplicates
+            if (campaignDomains.includes(domain)) {
+                customToast.error({ title: "Duplicate Domain", description: "This domain is already added." });
+                return;
+            }
+
+            setCampaignDomains(prev => [...prev, domain]);
+            setDomainsInput(''); // Clear the input field
+        }
+    };
+
+    const handleRemoveDomain = (domain: string) => {
+        setCampaignDomains(prev => prev.filter(d => d !== domain));
+    };
+
     if (loading) {
         return (
             <Box p={8} display={'flex'} justifyContent={'flex-start'} flexDirection={'column'}>
@@ -678,7 +852,7 @@ function OrgDetailPage() {
                     <Card style={{ background: "white" }} p={8}>
                         <VStack gap={5} alignItems={'start'}>
                             <Text fontWeight={600} fontSize={18} color={"GrayText"}>View Campaigns</Text>
-                            <Select placeholder="Select Campaign" onChange={(e) => setSelectedCampaign(e.target.value)} value={selectedCampaign}>
+                            <Select placeholder="Select Campaign to View" onChange={(e) => setViewCampaignId(e.target.value)} value={viewCampaignId}>
                                 {campaignsMeta && campaignsMeta.map((campaign) => (
                                     <option key={campaign.id} value={campaign.id}>
                                         {campaign.name}
@@ -686,22 +860,143 @@ function OrgDetailPage() {
                                 ))}
                             </Select>
                         </VStack>
-
                     </Card>
 
                     {/* csv view */}
                     {headers && (
-                        <HStack justifyContent={'space-between'}>
-                            <Input placeholder='File Input' value={listName} w={'500px'} onChange={(e) => setListName(e.target.value)} />
-                            <Select placeholder="Select Campaign" onChange={(e) => setSelectedCampaign(e.target.value)} value={selectedCampaign}>
-                                {campaignsMeta && campaignsMeta.map((campaign) => (
-                                    <option key={campaign.id} value={campaign.id}>
-                                        {campaign.name}
-                                    </option>
-                                ))}
-                            </Select>
-                            <Button onClick={handleUpload}>Upload</Button>
-                        </HStack>
+                        <>
+                            {/* <HStack justifyContent={'space-between'}>
+                                <Input placeholder='File Input' value={listName} w={'500px'} onChange={(e) => setListName(e.target.value)} />
+                                <Select placeholder="Select Campaign to Upload" onChange={(e) => setUploadCampaignId(e.target.value)} value={uploadCampaignId}>
+                                    {campaignsMeta && campaignsMeta.map((campaign) => (
+                                        <option key={campaign.id} value={campaign.id}>
+                                            {campaign.name}
+                                        </option>
+                                    ))}
+                                </Select>
+                            </HStack> */}
+                            <Card style={{ background: "white" }} p={8} mt={8}>
+                                <Heading size="md" mb={4} color="teal.600">Upload List</Heading>
+                                <Heading size="md" mb={2} color="teal.600">Campaign Domains</Heading>
+                                <VStack align="start" spacing={2} mb={4}>
+                                    <HStack>
+                                        <Input
+                                            placeholder="Enter domain and press Enter"
+                                            value={domainsInput}
+                                            onChange={(e) => setDomainsInput(e.target.value)}
+                                            size="sm"
+                                            onKeyDown={handleAddDomain}
+                                            width="300px"
+                                        />
+                                        <Button
+                                            size="sm"
+                                            onClick={() => {
+                                                if (campaignDomains.length > 0) {
+                                                    customToast.success({
+                                                        title: "Domains Added",
+                                                        description: "Successfully added domains to the campaign."
+                                                    });
+                                                } else {
+                                                    customToast.error({
+                                                        title: "No Domains Found",
+                                                        description: "Please enter domains to add."
+                                                    });
+                                                }
+                                            }}
+                                        >
+                                            Add Domains
+                                        </Button>
+                                    </HStack>
+                                    <VStack align="start" spacing={1} width="100%">
+                                        {campaignDomains.map((domain, index) => (
+                                            <HStack key={index} width="100%" justify="space-between">
+                                                <Text fontSize="sm" color="gray.700">{domain}</Text>
+                                                <Button
+                                                    size="xs"
+                                                    colorScheme="red"
+                                                    onClick={() => handleRemoveDomain(domain)}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </HStack>
+                                        ))}
+                                    </VStack>
+                                </VStack>
+                                <VStack spacing={4} align="stretch">
+                                    <Select
+                                        placeholder="Select Campaign"
+                                        value={uploadCampaignId || ''}
+                                        onChange={(e) => setUploadCampaignId(e.target.value)}
+                                    >
+                                        {campaignsMeta?.map((campaign) => (
+                                            <option key={campaign.id} value={campaign.id}>
+                                                {campaign.name}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                    <SimpleGrid columns={2} spacing={4}>
+                                        <Box>
+                                            <FormLabel>Timezone</FormLabel>
+                                            <Select
+                                                placeholder="Select Timezone"
+                                                value={timezone}
+                                                onChange={(e) => setTimezone(e.target.value)}
+                                            >
+                                                {timezones.map((tz, idx) => (
+                                                    <option key={idx} value={tz.value}>
+                                                        {tz.label}
+                                                    </option>
+                                                ))}
+                                            </Select>
+                                        </Box>
+                                        <Box>
+                                            <FormLabel>Start Hour</FormLabel>
+                                            <Input
+                                                placeholder="Start Hour (HH:mm)"
+                                                value={startHour}
+                                                onChange={(e) => setStartHour(e.target.value)}
+                                            />
+                                        </Box>
+                                        <Box>
+                                            <FormLabel>End Hour</FormLabel>
+                                            <Input
+                                                placeholder="End Hour (HH:mm)"
+                                                value={endHour}
+                                                onChange={(e) => setEndHour(e.target.value)}
+                                            />
+                                        </Box>
+                                        <Box>
+                                            <FormLabel>Minimum Time Between Emails</FormLabel>
+                                            <Input
+                                                type="number"
+                                                placeholder="Min Time Between Emails (minutes)"
+                                                value={minTimeBetweenEmails}
+                                                onChange={(e) => setMinTimeBetweenEmails(Number(e.target.value))}
+                                            />
+                                        </Box>
+                                        <Box>
+                                            <FormLabel>Max New Leads Per Day</FormLabel>
+                                            <Input
+                                                type="number"
+                                                placeholder="Max New Leads Per Day"
+                                                value={maxNewLeadsPerDay}
+                                                onChange={(e) => setMaxNewLeadsPerDay(Number(e.target.value))}
+                                            />
+                                        </Box>
+                                        <Box>
+                                            <FormLabel>Schedule start time</FormLabel>
+                                            <Input
+                                                type="datetime-local"
+                                                placeholder="Schedule Start Time"
+                                                value={scheduleStartTime}
+                                                onChange={(e) => setScheduleStartTime(e.target.value)}
+                                            />
+                                        </Box>
+                                    </SimpleGrid>
+                                    <Button colorScheme="blue" onClick={handleUpload}>Upload</Button>
+                                </VStack>
+                            </Card>
+                        </>
                     )}
                     {headers && (
                         <TableContainer border={'1px'} borderColor={'blackAlpha.400'}>
@@ -731,6 +1026,151 @@ function OrgDetailPage() {
                         </TableContainer>
                     )}
                     {renderCampaignDetails()}
+
+                    {/* Email Personalization Section */}
+                    {viewCampaignId && selectedCampaignData && (
+                        <Card style={{ background: "white" }} p={8} mt={8}>
+                            <VStack gap={6} alignItems={'start'}>
+                                <HStack justify="space-between" w="100%">
+                                    <VStack alignItems={'start'} spacing={1}>
+                                        <Text fontWeight={600} fontSize={20} color={"GrayText"}>
+                                            Generate Personalized Emails
+                                        </Text>
+                                        <Text fontSize={14} color={"gray.600"}>
+                                            Upload leads CSV to generate AI-powered personalized email sequences using "{selectedCampaignData.name}" campaign context
+                                        </Text>
+                                    </VStack>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={downloadSampleCSV}
+                                        leftIcon={<Text>📥</Text>}
+                                    >
+                                        Download Sample CSV
+                                    </Button>
+                                </HStack>
+
+                                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} w="100%">
+                                    {/* Upload Section */}
+                                    <VStack alignItems={'start'} spacing={4}>
+                                        <Text fontWeight={500} fontSize={16}>1. Upload Leads CSV</Text>
+
+                                        <input
+                                            ref={emailFileInputRef}
+                                            type="file"
+                                            accept=".csv"
+                                            style={{ display: 'none' }}
+                                            onChange={handleEmailPersonalizationFileUpload}
+                                        />
+
+                                        <Button
+                                            onClick={() => emailFileInputRef.current?.click()}
+                                            variant={emailPersonalizationFile ? "solid" : "outline"}
+                                            colorScheme={emailPersonalizationFile ? "green" : "blue"}
+                                            w="100%"
+                                        >
+                                            {emailPersonalizationFile ?
+                                                `✅ ${emailPersonalizationFile.name}` :
+                                                "📁 Select CSV File"
+                                            }
+                                        </Button>
+
+                                        <Text fontSize={12} color="gray.500">
+                                            Required fields: First name, Last name, Title, Company, Location, LinkedIn url, Company website
+                                        </Text>
+                                    </VStack>
+
+                                    {/* Process Section */}
+                                    <VStack alignItems={'start'} spacing={4}>
+                                        <Text fontWeight={500} fontSize={16}>2. Generate Email Sequences</Text>
+
+                                        <Button
+                                            onClick={startEmailPersonalization}
+                                            isDisabled={!emailPersonalizationFile || !viewCampaignId || emailPersonalizationStatus === 'processing'}
+                                            isLoading={emailPersonalizationStatus === 'processing'}
+                                            loadingText="Processing..."
+                                            colorScheme="purple"
+                                            w="100%"
+                                        >
+                                            🚀 Generate Personalized Emails
+                                        </Button>
+
+                                        {emailPersonalizationStatus === 'processing' && (
+                                            <VStack w="100%" spacing={2}>
+                                                <HStack justify="space-between" w="100%">
+                                                    <Text fontSize={12}>Progress</Text>
+                                                    <Text fontSize={12} fontWeight="bold">{emailPersonalizationProgress}%</Text>
+                                                </HStack>
+                                                <Box w="100%" bg="gray.200" h="6px" borderRadius="3px">
+                                                    <Box
+                                                        bg="purple.500"
+                                                        h="100%"
+                                                        borderRadius="3px"
+                                                        width={`${emailPersonalizationProgress}%`}
+                                                        transition="width 0.3s ease"
+                                                    />
+                                                </Box>
+                                            </VStack>
+                                        )}
+                                    </VStack>
+                                </SimpleGrid>
+
+                                {/* Results Section */}
+                                {emailPersonalizationStatus === 'completed' && (
+                                    <VStack alignItems={'start'} spacing={4} w="100%" p={4} bg="green.50" borderRadius="md" border="1px solid" borderColor="green.200">
+                                        <HStack>
+                                            <Text fontSize={16} fontWeight={600} color="green.700">✅ Processing Complete!</Text>
+                                        </HStack>
+                                        <Text fontSize={14} color="green.600">
+                                            Your personalized email sequences have been generated successfully.
+                                            Each lead now has 1 initial email + 4 follow-up emails with campaign context.
+                                        </Text>
+                                        <Button
+                                            onClick={downloadEmailPersonalizationResults}
+                                            colorScheme="green"
+                                            leftIcon={<Text>⬇️</Text>}
+                                        >
+                                            Download Personalized Emails CSV
+                                        </Button>
+                                    </VStack>
+                                )}
+
+                                {/* Error Section */}
+                                {emailPersonalizationStatus === 'failed' && (
+                                    <VStack alignItems={'start'} spacing={4} w="100%" p={4} bg="red.50" borderRadius="md" border="1px solid" borderColor="red.200">
+                                        <Text fontSize={16} fontWeight={600} color="red.700">❌ Processing Failed</Text>
+                                        <Text fontSize={14} color="red.600">
+                                            There was an error processing your leads. Please check your CSV format and try again.
+                                        </Text>
+                                        <Button
+                                            onClick={() => {
+                                                setEmailPersonalizationStatus('idle');
+                                                setEmailPersonalizationFile(null);
+                                                setEmailPersonalizationProgress(0);
+                                                setEmailPersonalizationErrors([]);
+                                            }}
+                                            colorScheme="red"
+                                            variant="outline"
+                                        >
+                                            Try Again
+                                        </Button>
+                                    </VStack>
+                                )}
+
+                                {/* Errors Display */}
+                                {emailPersonalizationErrors.length > 0 && (
+                                    <VStack alignItems={'start'} spacing={2} w="100%" p={4} bg="yellow.50" borderRadius="md" border="1px solid" borderColor="yellow.200">
+                                        <Text fontSize={14} fontWeight={600} color="yellow.700">⚠️ Processing Warnings</Text>
+                                        {emailPersonalizationErrors.map((error, index) => (
+                                            <Text key={index} fontSize={12} color="yellow.600">
+                                                Row {error.row}: {error.leadName} - {error.error}
+                                            </Text>
+                                        ))}
+                                    </VStack>
+                                )}
+                            </VStack>
+                        </Card>
+                    )}
                 </VStack>
             </Container>
         </Box>

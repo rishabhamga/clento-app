@@ -1,0 +1,64 @@
+{
+  "nodes": [
+    {
+      "id": "profile_visit-1741803242094",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 0
+      },
+      "data": {
+        "type": "profile_visit",
+        "label": "Visit Profile",
+        "isConfigured": true,
+        "config": {}
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      },
+      "selected": false
+    },
+    {
+      "id": "send-invite-1755016596165",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 150
+      },
+      "data": {
+        "type": "send_invite",
+        "label": "Connection Request",
+        "isConfigured": true,
+        "config": {
+          "useAI": false,
+          "tone": "Warm",
+          "formality": "Casual",
+          "message": "Hi [first_name], I'd like to connect with you."
+        }
+      },
+      "measured": {
+        "width": 220,
+        "height": 54
+      },
+      "selected": false
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0-1",
+      "source": "profile_visit-1741803242094",
+      "target": "send-invite-1755016596165",
+      "type": "buttonedge",
+      "animated": true,
+      "data": {
+        "delay": "15m",
+        "delayData": {
+          "delay": 15,
+          "unit": "m"
+        }
+      }
+    }
+  ],
+  "timestamp": "2025-01-24T10:24:28.794Z"
+}

@@ -1,120 +1,127 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase';
+import { auth } from '@clerk/nextjs/server';
+import axios from 'axios';
+import { NextRequest, NextResponse } from 'next/server';
+import { syndieBaseUrl } from '../../../lib/utils';
 
-const supabase = createClient(
-  process.env.PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const getCampaigns = async (tokenData: { api_token: string }) => {
+    try {
+        const res = await axios.get(syndieBaseUrl + '/api/campaigns' + '?includeAnalytics=true&includeDetailedActions=true', {
+            headers: {
+                'Authorization': `Bearer ${tokenData.api_token}`,
+                'Content-Type': 'application/json',
+            }
+        })
+
+        if (!res.data) {
+            console.log('No Campaigns Found')
+            return
+        }
+        const campaignsArray: any[] = res.data.data
+        console.log(JSON.stringify(res.data.data, null, 4))
+
+        return campaignsArray.filter(it => it.status !== 'paused' && it.status !== 'draft')
+    } catch (err) {
+        console.log(JSON.stringify(err, null, 4));
+        return
+    }
+}
+
+const getLeads = async (tokenData: { api_token: string }, campaignIds: string[], page: string, limit: string, status?: string, search?: string) => {
+    try {
+        const paramsObj: Record<string, string> = { page, limit };
+        if (status !== undefined) {
+            paramsObj.status = status;
+        }
+        if (search !== undefined) {
+            paramsObj.search = search;
+        }
+        const params = new URLSearchParams(paramsObj);
+        console.log(params)
+        campaignIds.forEach(id => params.append('campaignId', id));
+        const res = await axios.get(`${syndieBaseUrl}/api/leads?${params.toString()}`, {
+            headers: {
+                'Authorization': `Bearer ${tokenData.api_token}`,
+                'Content-Type': 'application/json',
+            }
+        });
+        return res.data;
+    } catch (err) {
+        console.log(err);
+        return;
+    }
+}
+
+const getStats = async (campaignsArray: any) => {
+    const allStats = campaignsArray.map((it: any) => it.stats)
+    const totals = allStats.reduce((acc: any, curr: any) => {
+        Object.keys(curr).forEach((key) => {
+            acc[key] = (acc[key] || 0) + curr[key];
+        });
+        return acc;
+    }, {} as Record<string, number>);
+    console.log(totals);
+    return totals
+}
 
 export async function GET(request: NextRequest) {
-  try {
-    const { userId } = await auth()
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { searchParams } = new URL(request.url)
-    const campaignId = searchParams.get('campaignId')
-    const limit = parseInt(searchParams.get('limit') || '100')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const stats = searchParams.get('stats');
 
-    // Get user's ID from the users table
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('clerk_id', userId)
-      .single()
+    const page = searchParams.get('page') || '1';
+    const limit = searchParams.get('limit') || '15';
+    const status = searchParams.get('connectionStatus') ?? undefined;
+    const searchTerm = searchParams.get('search') ?? undefined;
 
-    if (userError || !userData) {
-      console.error('Error fetching user:', userError)
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+    try {
+        const { orgId } = await auth()
+        const { data: orgData, error: orgError } = await supabase
+            .from('organizations')
+            .select('id')
+            .eq('clerk_org_id', orgId)
+            .single();
+
+        if (!orgData || orgError) {
+            console.log(orgError)
+            return NextResponse.json(
+                { success: false, error: 'Org Not Found' },
+                { status: 401 }
+            )
+        }
+
+        const { data: tokenData, error: tokenError } = await supabase.from('syndie_access_tokens').select('*').eq('organization_id', orgData.id).single()
+        if (!tokenData || tokenError) {
+            console.log(tokenError)
+            return NextResponse.json(
+                { success: false, error: 'Token Not Found' },
+                { status: 401 }
+            )
+        }
+        const campaignsArray = await getCampaigns(tokenData);
+        if (!campaignsArray) {
+            return NextResponse.json(
+                { success: false, error: 'Error fetching campaigns' },
+                { status: 401 }
+            )
+        }
+        if (stats) {
+            const statsData = await getStats(campaignsArray)
+            return NextResponse.json(
+                { success: true, data: statsData }
+            )
+        }
+        const filteredCampaigns = campaignsArray.filter(it => it.status === 'active')
+        const campaignIds = filteredCampaigns.map(it => it.id);
+
+        const leads = await getLeads(tokenData, campaignIds, page, limit, status, searchTerm);
+        return NextResponse.json(
+            { success: true, data: leads }
+        )
+    } catch (error) {
+        console.error('Error fetching lead details:', error)
+        return NextResponse.json(
+            { success: false, error: 'Internal server error' },
+            { status: 500 }
+        )
     }
-
-    const userDbId = userData.id
-
-    let query: any
-
-    // If campaignId is provided, filter by campaign
-    if (campaignId) {
-      query = supabase
-        .from('campaign_leads')
-        .select(`
-          *,
-          leads(*)
-        `)
-        .eq('campaign_id', campaignId)
-        .order('added_at', { ascending: false })
-        .range(offset, offset + limit - 1)
-    } else {
-      // Get all leads for campaigns that belong to this user
-      query = supabase
-        .from('campaign_leads')
-        .select(`
-          *,
-          leads(*),
-          campaigns!inner(user_id)
-        `)
-        .eq('campaigns.user_id', userDbId)
-        .order('added_at', { ascending: false })
-        .range(offset, offset + limit - 1)
-    }
-
-    const { data: campaignLeads, error: leadsError } = await query
-
-    if (leadsError) {
-      console.error('Error fetching leads:', leadsError)
-      return NextResponse.json(
-        { error: 'Failed to fetch leads' },
-        { status: 500 }
-      )
-    }
-
-    // Get total count
-    let count: number | null = null
-    let countError: any = null
-    
-    if (campaignId) {
-      const countResult = await supabase
-        .from('campaign_leads')
-        .select('id', { count: 'exact', head: true })
-        .eq('campaign_id', campaignId)
-      
-      count = countResult.count
-      countError = countResult.error
-    } else {
-      const countResult = await supabase
-        .from('campaign_leads')
-        .select('id, campaigns!inner(user_id)', { count: 'exact', head: true })
-        .eq('campaigns.user_id', userDbId)
-      
-      count = countResult.count
-      countError = countResult.error
-    }
-
-    if (countError) {
-      console.error('Error fetching leads count:', countError)
-    }
-
-    // Extract leads from campaign_leads relationship
-    const leads = campaignLeads?.map((cl: any) => cl.leads).filter(Boolean) || []
-
-    return NextResponse.json({
-      leads: leads,
-      total: count || 0,
-      limit,
-      offset
-    })
-
-  } catch (error) {
-    console.error('Error in leads API:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-} 
+}

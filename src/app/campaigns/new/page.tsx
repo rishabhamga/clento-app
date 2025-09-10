@@ -10,12 +10,18 @@ import {
     CardBody,
     Badge,
     useColorModeValue,
+    Spinner,
+    Grid,
+    useToast,
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { Enhanced3DStepper } from '@/components/ui/Enhanced3DStepper'
+import { LeadListWithAccount } from '../../../types/database'
+import { LeadListCard } from '../../lead-lists/page'
+import { createCustomToast } from '../../../lib/utils/custom-toast'
 
 // Enhanced animations
 const float = keyframes`
@@ -43,7 +49,11 @@ const campaignSteps = [
 
 export default function NewCampaignPage() {
     const [activeStep, setActiveStep] = useState(0)
-    const router = useRouter()
+    const router = useRouter();
+    const toast = useToast();
+    const [loading, setLoading] = useState<boolean>(false);
+    const [lists, setLists] = useState<LeadListWithAccount[]>();
+    const [selectedList, setSelectedList] = useState<string>();
 
     // Enhanced color mode values with 3D styling
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')
@@ -58,6 +68,7 @@ export default function NewCampaignPage() {
         'linear-gradient(45deg, #667eea, #764ba2)',
         'linear-gradient(45deg, #5b21b6, #7c3aed)'
     )
+    const customToast = createCustomToast(toast);
 
     const handleStepClick = (stepIndex: number) => {
         // Only allow navigation to completed or current step
@@ -66,9 +77,48 @@ export default function NewCampaignPage() {
         }
     }
 
-    const handleStartTargeting = () => {
-        router.push('/campaigns/new/targeting/b2b-filters')
+    const handleSelectList = (id: string) => {
+        setSelectedList(id);
     }
+
+    const handleProceedToPitch = async () => {
+        const targetingConfig = {
+            selectedList
+        };
+        localStorage.setItem('campaignTargeting', JSON.stringify(targetingConfig));
+        customToast.success({
+            title: 'Targeting Configuration Saved',
+            description: `Your targeting filters have been saved successfully.`,
+            duration: 2000,
+        });
+        // Navigate to pitch step
+        setTimeout(() => {
+            window.location.href = '/campaigns/new/pitch';
+        }, 1000);
+    }
+
+    useEffect(() => {
+        const fetchLists = async () => {
+            // Fetch lead lists
+            setLoading(true);
+            try {
+                const leadListsUrl = `/api/lead-lists`;
+                const leadListsResponse = await fetch(leadListsUrl);
+
+                if (!leadListsResponse.ok) {
+                    throw new Error('Failed to fetch lead lists');
+                }
+
+                const leadListsData = await leadListsResponse.json();
+                setLists(leadListsData.lead_lists);
+            } catch (error) {
+                console.log(error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchLists();
+    }, [])
 
     return (
         <Box
@@ -160,24 +210,42 @@ export default function NewCampaignPage() {
                                         </Text>
                                     </Box>
 
-                                    <VStack spacing={4} align="start" w="full" maxW="md">
-                                        <HStack spacing={3}>
-                                            <Box w={2} h={2} bg="purple.500" borderRadius="full" />
-                                            <Text color={useColorModeValue('gray.700', 'gray.300')}>300M+ verified B2B contacts</Text>
-                                        </HStack>
-                                        <HStack spacing={3}>
-                                            <Box w={2} h={2} bg="purple.500" borderRadius="full" />
-                                            <Text color={useColorModeValue('gray.700', 'gray.300')}>Advanced filtering by title, industry, company size</Text>
-                                        </HStack>
-                                        <HStack spacing={3}>
-                                            <Box w={2} h={2} bg="purple.500" borderRadius="full" />
-                                            <Text color={useColorModeValue('gray.700', 'gray.300')}>Real-time contact verification</Text>
-                                        </HStack>
-                                        <HStack spacing={3}>
-                                            <Box w={2} h={2} bg="purple.500" borderRadius="full" />
-                                            <Text color={useColorModeValue('gray.700', 'gray.300')}>Intent data and technographics</Text>
-                                        </HStack>
-                                    </VStack>
+                                    {loading && (
+                                        <VStack spacing={6} justify="center" h="400px">
+                                            <Spinner size="xl" color="purple.500" />
+                                            <Text>Loading your lead lists...</Text>
+                                        </VStack>
+                                    )}
+
+                                    <Grid
+                                        templateColumns="repeat(auto-fill, minmax(350px, 1fr))"
+                                        gap={6}
+                                        w="100%"
+                                        maxH={'30rem'}
+                                        overflowY={'auto'}
+                                        border={'1px solid'}
+                                        borderColor={'gray.300'}
+                                        borderRadius={'12px'}
+                                        padding={4}
+                                    >
+                                        {lists && lists.map((leadList) => (
+                                            <LeadListCard
+                                                onClickCard={() => handleSelectList(leadList.id)}
+                                                borderColor={selectedList === leadList.id ? 'purple.500' : 'rgba(255, 255, 255, 0.2)'}
+                                                key={leadList.id}
+                                                leadList={leadList}
+                                                onView={() => { }}
+                                                onEdit={() => { }}
+                                                onDelete={() => toast({
+                                                    title: 'lists can only be deleted from the lead list page',
+                                                    status: 'info',
+                                                    duration: 3000,
+                                                    isClosable: true,
+                                                })}
+                                                isLoading={false}
+                                            />
+                                        ))}
+                                    </Grid>
 
                                     <Badge
                                         colorScheme="purple"
@@ -194,7 +262,7 @@ export default function NewCampaignPage() {
 
                                     <GradientButton
                                         size="lg"
-                                        onClick={handleStartTargeting}
+                                        onClick={handleProceedToPitch}
                                         mt={6}
                                         px={12}
                                         py={6}
@@ -205,7 +273,7 @@ export default function NewCampaignPage() {
                                         }}
                                         transition="all 0.3s ease"
                                     >
-                                        Start Targeting
+                                        Proceed To Pitch
                                     </GradientButton>
                                 </VStack>
                             )}

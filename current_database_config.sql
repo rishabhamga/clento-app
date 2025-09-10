@@ -30,9 +30,34 @@ CREATE TABLE public.campaigns (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   organization_id uuid,
+  smartlead_campaign_id character varying,
+  syndie_campaign_ids ARRAY,
   CONSTRAINT campaigns_pkey PRIMARY KEY (id),
   CONSTRAINT campaigns_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
   CONSTRAINT campaigns_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.company_active_jobs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  organization_id uuid NOT NULL,
+  job_id text NOT NULL,
+  company_name text NOT NULL,
+  company_website text,
+  linkedin_url text NOT NULL,
+  department text NOT NULL,
+  job_titles ARRAY,
+  match_count integer DEFAULT 0,
+  job_data jsonb DEFAULT '{}'::jsonb CHECK (validate_job_data(job_data)),
+  linkedin_jobs jsonb DEFAULT '[]'::jsonb,
+  career_page_jobs jsonb DEFAULT '[]'::jsonb,
+  processing_status text DEFAULT 'pending'::text CHECK (processing_status = ANY (ARRAY['pending'::text, 'processing'::text, 'completed'::text, 'failed'::text, 'timeout'::text])),
+  error_message text,
+  scraped_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT company_active_jobs_pkey PRIMARY KEY (id),
+  CONSTRAINT company_active_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT company_active_jobs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.icp_filter_profiles (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -47,21 +72,98 @@ CREATE TABLE public.icp_filter_profiles (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT icp_filter_profiles_pkey PRIMARY KEY (id),
-  CONSTRAINT icp_filter_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT icp_filter_profiles_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+  CONSTRAINT icp_filter_profiles_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT icp_filter_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
-CREATE TABLE public.leads_files (
+CREATE TABLE public.job_filter_requests (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  list_name text NOT NULL,
-  campaign_id uuid,
+  user_id uuid NOT NULL,
   organization_id uuid NOT NULL,
-  s3_key text NOT NULL,
-  s3_bucket text NOT NULL,
-  created_at timestamp without time zone NOT NULL DEFAULT now(),
-  active integer NOT NULL DEFAULT 1,
-  CONSTRAINT leads_files_pkey PRIMARY KEY (id),
-  CONSTRAINT fk_campaign FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id),
-  CONSTRAINT fk_organization FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+  job_id text NOT NULL UNIQUE,
+  original_filename text NOT NULL,
+  total_companies integer DEFAULT 0,
+  processed_companies integer DEFAULT 0,
+  successful_companies integer DEFAULT 0,
+  failed_companies integer DEFAULT 0,
+  departments ARRAY NOT NULL,
+  job_titles ARRAY,
+  processing_status text DEFAULT 'pending'::text CHECK (processing_status = ANY (ARRAY['pending'::text, 'processing'::text, 'completed'::text, 'failed'::text, 'cancelled'::text])),
+  csv_output_url text,
+  error_message text,
+  started_at timestamp with time zone,
+  completed_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT job_filter_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT job_filter_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT job_filter_requests_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+);
+CREATE TABLE public.lead_lists (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  organization_id uuid NOT NULL,
+  connected_account_id uuid,
+  name text NOT NULL,
+  description text,
+  total_leads integer DEFAULT 0,
+  processed_leads integer DEFAULT 0,
+  failed_leads integer DEFAULT 0,
+  original_filename text,
+  csv_file_url text,
+  sample_csv_url text,
+  status text DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'processing'::text, 'completed'::text, 'failed'::text])),
+  processing_started_at timestamp with time zone,
+  processing_completed_at timestamp with time zone,
+  error_message text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  campaign_id uuid,
+  CONSTRAINT lead_lists_pkey PRIMARY KEY (id),
+  CONSTRAINT lead_lists_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT lead_lists_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT lead_lists_connected_account_id_fkey FOREIGN KEY (connected_account_id) REFERENCES public.user_accounts(id),
+  CONSTRAINT lead_lists_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+);
+CREATE TABLE public.leads (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  organization_id uuid,
+  full_name text NOT NULL,
+  first_name text,
+  last_name text,
+  email text,
+  phone text,
+  title text,
+  headline text,
+  seniority text,
+  company text,
+  industry text,
+  location text,
+  linkedin_url text,
+  twitter_url text,
+  status text DEFAULT 'new'::text CHECK (status = ANY (ARRAY['new'::text, 'contacted'::text, 'replied'::text, 'positive'::text, 'neutral'::text, 'negative'::text, 'unsubscribed'::text])),
+  source text DEFAULT 'manual'::text CHECK (source = ANY (ARRAY['manual'::text, 'zoominfo'::text, 'apollo'::text, 'clearbit'::text, 'website_visitor'::text, 'syndie'::text])),
+  enrichment_data jsonb DEFAULT '{}'::jsonb,
+  verified boolean DEFAULT false,
+  confidence numeric DEFAULT 0,
+  smartlead_campaign_id text,
+  last_email_event text,
+  last_event_timestamp timestamp with time zone,
+  syndie_lead_id text UNIQUE,
+  linkedin_connection_status text DEFAULT 'not_connected'::text,
+  steps jsonb DEFAULT '[]'::jsonb CHECK (validate_syndie_steps(steps)),
+  campaign_info jsonb DEFAULT '{}'::jsonb,
+  seat_info jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  clento_campaign_id text,
+  syndie_campaign_id text,
+  crm_entry smallint DEFAULT '0'::smallint,
+  lead_list_id uuid,
+  user_id uuid,
+  CONSTRAINT leads_pkey PRIMARY KEY (id),
+  CONSTRAINT leads_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT leads_lead_list_id_fkey FOREIGN KEY (lead_list_id) REFERENCES public.lead_lists(id),
+  CONSTRAINT leads_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.organization_members (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -76,8 +178,8 @@ CREATE TABLE public.organization_members (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT organization_members_pkey PRIMARY KEY (id),
-  CONSTRAINT organization_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT organization_members_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT organization_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT organization_members_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES public.users(id)
 );
 CREATE TABLE public.organizations (
@@ -98,6 +200,7 @@ CREATE TABLE public.organizations (
   settings jsonb DEFAULT '{}'::jsonb,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  permissible_seats integer NOT NULL DEFAULT 5 CHECK (permissible_seats > 0),
   CONSTRAINT organizations_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.sequence_steps (
@@ -114,6 +217,34 @@ CREATE TABLE public.sequence_steps (
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT sequence_steps_pkey PRIMARY KEY (id),
   CONSTRAINT sequence_steps_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+);
+CREATE TABLE public.syndie_to_clento_orgs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clento_org_id text NOT NULL,
+  syndie_org_id text NOT NULL,
+  org_name text
+);
+CREATE TABLE public.user_accounts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  organization_id uuid,
+  unipile_account_id text UNIQUE,
+  provider text NOT NULL CHECK (provider = ANY (ARRAY['linkedin'::text, 'email'::text, 'twitter'::text, 'facebook'::text, 'instagram'::text, 'whatsapp'::text, 'telegram'::text, 'messenger'::text])),
+  account_type text NOT NULL DEFAULT 'personal'::text CHECK (account_type = ANY (ARRAY['personal'::text, 'business'::text, 'page'::text])),
+  display_name text NOT NULL,
+  username text,
+  email text,
+  profile_picture_url text,
+  connection_status text DEFAULT 'disconnected'::text CHECK (connection_status = ANY (ARRAY['connected'::text, 'disconnected'::text, 'expired'::text, 'error'::text, 'pending'::text, 'credentials'::text])),
+  last_sync_at timestamp with time zone,
+  expires_at timestamp with time zone,
+  unipile_data jsonb DEFAULT '{}'::jsonb,
+  capabilities jsonb DEFAULT '[]'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT user_accounts_pkey PRIMARY KEY (id),
+  CONSTRAINT user_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT user_accounts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.user_profile (
   user_id uuid NOT NULL,
@@ -139,8 +270,8 @@ CREATE TABLE public.user_profile (
   linkedin_accounts_connected integer DEFAULT 0,
   organization_id uuid,
   CONSTRAINT user_profile_pkey PRIMARY KEY (user_id),
-  CONSTRAINT user_profile_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-  CONSTRAINT user_profile_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+  CONSTRAINT user_profile_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT user_profile_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.users (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
