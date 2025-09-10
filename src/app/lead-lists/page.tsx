@@ -96,7 +96,7 @@ import { createCustomToast } from '../../lib/utils/custom-toast'
 type UserAccount = DatabaseType['public']['Tables']['user_accounts']['Row']
 
 // Lead List Card Component
-export const LeadListCard = ({
+const LeadListCard = ({
     leadList,
     onView,
     onEdit,
