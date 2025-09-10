@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
       .single()
 
     // CRITICAL FIX: Also check for latest website analysis data
-    console.log('📊 Fetching latest website analysis for user:', user.id)
     const { data: latestAnalysis, error: analysisError } = await supabase
       .from('website_analysis')
       .select('*')
@@ -57,12 +56,6 @@ export async function GET(request: NextRequest) {
       console.warn('Error fetching latest analysis:', analysisError)
     }
 
-    console.log('📊 Latest analysis data:', {
-      hasAnalysis: !!latestAnalysis,
-      analysisUrl: latestAnalysis?.website_url,
-      completedAt: latestAnalysis?.completed_at,
-      confidenceScore: latestAnalysis?.confidence_score
-    })
 
     if (profileError && profileError.code === 'PGRST116') {
       // Profile doesn't exist yet, but we might have analysis data
@@ -90,7 +83,6 @@ export async function GET(request: NextRequest) {
 
     // SIMPLIFIED: user_profile only contains profile data, not analysis
     // Analysis data is fetched separately from website_analysis table
-    console.log('📊 Returning profile data (analysis fetched separately)')
 
     return NextResponse.json({
       profile: {

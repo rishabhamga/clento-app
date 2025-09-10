@@ -207,49 +207,22 @@ const ActionNode = memo(({ id, data, selected }: ActionNodeProps) => {
         )}
       </motion.div>
 
-      {/* Output Handle(s) */}
-      {data.type === 'send_invite' ? (
-        // Connection request has dual outputs
-        <>
-          <ButtonHandle
-            type="source"
-            position={Position.Bottom}
-            id="accepted"
-            handleClassName="w-4 h-4 border-2 border-white bg-green-500 hover:bg-green-600 transition-colors"
-            style={{ 
-              bottom: -8, 
-              left: '50%',
-              transform: 'translateX(-30px)' // 30px left from center
-            }}
-            showButton={false}
-          />
-          <ButtonHandle
-            type="source"
-            position={Position.Bottom}
-            id="not-accepted"
-            handleClassName="w-4 h-4 border-2 border-white bg-red-500 hover:bg-red-600 transition-colors"
-            style={{ 
-              bottom: -8, 
-              left: '50%',
-              transform: 'translateX(30px)' // 30px right from center
-            }}
-            showButton={false}
-          />
-        </>
-      ) : (
-        // Standard single output
-        <ButtonHandle
-          type="source"
-          position={Position.Bottom}
-          handleClassName="w-4 h-4 border-2 border-white bg-gray-400 hover:bg-gray-600 transition-colors"
-          style={{ 
-            bottom: -8,
-            left: '50%',
-            transform: 'translateX(-50%)'
-          }}
-          showButton={false}
-        />
-      )}
+      {/* Output Handle - Single central handle for all nodes */}
+      <ButtonHandle
+        type="source"
+        position={Position.Bottom}
+        handleClassName={`w-4 h-4 border-2 border-white transition-colors ${
+          data.type === 'send_invite' 
+            ? 'bg-purple-500 hover:bg-purple-600' // Special color for conditional nodes
+            : 'bg-gray-400 hover:bg-gray-600'    // Standard color for regular nodes
+        }`}
+        style={{ 
+          bottom: -8,
+          left: '50%',
+          transform: 'translateX(-50%)'
+        }}
+        showButton={false}
+      />
     </>
   );
 });

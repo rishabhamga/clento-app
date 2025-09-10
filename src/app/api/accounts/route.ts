@@ -12,14 +12,12 @@ export async function GET(request: NextRequest) {
     const { userId } = await auth()
 
     if (!userId) {
-      console.log('❌ Accounts API: Unauthorized - no userId')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Get organization context from query parameters
     const { searchParams } = new URL(request.url)
     const organizationId = searchParams.get('organizationId')
-    console.log('👤 Accounts API: userId:', userId, 'organizationId:', organizationId)
 
     // Get user's ID from the users table
     const { data: userData, error: userError } = await supabase
@@ -29,20 +27,17 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (userError || !userData) {
-      console.error('👤 Accounts API: Error fetching user:', userError)
+      console.error('Error fetching user:', userError)
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       )
     }
 
-    console.log('👤 Accounts API: Found user:', userData.id)
-
     let orgDbId = null
 
     // If organizationId is provided, get the corresponding database ID
     if (organizationId) {
-      console.log('👤 Looking up organization for accounts list:', organizationId)
 
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
@@ -54,7 +49,6 @@ export async function GET(request: NextRequest) {
         console.warn(`👤 ⚠️ Organization ${organizationId} not found in database:`, orgError)
       } else {
         orgDbId = orgData.id
-        console.log('👤 Found organization for accounts:', { clerk_id: organizationId, db_id: orgDbId, name: orgData.name })
       }
     }
 
@@ -77,19 +71,16 @@ export async function GET(request: NextRequest) {
         .eq('connection_status', 'connected')
     }
 
-    console.log('👤 Executing accounts query with context:', { orgDbId, isOrgContext: !!organizationId })
     const { data: accounts, error: accountsError } = await accountsQuery
 
     if (accountsError) {
-      console.error('👤 Error fetching accounts:', accountsError)
+      console.error('Error fetching accounts:', accountsError)
       return NextResponse.json(
         { error: 'Failed to fetch accounts' },
         { status: 500 }
       )
     }
 
-    console.log('👤 Found accounts:', accounts?.length || 0)
-    console.log('👤 Account IDs:', accounts?.map(a => `${a.id} (${a.provider})`).join(', ') || 'none')
 
     // Get account statistics
     let stats: any[] = []

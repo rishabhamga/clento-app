@@ -50,6 +50,7 @@ export default function WorkflowPage() {
         warnings: [] as string[]
     })
 
+
     // Enhanced color values for glassmorphism
     const bgGradient = useColorModeValue(
         'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
@@ -57,25 +58,11 @@ export default function WorkflowPage() {
     )
 
     useEffect(() => {
-        // Load saved workflow data
-        const savedData = localStorage.getItem('campaignWorkflow')
-        if (savedData) {
-            try {
-            const parsed = JSON.parse(savedData)
-                if (parsed.flowData) {
-                    setCurrentFlow(parsed.flowData)
-                } else {
-                    // Load sample data for first-time users
-                    setCurrentFlow(sampleWorkflowData)
-                }
-            } catch (error) {
-                console.error('Failed to load saved workflow:', error)
-                setCurrentFlow(sampleWorkflowData)
-            }
-        } else {
-            // Load sample data for first-time users
-            setCurrentFlow(sampleWorkflowData)
-        }
+        // Clear any potentially corrupted localStorage data first
+        localStorage.removeItem('campaignWorkflow')
+        
+        // Always start with empty state to show the "Add First Step" buttons
+        setCurrentFlow(undefined)
     }, [])
 
     const handleSaveWorkflow = useCallback(async (flowData: FlowData) => {
@@ -148,6 +135,7 @@ export default function WorkflowPage() {
     }
 
     const handleStartFresh = () => {
+        localStorage.removeItem('campaignWorkflow') // Clear saved data
         setCurrentFlow(undefined)
     }
 
@@ -174,12 +162,12 @@ export default function WorkflowPage() {
                 <VStack spacing={8} align="stretch">
                     <CampaignStepper currentStep={4} />
 
-                    {/* Header */}
-                    <Box textAlign="center" mb={8}>
+                    {/* Header - More Compact */}
+                    <Box textAlign="center" mb={4}>
                         <Heading
                             as="h1"
                             size="2xl"
-                            mb={4}
+                            mb={2}
                             bgGradient="linear(to-r, white, purple.100)"
                             bgClip="text"
                             fontWeight="800"
@@ -188,41 +176,39 @@ export default function WorkflowPage() {
                         >
                             Workflow Designer
                         </Heading>
+                        
+                        {/* Temporary: Test buttons */}
+                        <HStack justify="center" spacing={4} mt={4}>
+                            <Button
+                                onClick={handleStartFresh}
+                                size="sm"
+                                bg="whiteAlpha.200"
+                                color="white"
+                                borderColor="whiteAlpha.300"
+                                borderWidth="1px"
+                                _hover={{
+                                    bg: 'whiteAlpha.300',
+                                    borderColor: 'whiteAlpha.400'
+                                }}
+                            >
+                                🆕 Clear & Test Empty State
+                            </Button>
+                            <Button
+                                onClick={handleLoadSample}
+                                size="sm"
+                                bg="whiteAlpha.200"
+                                color="white"
+                                borderColor="whiteAlpha.300"
+                                borderWidth="1px"
+                                _hover={{
+                                    bg: 'whiteAlpha.300',
+                                    borderColor: 'whiteAlpha.400'
+                                }}
+                            >
+                                📋 Load Sample
+                            </Button>
+                        </HStack>
                     </Box>
-
-                    {/* Quick Actions */}
-                    <HStack justify="center" spacing={4} mb={4}>
-                        <Button
-                            onClick={handleLoadSample}
-                            leftIcon={<FiSettings />}
-                            size="sm"
-                            bg="whiteAlpha.200"
-                            color="white"
-                            borderColor="whiteAlpha.300"
-                            borderWidth="1px"
-                            _hover={{
-                                bg: 'whiteAlpha.300',
-                                borderColor: 'whiteAlpha.400'
-                            }}
-                        >
-                            Load Sample
-                        </Button>
-                        <Button
-                            onClick={handleStartFresh}
-                            leftIcon={<FiPlay />}
-                            size="sm"
-                            bg="whiteAlpha.200"
-                                    color="white"
-                            borderColor="whiteAlpha.300"
-                            borderWidth="1px"
-                                        _hover={{
-                                bg: 'whiteAlpha.300',
-                                borderColor: 'whiteAlpha.400'
-                            }}
-                        >
-                            Start Fresh
-                        </Button>
-                                                </HStack>
 
                     {/* Validation Status */}
                     {(!validationState.isValid || validationState.warnings.length > 0) && (
@@ -258,21 +244,24 @@ export default function WorkflowPage() {
                         </Box>
                     )}
 
-                    {/* Workflow Builder */}
+                    {/* Workflow Builder - Expanded Canvas */}
                     <Box
-                        height="600px"
-                            borderRadius="2xl"
+                        height="700px"
+                        borderRadius="2xl"
                         overflow="hidden"
-                            border="1px solid"
-                            borderColor="whiteAlpha.200"
+                        border="1px solid"
+                        borderColor="whiteAlpha.200"
                         bg="white"
-                            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
-                        >
+                        boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                        flex="1"
+                    >
                         <WorkflowBuilder
                             initialFlow={currentFlow}
                             onSave={handleSaveWorkflow}
                             onValidationChange={handleValidationChange}
-                            className="h-full"
+                            onLoadSample={handleLoadSample}
+                            onStartFresh={handleStartFresh}
+                            className="h-full w-full"
                         />
                     </Box>
 
