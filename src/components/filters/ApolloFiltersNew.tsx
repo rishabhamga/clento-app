@@ -645,7 +645,7 @@ export function ApolloPeopleFilters({
     onLoadProfile
 }: ApolloFiltersProps) {
     return (
-        <VStack spacing={6} align="stretch">
+        <VStack spacing={6} align="stretch" overflowY={'auto'}>
             <PeopleFilters filters={filters} onChange={onChange} />
             <CompanyFilters filters={filters} onChange={onChange} />
             <CommonFilters searchType="people" filters={filters} onChange={onChange} />

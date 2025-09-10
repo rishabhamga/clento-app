@@ -44,7 +44,13 @@ import {
     FormControl,
     FormLabel,
     Textarea,
-    Select
+    Select,
+    Drawer,
+    DrawerOverlay,
+    DrawerContent,
+    DrawerHeader,
+    DrawerCloseButton,
+    DrawerBody
 } from '@chakra-ui/react'
 import {
     Search,
@@ -83,26 +89,35 @@ import {
     Database as DatabaseType
 } from '@/types/database'
 import { useOrgPlan } from '../../hooks/useOrgPlan'
+import { ApolloPeopleFilters, ApolloCompanyFilters, IntentSignals, IIntentSignals } from '@/components/filters/ApolloFiltersNew'
+import { ApolloSearchProvider, useApolloSearch, useSearchFilters, useSearchResults } from '../../hooks/useApolloSearch'
+import { createCustomToast } from '../../lib/utils/custom-toast'
 
 type UserAccount = DatabaseType['public']['Tables']['user_accounts']['Row']
 
 // Lead List Card Component
-const LeadListCard = ({
+export const LeadListCard = ({
     leadList,
     onView,
     onEdit,
     onDelete,
-    isLoading
+    isLoading,
+    borderColor,
+    onClickCard
 }: {
     leadList: LeadListWithAccount
     onView: (id: string) => void
     onEdit: (leadList: LeadListWithAccount) => void
     onDelete: (id: string) => void
-    isLoading: boolean
+    isLoading: boolean,
+    borderColor?: string,
+    onClickCard?: () => void
 }) => {
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
-    const cardBorder = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
+    const cardBorder = 'rgba(255, 255, 255, 0.2)';
     const textColor = useColorModeValue('gray.600', 'gray.400');
+    const toast = useToast();
+    const customToast = createCustomToast(toast);
 
 
     const getStatusConfig = (status: string) => {
@@ -124,17 +139,25 @@ const LeadListCard = ({
     const completionRate = leadList.total_leads > 0 ?
         Math.round((leadList.processed_leads / leadList.total_leads) * 100) : 0
 
+    const onExport = () => {
+        customToast.warning({
+            title: 'Upgrade to enterprise to export Leads',
+            // description: 'Export CSV functionality will be available soon.',
+        })
+    }
+
     return (
         <Card
             bg={cardBg}
             backdropFilter="blur(10px)"
             border="1px solid"
-            borderColor={cardBorder}
+            borderColor={borderColor ??  cardBorder}
             borderRadius="xl"
             p={6}
             _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
             transition="all 0.2s ease"
             position="relative"
+            onClick={onClickCard ?? undefined}
         >
             <VStack spacing={4} align="stretch">
                 {/* Header */}
@@ -182,13 +205,13 @@ const LeadListCard = ({
                             borderRadius="md"
                             backdropFilter="blur(10px)"
                         >
-                            <MenuItem icon={<Eye size={16} />} onClick={() => onView(leadList.id)}>
+                            {/* <MenuItem icon={<Eye size={16} />} onClick={() => onView(leadList.id)}>
                                 View Details
                             </MenuItem>
                             <MenuItem icon={<Settings size={16} />} onClick={() => onEdit(leadList)}>
                                 Edit
-                            </MenuItem>
-                            <MenuItem icon={<Download size={16} />}>
+                            </MenuItem> */}
+                            <MenuItem icon={<Download size={16} />} onClick={onExport}>
                                 Export CSV
                             </MenuItem>
                             <Divider />
@@ -269,49 +292,13 @@ const LeadListCard = ({
                         </>
                     )}
                 </HStack>
-
-                {/* Campaign */}
-                <HStack spacing={2}>
-                    {leadList.campaign ? (
-                        <>
-                            <Icon as={TrendingUp} boxSize={4} color="blue.500" />
-                            <Text fontSize="sm" color={textColor}>
-                                Campaign: {leadList.campaign.name}
-                            </Text>
-                            <Badge
-                                size="sm"
-                                colorScheme={leadList.campaign.status === 'active' ? 'green' : 'gray'}
-                            >
-                                {leadList.campaign.status}
-                            </Badge>
-                        </>
-                    ) : (
-                        <>
-                            <Icon as={AlertCircle} boxSize={4} color="gray.400" />
-                            <Text fontSize="sm" color="gray.400">
-                                No campaign assigned
-                            </Text>
-                        </>
-                    )}
-                </HStack>
-
-                {/* File Info */}
-                {leadList.original_filename && (
-                    <HStack spacing={2}>
-                        <Icon as={FileText} boxSize={4} color="gray.500" />
-                        <Text fontSize="sm" color={textColor} noOfLines={1}>
-                            {leadList.original_filename}
-                        </Text>
-                    </HStack>
-                )}
-
                 {/* Last Updated */}
                 <Text fontSize="xs" color={textColor}>
                     Updated {new Date(leadList.updated_at).toLocaleDateString()}
                 </Text>
 
                 {/* Actions */}
-                <HStack spacing={2} justify="flex-end">
+                {/* <HStack spacing={2} justify="flex-end">
                     <Button
                         size="sm"
                         variant="ghost"
@@ -320,142 +307,9 @@ const LeadListCard = ({
                     >
                         View
                     </Button>
-                    {leadList.status === 'draft' && (
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            colorScheme="purple"
-                            leftIcon={<Upload size={14} />}
-                            onClick={() => onEdit(leadList)}
-                        >
-                            Upload CSV
-                        </Button>
-                    )}
-                </HStack>
+                </HStack> */}
             </VStack>
         </Card>
-    )
-}
-
-// Create Lead List Modal Component
-const CreateLeadListModal = ({
-    isOpen,
-    onClose,
-    onSubmit,
-    accounts,
-    campaigns,
-    isLoading
-}: {
-    isOpen: boolean
-    onClose: () => void
-    onSubmit: (data: CreateLeadListRequest) => void
-    accounts: UserAccount[]
-    campaigns: any[]
-    isLoading: boolean
-}) => {
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        connected_account_id: '',
-        campaign_id: ''
-    })
-
-    const handleSubmit = () => {
-        if (!formData.name.trim()) return
-
-        onSubmit({
-            name: formData.name.trim(),
-            description: formData.description.trim() || undefined,
-            connected_account_id: formData.connected_account_id || undefined,
-            campaign_id: formData.campaign_id || undefined,
-            organization_id: '' // Will be set by the API
-        })
-    }
-
-    const handleClose = () => {
-        setFormData({ name: '', description: '', connected_account_id: '', campaign_id: '' })
-        onClose()
-    }
-
-    return (
-        <Modal isOpen={isOpen} onClose={handleClose} size="lg">
-            <ModalOverlay />
-            <ModalContent>
-                <ModalHeader>Create New Lead List</ModalHeader>
-                <ModalCloseButton />
-                <ModalBody>
-                    <VStack spacing={4} align="stretch">
-                        <FormControl isRequired>
-                            <FormLabel>List Name</FormLabel>
-                            <Input
-                                placeholder="Enter lead list name"
-                                value={formData.name}
-                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            />
-                        </FormControl>
-
-                        <FormControl>
-                            <FormLabel>Description</FormLabel>
-                            <Textarea
-                                placeholder="Optional description for this lead list"
-                                value={formData.description}
-                                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                rows={3}
-                            />
-                        </FormControl>
-
-                        <FormControl>
-                            <FormLabel>Connected Account (Optional)</FormLabel>
-                            <Select
-                                placeholder="Select an account for outreach"
-                                value={formData.connected_account_id}
-                                onChange={(e) => setFormData(prev => ({ ...prev, connected_account_id: e.target.value }))}
-                            >
-                                {accounts.filter(acc => acc.connection_status === 'connected').map(account => (
-                                    <option key={account.id} value={account.id}>
-                                        {account.display_name} ({account.provider})
-                                    </option>
-                                ))}
-                            </Select>
-                            <Text fontSize="sm" color="gray.500" mt={1}>
-                                Connect this list to a social media account for automated outreach
-                            </Text>
-                        </FormControl>
-
-                        <FormControl>
-                            <FormLabel>Campaign (Optional)</FormLabel>
-                            <Select
-                                placeholder="Select a campaign for this lead list"
-                                value={formData.campaign_id}
-                                onChange={(e) => setFormData(prev => ({ ...prev, campaign_id: e.target.value }))}
-                            >
-                                {campaigns.map(campaign => (
-                                    <option key={campaign.id} value={campaign.id}>
-                                        {campaign.name}
-                                    </option>
-                                ))}
-                            </Select>
-                            <Text fontSize="sm" color="gray.500" mt={1}>
-                                Associate this lead list with a specific campaign for better organization
-                            </Text>
-                        </FormControl>
-                    </VStack>
-                </ModalBody>
-                <ModalFooter>
-                    <Button variant="ghost" mr={3} onClick={handleClose}>
-                        Cancel
-                    </Button>
-                    <GradientButton
-                        onClick={handleSubmit}
-                        isLoading={isLoading}
-                        loadingText="Creating..."
-                        isDisabled={!formData.name.trim()}
-                    >
-                        Create Lead List
-                    </GradientButton>
-                </ModalFooter>
-            </ModalContent>
-        </Modal>
     )
 }
 
@@ -467,7 +321,6 @@ function LeadListsPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const toast = useToast()
-    const { isOpen, onOpen, onClose } = useDisclosure()
 
     const [state, setState] = useState({
         leadLists: [] as LeadListWithAccount[],
@@ -549,59 +402,6 @@ function LeadListsPageContent() {
             fetchData()
         }
     }, [isLoaded, user, organization?.id])
-
-    const handleCreateList = async (data: CreateLeadListRequest) => {
-        setState(prev => ({ ...prev, creatingList: true }))
-
-        try {
-            const response = await fetch('/api/lead-lists', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...data,
-                    organization_id: organization?.id
-                }),
-            })
-
-            if (!response.ok) {
-                throw new Error('Failed to create lead list')
-            }
-
-            const result = await response.json()
-
-            setState(prev => ({
-                ...prev,
-                leadLists: [result.lead_list, ...prev.leadLists]
-            }))
-
-            toast({
-                title: 'Lead List Created',
-                description: 'Your lead list has been created successfully! Redirecting to upload CSV...',
-                status: 'success',
-                duration: 3000,
-                isClosable: true,
-            })
-
-            onClose()
-
-            // Redirect to edit page for CSV upload
-            router.push(`/lead-lists/${result.lead_list.id}/edit`)
-
-        } catch (error) {
-            console.error('Error creating lead list:', error)
-            toast({
-                title: 'Creation Failed',
-                description: 'Failed to create lead list. Please try again.',
-                status: 'error',
-                duration: 5000,
-                isClosable: true,
-            })
-        } finally {
-            setState(prev => ({ ...prev, creatingList: false }))
-        }
-    }
 
     const handleViewList = (id: string) => {
         router.push(`/lead-lists/${id}`)
@@ -744,7 +544,7 @@ function LeadListsPageContent() {
                             leftIcon={<Plus size={16} />}
                             variant="primary"
                             size="lg"
-                            onClick={onOpen}
+                            onClick={() => router.push('/lead-lists/create')}
                         >
                             Create Lead List
                         </GradientButton>
@@ -925,23 +725,13 @@ function LeadListsPageContent() {
                                         : "No lead lists created yet. Create your first list to get started!"
                                     }
                                 </Text>
-                                <GradientButton onClick={onOpen}>
+                                <GradientButton onClick={() => router.push('/lead-lists/create')}>
                                     Create Your First Lead List
                                 </GradientButton>
                             </VStack>
                         </Box>
                     )}
                 </Box>
-
-                {/* Create Lead List Modal */}
-                <CreateLeadListModal
-                    isOpen={isOpen}
-                    onClose={onClose}
-                    onSubmit={handleCreateList}
-                    accounts={state.accounts}
-                    campaigns={state.campaigns}
-                    isLoading={state.creatingList}
-                />
             </VStack>
         </DashboardLayout>
     )
