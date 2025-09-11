@@ -226,7 +226,7 @@ export function MultiSelect({ label, options, values, onChange, description, col
               key={option.value}
               value={option.value}
               size="sm"
-              flex={columns > 1 ? `0 0 ${100/columns}%` : undefined}
+              flex={columns > 1 ? `0 0 ${100 / columns}%` : undefined}
             >
               {option.label}
             </Checkbox>

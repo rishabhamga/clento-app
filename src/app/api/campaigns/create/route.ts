@@ -72,7 +72,8 @@ export async function POST(request: NextRequest) {
       outreach,
       workflow,
       launch,
-      organizationId
+      organizationId,
+      leadListId
     } = await request.json()
 
     // Validate required fields
@@ -134,10 +135,10 @@ export async function POST(request: NextRequest) {
     let workflowFileName: string | null = null;
     if (workflow?.flowData && Object.keys(workflow.flowData).length > 0) {
       console.log('💾 Saving workflow to Google Cloud Storage...');
-      
+
       const workflowData: FlowData = workflow.flowData;
       const storageResult = await saveWorkflowToGCS(workflowData);
-      
+
       if (storageResult.success) {
         workflowFileName = storageResult.fileName || null;
         console.log('✅ Workflow saved to GCS:', workflowFileName);
@@ -176,7 +177,8 @@ export async function POST(request: NextRequest) {
           industry: targeting?.filters?.industries?.[0] || null,
           country: targeting?.filters?.locations?.[0] || 'US',
           language: outreach?.campaignLanguage || 'English (United States)'
-        }
+        },
+        lead_list_id: leadListId
       }])
       .select()
       .single()
