@@ -185,7 +185,8 @@ export default function LaunchPage() {
                 workflow: typeof window !== 'undefined'
                     ? JSON.parse(localStorage.getItem('campaignWorkflow') || '{}')
                     : {},
-                launch: launchSettings
+                launch: launchSettings,
+                leadListId: targetingData.selectedList
             }
 
             console.log('Creating campaign with payload:', campaignPayload)

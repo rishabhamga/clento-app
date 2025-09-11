@@ -163,12 +163,23 @@ const CreateLeadListInside = () => {
 
     return (
         <DashboardLayout>
+            <VStack spacing={1} align="start">
+                <Heading
+                    size="xl"
+                    bgGradient="linear(to-r, purple.400, blue.400)"
+                    bgClip="text"
+                    fontWeight="bold"
+                >
+                    Create Lead List
+                </Heading>
+                <Text color="gray.600" fontSize="lg">
+                    Upload Leads or Create via ICP
+                </Text>
+            </VStack>
+            <Spacer height={10}/>
             <Box minH="90vh" bg="gray.50">
                 <HStack align="start" spacing={8} justifyContent={'space-between'} height="100%">
-                    <Box maxW="2xl" py={10} px={{ base: 4, md: 8 }} flex="1">
-                        <Text fontSize="3xl" fontWeight="bold" mb={8} textAlign="center" color="purple.700">
-                            Create New Lead List
-                        </Text>
+                    <Box maxW="2xl" px={{ base: 4, md: 8 }} flex="1">
                         <Box bg="white" boxShadow="md" borderRadius="xl" p={{ base: 4, md: 8 }}>
                             <VStack spacing={6} align="stretch">
                                 {/* Mode Switch Tabs */}
@@ -303,8 +314,8 @@ const CreateLeadListInside = () => {
                         </Box>
                     )}
                 </HStack>
-                <Spacer height={10}/>
-                {results.length !== 0 && (
+                <Spacer height={10} />
+                {formData.mode === 'icp' && results.length !== 0 && (
                     <Card
                         bg={cardBg}
                         backdropFilter="blur(10px)"
