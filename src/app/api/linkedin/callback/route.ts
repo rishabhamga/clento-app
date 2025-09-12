@@ -52,53 +52,53 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('LinkedIn OAuth error:', error)
-      return NextResponse.redirect(new URL('/onboarding?error=linkedin_auth_failed', request.url))
+      return NextResponse.redirect(new URL('/dashboard?error=linkedin_auth_failed', request.url))
     }
 
     if (!code || !state) {
-      return NextResponse.redirect(new URL('/onboarding?error=invalid_callback', request.url))
+      return NextResponse.redirect(new URL('/dashboard?error=invalid_callback', request.url))
     }
 
     // Verify state parameter
     const storedState = request.cookies.get('linkedin_oauth_state')?.value
     if (!storedState || storedState !== state) {
       console.error('Invalid state parameter')
-      return NextResponse.redirect(new URL('/onboarding?error=invalid_state', request.url))
+      return NextResponse.redirect(new URL('/dashboard?error=invalid_state', request.url))
     }
 
     // Exchange code for access token
     const tokenResponse = await exchangeCodeForToken(code)
     if (!tokenResponse) {
-      return NextResponse.redirect(new URL('/onboarding?error=token_exchange_failed', request.url))
+      return NextResponse.redirect(new URL('/dashboard?error=token_exchange_failed', request.url))
     }
 
     // Get LinkedIn profile information
     const profile = await getLinkedInProfile(tokenResponse.access_token)
     if (!profile) {
-      return NextResponse.redirect(new URL('/onboarding?error=profile_fetch_failed', request.url))
+      return NextResponse.redirect(new URL('/dashboard?error=profile_fetch_failed', request.url))
     }
 
     // Get or create user in database
     const user = await getOrCreateUserByClerkId(userId)
     if (!user) {
-      return NextResponse.redirect(new URL('/onboarding?error=user_creation_failed', request.url))
+      return NextResponse.redirect(new URL('/dashboard?error=user_creation_failed', request.url))
     }
 
     // Save LinkedIn account to database
     const success = await saveLinkedInAccount(user.id, tokenResponse, profile)
     if (!success) {
-      return NextResponse.redirect(new URL('/onboarding?error=account_save_failed', request.url))
+      return NextResponse.redirect(new URL('/dashboard?error=account_save_failed', request.url))
     }
 
     // Clear the state cookie
-    const response = NextResponse.redirect(new URL('/onboarding?linkedin_connected=true', request.url))
+    const response = NextResponse.redirect(new URL('/dashboard?linkedin_connected=true', request.url))
     response.cookies.delete('linkedin_oauth_state')
 
     return response
 
   } catch (error) {
     console.error('Error in LinkedIn callback:', error)
-    return NextResponse.redirect(new URL('/onboarding?error=callback_error', request.url))
+    return NextResponse.redirect(new URL('/dashboard?error=callback_error', request.url))
   }
 }
 

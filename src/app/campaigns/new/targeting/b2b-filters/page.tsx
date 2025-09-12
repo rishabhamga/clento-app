@@ -33,8 +33,6 @@ import { useSearchFilters, ApolloSearchProvider, useApolloSearch, useSearchResul
 import { ApolloPeopleFilters, ApolloCompanyFilters, IntentSignals, IIntentSignals } from '@/components/filters/ApolloFiltersNew'
 import { ApolloFilterInput, CompanyFilterInput } from '../../../../../types/apollo'
 import { ApolloCompanyInfo } from '../../../../../lib/data-providers/apollo-provider'
-import { createCustomToast } from '../../../../../lib/utils/custom-toast'
-import { toast } from '../../../../../hooks/use-toast'
 
 // Animations (kept for visual parity)
 const float = keyframes`
@@ -49,6 +47,37 @@ function LoadingSpinner() {
     )
 }
 function B2BFiltersInner() {
+    const [selectedAgent, setSelectedAgent] = useState<string>('ai-sdr')
+    
+    // Load selected agent from localStorage
+    useEffect(() => {
+        const savedAgent = localStorage.getItem('selectedAgent')
+        if (savedAgent) {
+            setSelectedAgent(savedAgent)
+        }
+    }, [])
+    
+    // Agent-specific page configurations
+    const agentPageConfig = {
+        'ai-sdr': {
+            pageTitle: 'Ideal Customer Profile Preview',
+            pageDescription: 'Use our advanced filters to find your perfect people prospects from 200M+ verified contacts',
+            targetingTitle: 'Target Your Ideal Customers'
+        },
+        'ai-marketer': {
+            pageTitle: 'Ideal Audience Profile Preview',
+            pageDescription: 'Use our advanced filters to find your perfect marketing audience from 200M+ verified contacts',
+            targetingTitle: 'Target Your Ideal Audience'
+        },
+        'ai-recruiter': {
+            pageTitle: 'Ideal Candidate Profile Preview',
+            pageDescription: 'Use our advanced filters to find your perfect recruitment candidates from 200M+ verified contacts',
+            targetingTitle: 'Target Your Ideal Candidates'
+        }
+    }
+    
+    const currentPageConfig = agentPageConfig[selectedAgent as keyof typeof agentPageConfig] || agentPageConfig['ai-sdr']
+    
     // Color tokens (rendered once; these calls are pure)
     const cardBg = useColorModeValue('rgba(255,255,255,0.9)', 'rgba(26,32,44,0.9)')
     const borderColor = useColorModeValue('rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)')
@@ -62,7 +91,6 @@ function B2BFiltersInner() {
     )
     const titleTextColor = useColorModeValue('white', 'gray.100')
     const subtitleTextColor = useColorModeValue('whiteAlpha.900', 'gray.200')
-    const customToast = createCustomToast(toast);
 
     const defaultIntentSignals: IIntentSignals = {
         jobPostings: [],
@@ -108,15 +136,9 @@ function B2BFiltersInner() {
     const handleSearch = async () => {
         try {
             await search()
-            customToast.success({
-                title: 'Search Complete',
-                description: `Found results for your people search`,
-            })
+            console.log('Search complete - found results for people search')
         } catch (error) {
-            customToast.error({
-                title: 'Search Error',
-                description: error instanceof Error ? error.message : 'Something went wrong',
-            })
+            console.log('Search error:', error instanceof Error ? error.message : 'Something went wrong')
         }
     }
 
@@ -133,11 +155,7 @@ function B2BFiltersInner() {
             intentSignals
         };
         localStorage.setItem('campaignTargeting', JSON.stringify(targetingConfig));
-        customToast.success({
-            title: 'Targeting Configuration Saved',
-            description: `Your targeting filters have been saved successfully.`,
-            duration: 2000,
-        });
+        console.log('Targeting configuration saved successfully');
         // Navigate to pitch step
         setTimeout(() => {
             window.location.href = '/campaigns/new/pitch';
@@ -180,10 +198,10 @@ function B2BFiltersInner() {
                     {/* Page Title */}
                     <Box textAlign="center">
                         <Heading size="2xl" mb={4} color={titleTextColor} textShadow="0 2px 4px rgba(0,0,0,0.3)">
-                            Ideal Customer Profile Preview
+                            {currentPageConfig.pageTitle}
                         </Heading>
                         <Text fontSize="lg" color={subtitleTextColor} maxW="2xl" mx="auto" textShadow="0 1px 2px rgba(0,0,0,0.2)">
-                            Use our advanced filters to find your perfect people prospects from 200M+ verified contacts
+                            {currentPageConfig.pageDescription}
                         </Text>
                     </Box>
 
@@ -210,7 +228,7 @@ function B2BFiltersInner() {
                                     <CardBody p={6} display="flex" flexDirection="column" overflow="hidden">
                                         <VStack spacing={6} align="stretch" flex={1} overflow="hidden" mt={6}>
                                             <Heading size="md" color="purple.500" flexShrink={0}>
-                                                Target Your Ideal Customers
+                                                {currentPageConfig.targetingTitle}
                                             </Heading>
 
                                             <Box flex={1} overflow="auto" pr={2}>

@@ -425,7 +425,7 @@ export default function OnboardingWizard() {
       //       >
       //         <CardHeader textAlign="center" pb={4}>
       //           <Heading size="lg" bgGradient={accentGradient} bgClip="text" mb={2}>
-      //             Welcome to Clento.ai
+      //             Welcome to Observe.ai
       //           </Heading>
       //           <Text fontSize="lg" color="gray.600" lineHeight="tall">
       //             Transform your sales process with AI-powered lead generation and automated outreach

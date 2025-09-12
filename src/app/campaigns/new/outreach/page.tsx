@@ -28,7 +28,6 @@ import {
   SliderTrack,
   SliderFilledTrack,
   SliderThumb,
-  useToast,
   Flex,
   IconButton,
   Tooltip,
@@ -39,7 +38,6 @@ import { CampaignStepper } from '@/components/ui/CampaignStepper'
 import { GradientButton } from '@/components/ui/GradientButton'
 import { useRouter } from 'next/navigation'
 import { FiGlobe, FiUser, FiTarget, FiSettings, FiEye, FiPlus, FiTrash2, FiEdit3, FiMessageCircle, FiLinkedin, FiMail } from 'react-icons/fi'
-import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 import { generateSampleMessages } from '@/lib/message-generation-service'
 import type { GenerateMessagesResponse } from '@/lib/message-generation-service'
 import { LinkedInMessageFrame } from '@/components/ui/LinkedInMessageFrame'
@@ -79,8 +77,6 @@ const pulse = keyframes`
 
 export default function OutreachPage() {
   const router = useRouter()
-  const toast = useToast()
-  const customToast = createCustomToast(toast)
 
   // Enhanced color mode values with 3D styling
   const cardBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')
@@ -96,34 +92,89 @@ export default function OutreachPage() {
     'linear-gradient(45deg, #5b21b6, #7c3aed)'
   )
 
+  // Agent-specific state
+  const [selectedAgent, setSelectedAgent] = useState<string>('ai-sdr')
+
   // State for outreach settings
   const [campaignLanguage, setCampaignLanguage] = useState('English (United States)')
   const [signOffs, setSignOffs] = useState(['Best', 'Regards', 'Thanks'])
   const [newSignOff, setNewSignOff] = useState('')
   const [toneOfVoice, setToneOfVoice] = useState('Professional')
-  const [callsToAction, setCallsToAction] = useState([
-    'Curious about ways to boost your lead generation?',
-    'Interested in tools to help you get more leads?',
-    'I can record a quick custom video to show what we offer. Are you the right person to send it to?',
-    'Do you mind if I show you some examples of how our system can help generate leads for you?'
-  ])
+  const [callsToAction, setCallsToAction] = useState<string[]>([])
   const [addingCTA, setAddingCTA] = useState(false)
   const [newCTA, setNewCTA] = useState('')
   const [messagePersonalization, setMessagePersonalization] = useState(true)
   const [maxResourceAge, setMaxResourceAge] = useState(4)
-  const [personalizationSources, setPersonalizationSources] = useState([
-    'Website Scrape',
-    'X Posts',
-    'LinkedIn Posts',
-    'Press Release',
-    'Funding Announcement'
-  ])
+  const [personalizationSources, setPersonalizationSources] = useState<string[]>([])
 
   // Pitch data from previous step
   const [pitchData, setPitchData] = useState<PitchData | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [sampleMessages, setSampleMessages] = useState<GenerateMessagesResponse | null>(null)
   const [carouselData, setCarouselData] = useState<{linkedin: any[], email: any[]} | null>(null)
+
+  // Agent-specific CTAs
+  const agentCTAs = {
+    'ai-sdr': [
+      'Curious about ways to boost your lead generation?',
+      'Interested in tools to help you get more leads?',
+      'I can record a quick custom video to show what we offer. Are you the right person to send it to?',
+      'Do you mind if I show you some examples of how our system can help generate leads for you?'
+    ],
+    'ai-recruiter': [
+      'Are you open to exploring new career opportunities?',
+      'Would you be interested in learning about a role that matches your background?',
+      'I have an exciting opportunity that might be perfect for your skills. Are you the right person to discuss this with?',
+      'Would you be open to a brief conversation about a position that could advance your career?'
+    ],
+    'ai-marketer': [
+      'Interested in strategies to improve your marketing ROI?',
+      'Would you like to see how we can help boost your brand engagement?',
+      'I can show you some examples of how our approach has helped similar companies. Worth a quick chat?',
+      'Curious about new ways to reach your target audience more effectively?'
+    ]
+  }
+
+  // Agent-specific personalization sources
+  const agentPersonalizationSources = {
+    'ai-sdr': [
+      'Website Scrape',
+      'X Posts',
+      'LinkedIn Posts',
+      'Press Release',
+      'Funding Announcement'
+    ],
+    'ai-recruiter': [
+      'LinkedIn Profile',
+      'LinkedIn Posts',
+      'GitHub Activity',
+      'Professional Blog',
+      'Company Updates'
+    ],
+    'ai-marketer': [
+      'Website Content',
+      'Social Media',
+      'Marketing Blog',
+      'Press Coverage',
+      'Campaign Analytics'
+    ]
+  }
+
+  // Initialize agent and CTAs
+  useEffect(() => {
+    const agent = localStorage.getItem('selectedAgent') || 'ai-sdr'
+    setSelectedAgent(agent)
+    
+    // Set default CTAs if none are saved
+    if (callsToAction.length === 0) {
+      setCallsToAction(agentCTAs[agent as keyof typeof agentCTAs] || agentCTAs['ai-sdr'])
+    }
+    
+    // Set default personalization sources if none are saved
+    if (personalizationSources.length === 0) {
+      setPersonalizationSources(agentPersonalizationSources[agent as keyof typeof agentPersonalizationSources] || agentPersonalizationSources['ai-sdr'])
+    }
+  }, [])
 
   // Load pitch data from localStorage OR backend
   useEffect(() => {
@@ -241,18 +292,12 @@ export default function OutreachPage() {
 
   const generateSampleMessage = async () => {
     if (!pitchData) {
-      customToast.warning({
-        title: 'Missing Pitch Data',
-        description: 'Please complete the pitch step first to generate sample messages.',
-      })
+      console.log('Missing pitch data - complete pitch step first')
       return
     }
 
     if (!(pitchData as any).websiteAnalysis) {
-      customToast.warning({
-        title: 'Missing Website Analysis',
-        description: 'Website analysis is required to generate personalized messages. Please complete the pitch step.',
-      })
+      console.log('Missing website analysis - required for personalized messages')
       return
     }
 
@@ -296,10 +341,7 @@ export default function OutreachPage() {
       }
     } catch (error) {
       console.error('Error generating sample messages:', error)
-      customToast.error({
-        title: 'Generation Failed',
-        description: error instanceof Error ? error.message : 'Failed to generate sample messages',
-      })
+      console.log('Generation failed:', error instanceof Error ? error.message : 'Failed to generate sample messages')
     } finally {
       setIsGenerating(false)
     }
@@ -388,8 +430,8 @@ export default function OutreachPage() {
               {pitchData && (pitchData as any).websiteAnalysis
                 ? `✅ Analysis ready for ${(pitchData as any).websiteUrl || 'website'} • ${(pitchData as any).websiteAnalysis?.target_personas?.length || 0} personas`
                 : pitchData
-                  ? '⚠️ Missing website analysis data'
-                  : '🔄 Loading pitch data...'}
+                  ? '✅ Configuration ready for outreach'
+                  : '🔄 Loading configuration...'}
             </Text>
           </HStack>
         </Box>
@@ -587,7 +629,17 @@ export default function OutreachPage() {
           <CardHeader>
             <HStack>
               <FiTarget />
-              <Heading size="md">Calls To Action</Heading>
+              <VStack align="start" spacing={0}>
+                <Heading size="md">Calls To Action</Heading>
+                <Text fontSize="sm" color="gray.600">
+                  {selectedAgent === 'ai-recruiter' 
+                    ? 'Engagement questions for potential candidates'
+                    : selectedAgent === 'ai-marketer'
+                    ? 'Marketing-focused conversation starters'
+                    : 'Lead generation conversation starters'
+                  }
+                </Text>
+              </VStack>
             </HStack>
           </CardHeader>
           <CardBody>
@@ -656,8 +708,12 @@ export default function OutreachPage() {
           </CardHeader>
           <CardBody>
             <Text fontSize="sm" color="gray.600" mb={6}>
-              Select the sources you want us to use to personalize your messages. We will automatically
-              select the personalization most likely to garner a response from the lead.
+              {selectedAgent === 'ai-recruiter'
+                ? 'Select the sources you want us to use to personalize your candidate outreach. We will automatically select the personalization most likely to engage potential candidates.'
+                : selectedAgent === 'ai-marketer'
+                ? 'Select the sources you want us to use to personalize your marketing messages. We will automatically select the personalization most likely to resonate with your target audience.'
+                : 'Select the sources you want us to use to personalize your messages. We will automatically select the personalization most likely to garner a response from the lead.'
+              }
             </Text>
 
             <VStack spacing={6} align="stretch">
@@ -686,13 +742,25 @@ export default function OutreachPage() {
               <Box>
                 <FormLabel mb={4}>Personalization Sources</FormLabel>
                 <SimpleGrid columns={2} spacing={4}>
-                  {[
+                  {(selectedAgent === 'ai-recruiter' ? [
+                    { name: 'LinkedIn Profile', description: 'Analyze the candidate\'s LinkedIn profile for experience, skills, and career achievements.' },
+                    { name: 'LinkedIn Posts', description: 'Reference recent LinkedIn updates and professional insights shared by candidates.' },
+                    { name: 'GitHub Activity', description: 'Highlight recent code contributions and technical projects for developers.' },
+                    { name: 'Professional Blog', description: 'Reference articles and thought leadership content published by candidates.' },
+                    { name: 'Company Updates', description: 'Mention recent news about the candidate\'s current or previous companies.' }
+                  ] : selectedAgent === 'ai-marketer' ? [
+                    { name: 'Website Content', description: 'Analyze the company\'s website for marketing strategies, campaigns, and brand messaging.' },
+                    { name: 'Social Media', description: 'Reference recent social media campaigns and brand engagement activities.' },
+                    { name: 'Marketing Blog', description: 'Highlight recent marketing content and thought leadership articles.' },
+                    { name: 'Press Coverage', description: 'Mention recent media coverage and brand mentions in the news.' },
+                    { name: 'Campaign Analytics', description: 'Reference publicly available marketing performance and campaign data.' }
+                  ] : [
                     { name: 'Website Scrape', description: 'Analyze the lead\'s website for achievements, goals, product updates, and recent blog posts.' },
                     { name: 'X Posts', description: 'Highlight recent X (formerly Twitter) posts published by your prospects.' },
                     { name: 'LinkedIn Posts', description: 'Feature recent LinkedIn updates shared by your prospects.' },
                     { name: 'Press Release', description: 'Reference recent press releases and announcements.' },
                     { name: 'Funding Announcement', description: 'Mention recent funding rounds and investment news.' }
-                  ].map((source) => (
+                  ]).map((source) => (
                     <Card key={source.name} variant="outline" p={4}>
                       <VStack align="start" spacing={2}>
                         <HStack>

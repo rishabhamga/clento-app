@@ -3,13 +3,6 @@
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { GradientButton } from '@/components/ui/GradientButton'
 import {
-    LeadActivityTimeline,
-    LeadFilters,
-    LeadStats,
-    LeadWithSyndieData,
-    LinkedInConnectionStatus
-} from '@/types/syndie'
-import {
     Avatar,
     Badge,
     Box,
@@ -25,13 +18,6 @@ import {
     Input,
     InputGroup,
     InputLeftElement,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalHeader,
-    ModalOverlay,
-    others,
     Progress,
     Select,
     SimpleGrid,
@@ -46,9 +32,14 @@ import {
     Tooltip,
     Tr,
     useColorModeValue,
-    useDisclosure,
-    useToast,
-    VStack
+    VStack,
+    Tabs,
+    TabList,
+    TabPanels,
+    Tab,
+    TabPanel,
+    Divider,
+    Link
 } from '@chakra-ui/react'
 import { useOrganization } from '@clerk/nextjs'
 import {
@@ -65,176 +56,886 @@ import {
     Plus,
     Search,
     TrendingUp,
-    Users
+    Users,
+    Phone,
+    Calendar,
+    Building,
+    MapPin,
+    Star,
+    CheckCircle,
+    XCircle,
+    AlertCircle,
+    Send,
+    Reply
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
 import { useOrgPlan } from '../../hooks/useOrgPlan'
 
-// Helper functions
-function getConnectionStatusColor(status: LinkedInConnectionStatus): string {
-    switch (status) {
-        case 'accepted': return 'green'
-        case 'replied': return 'blue'
-        case 'pending': return 'yellow'
-        case 'bounced': return 'red'
-        case 'not_interested': return 'gray'
-        default: return 'gray'
+// Mock data for AI SDR leads
+const mockSDRLeads = [
+    {
+        id: '1',
+        name: 'Sarah Chen',
+        title: 'VP of Engineering',
+        company: 'TechFlow Solutions',
+        email: 'sarah.chen@techflow.com',
+        phone: '+1 (555) 123-4567',
+        location: 'San Francisco, CA',
+        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150',
+        linkedinUrl: 'https://linkedin.com/in/sarahchen',
+        status: 'interested',
+        score: 92,
+        lastActivity: '2 hours ago',
+        campaignName: 'Tech Leaders Q4',
+        tags: ['Hot Lead', 'Decision Maker'],
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Sarah, I noticed TechFlow Solutions recently raised Series B funding. Congratulations! I\'d love to discuss how Observe.ai can help you scale your customer service operations with AI-powered insights.',
+                timestamp: '2024-01-15T10:30:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Thanks for reaching out! We\'re definitely looking at AI solutions for our customer support. Can you send me some case studies?',
+                timestamp: '2024-01-15T14:20:00Z'
+            },
+            {
+                id: '3',
+                type: 'sent',
+                content: 'Absolutely! I\'ve attached case studies from similar companies in your space. Would you be available for a 15-minute call this week to discuss your specific needs?',
+                timestamp: '2024-01-15T15:45:00Z',
+                status: 'opened'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 3,
+            opens: 2,
+            clicks: 1,
+            replies: 1
+        }
+    },
+    {
+        id: '2',
+        name: 'Marcus Rodriguez',
+        title: 'CTO',
+        company: 'DataVault Inc',
+        email: 'marcus@datavault.io',
+        phone: '+1 (555) 987-6543',
+        location: 'Austin, TX',
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
+        linkedinUrl: 'https://linkedin.com/in/marcusrodriguez',
+        status: 'replied',
+        score: 87,
+        lastActivity: '1 day ago',
+        campaignName: 'CTO Outreach',
+        tags: ['Technical', 'Enterprise'],
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Marcus, I saw your recent blog post about scaling customer support with AI. Your insights on conversation analytics really resonated with me.',
+                timestamp: '2024-01-14T09:15:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Thanks for reading! Always happy to discuss AI in customer service. What\'s your take on real-time sentiment analysis?',
+                timestamp: '2024-01-14T16:30:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 2,
+            opens: 2,
+            clicks: 1,
+            replies: 1
+        }
+    },
+    {
+        id: '3',
+        name: 'Jennifer Walsh',
+        title: 'Head of Customer Success',
+        company: 'CloudScale Systems',
+        email: 'j.walsh@cloudscale.com',
+        phone: '+1 (555) 456-7890',
+        location: 'Seattle, WA',
+        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
+        linkedinUrl: 'https://linkedin.com/in/jenniferwalsh',
+        status: 'meeting_scheduled',
+        score: 95,
+        lastActivity: '3 hours ago',
+        campaignName: 'Customer Success Leaders',
+        tags: ['Meeting Booked', 'High Priority'],
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Jennifer, I noticed CloudScale recently expanded to 500+ employees. Managing customer success at that scale must be challenging!',
+                timestamp: '2024-01-13T11:00:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'You\'re absolutely right! We\'re struggling with visibility into customer conversations across our support channels.',
+                timestamp: '2024-01-13T13:45:00Z'
+            },
+            {
+                id: '3',
+                type: 'sent',
+                content: 'That\'s exactly what Observe.ai helps with. Would you be interested in a quick demo to see how we\'ve helped similar companies gain 360° visibility?',
+                timestamp: '2024-01-13T14:00:00Z',
+                status: 'opened'
+            },
+            {
+                id: '4',
+                type: 'received',
+                content: 'Yes, let\'s schedule something. How about Thursday at 2 PM PST?',
+                timestamp: '2024-01-13T14:15:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 2,
+            emailsSent: 4,
+            opens: 3,
+            clicks: 2,
+            replies: 2
+        }
+    },
+    {
+        id: '4',
+        name: 'David Park',
+        title: 'Director of Operations',
+        company: 'FinanceFirst Bank',
+        email: 'david.park@financefirst.com',
+        phone: '+1 (555) 234-5678',
+        location: 'New York, NY',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+        linkedinUrl: 'https://linkedin.com/in/davidpark',
+        status: 'interested',
+        score: 89,
+        lastActivity: '5 hours ago',
+        campaignName: 'Financial Services',
+        tags: ['Compliance Focus', 'Large Enterprise'],
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi David, I understand FinanceFirst is focused on improving customer experience while maintaining compliance. Observe.ai helps financial institutions monitor 100% of customer interactions for quality and compliance.',
+                timestamp: '2024-01-12T14:30:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Interesting! We\'re always looking for better ways to ensure compliance across our call centers. How does your solution handle PCI requirements?',
+                timestamp: '2024-01-12T16:45:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 2,
+            opens: 1,
+            clicks: 1,
+            replies: 1
+        }
+    },
+    {
+        id: '5',
+        name: 'Lisa Thompson',
+        title: 'VP Customer Experience',
+        company: 'RetailMax Corp',
+        email: 'lisa.thompson@retailmax.com',
+        phone: '+1 (555) 345-6789',
+        location: 'Chicago, IL',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        linkedinUrl: 'https://linkedin.com/in/lisathompson',
+        status: 'replied',
+        score: 91,
+        lastActivity: '1 day ago',
+        campaignName: 'Retail CX Leaders',
+        tags: ['Customer Experience', 'Multi-Channel'],
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Lisa, RetailMax\'s customer-first approach is impressive! I\'d love to show you how Observe.ai can help you maintain that excellence across all customer touchpoints with real-time conversation intelligence.',
+                timestamp: '2024-01-11T11:15:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Thanks! We\'re definitely interested in better visibility into our customer interactions. Do you have experience with omnichannel retail environments?',
+                timestamp: '2024-01-11T15:30:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 2,
+            opens: 2,
+            clicks: 1,
+            replies: 1
+        }
+    },
+    {
+        id: '6',
+        name: 'Robert Kim',
+        title: 'Chief Technology Officer',
+        company: 'HealthTech Innovations',
+        email: 'robert.kim@healthtech.com',
+        phone: '+1 (555) 456-7890',
+        location: 'Boston, MA',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+        linkedinUrl: 'https://linkedin.com/in/robertkim',
+        status: 'not_interested',
+        score: 76,
+        lastActivity: '3 days ago',
+        campaignName: 'Healthcare Tech',
+        tags: ['Healthcare', 'HIPAA Compliance'],
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Robert, I know healthcare organizations like HealthTech need to balance patient experience with strict compliance requirements. Observe.ai provides HIPAA-compliant conversation analytics for healthcare contact centers.',
+                timestamp: '2024-01-10T13:00:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Thanks for reaching out, but we\'re currently focused on other priorities. Maybe we can revisit this next quarter.',
+                timestamp: '2024-01-10T17:20:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 1,
+            opens: 1,
+            clicks: 0,
+            replies: 1
+        }
+    },
+    {
+        id: '7',
+        name: 'Amanda Foster',
+        title: 'Director of Customer Support',
+        company: 'TravelEase Platform',
+        email: 'amanda.foster@travelease.com',
+        phone: '+1 (555) 567-8901',
+        location: 'Miami, FL',
+        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
+        linkedinUrl: 'https://linkedin.com/in/amandafoster',
+        status: 'meeting_scheduled',
+        score: 94,
+        lastActivity: '4 hours ago',
+        campaignName: 'Travel & Hospitality',
+        tags: ['Demo Scheduled', 'High Volume'],
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Amanda, I noticed TravelEase handles thousands of customer inquiries daily. Observe.ai can help you maintain service quality at scale with automated conversation scoring and real-time coaching.',
+                timestamp: '2024-01-09T10:45:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'That sounds exactly like what we need! Our volume has grown 300% but our quality scores are slipping. Can we schedule a demo?',
+                timestamp: '2024-01-09T14:30:00Z'
+            },
+            {
+                id: '3',
+                type: 'sent',
+                content: 'Absolutely! I\'ll send you a calendar link. We can show you how similar travel companies improved their CSAT by 25% using our platform.',
+                timestamp: '2024-01-09T15:00:00Z',
+                status: 'opened'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 3,
+            opens: 2,
+            clicks: 1,
+            replies: 1
+        }
+    },
+    {
+        id: '8',
+        name: 'Michael Chen',
+        title: 'VP of Customer Operations',
+        company: 'InsuranceHub',
+        email: 'michael.chen@insurancehub.com',
+        phone: '+1 (555) 678-9012',
+        location: 'Denver, CO',
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
+        linkedinUrl: 'https://linkedin.com/in/michaelchen',
+        status: 'replied',
+        score: 88,
+        lastActivity: '6 hours ago',
+        campaignName: 'Insurance Leaders',
+        tags: ['Insurance', 'Regulatory'],
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Michael, Insurance companies need to balance efficiency with regulatory compliance. Observe.ai helps insurers like yours monitor every customer interaction for compliance while improving resolution times.',
+                timestamp: '2024-01-08T12:20:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'We\'re definitely interested in compliance monitoring solutions. How does your platform handle state-specific insurance regulations?',
+                timestamp: '2024-01-08T16:45:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 2,
+            opens: 1,
+            clicks: 1,
+            replies: 1
+        }
     }
-}
+]
 
-function getStatusColor(status: string): string {
-    switch (status) {
-        case 'replied': return 'green'
-        case 'positive': return 'green'
-        case 'contacted': return 'blue'
-        case 'new': return 'purple'
-        case 'negative': return 'red'
-        case 'unsubscribed': return 'gray'
-        default: return 'gray'
+// Mock data for AI Recruiter candidates
+const mockRecruiterCandidates = [
+    {
+        id: '1',
+        name: 'Alex Thompson',
+        title: 'Senior Software Engineer',
+        company: 'Meta',
+        email: 'alex.thompson@gmail.com',
+        phone: '+1 (555) 234-5678',
+        location: 'Menlo Park, CA',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+        linkedinUrl: 'https://linkedin.com/in/alexthompson',
+        githubUrl: 'https://github.com/alexthompson',
+        status: 'interested',
+        score: 94,
+        lastActivity: '4 hours ago',
+        campaignName: 'Senior Engineers Q1',
+        tags: ['React Expert', 'Available'],
+        experience: '7 years',
+        skills: ['React', 'Node.js', 'TypeScript', 'AWS', 'GraphQL'],
+        salary: '$180k - $220k',
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Alex, I came across your profile and was impressed by your work on React performance optimization at Meta. We have an exciting Senior Engineer role at Observe.ai that I think would be perfect for you.',
+                timestamp: '2024-01-15T09:30:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Thanks for reaching out! I\'m always interested in hearing about new opportunities. What can you tell me about the role and the team?',
+                timestamp: '2024-01-15T11:45:00Z'
+            },
+            {
+                id: '3',
+                type: 'sent',
+                content: 'Great! You\'d be joining our AI Platform team, working on real-time conversation analytics. The role involves React, Node.js, and ML integrations. Competitive package: $200-240k + equity. Interested in a quick call?',
+                timestamp: '2024-01-15T12:15:00Z',
+                status: 'opened'
+            }
+        ],
+        metrics: {
+            emailsReceived: 2,
+            emailsSent: 3,
+            opens: 3,
+            clicks: 1,
+            replies: 2
+        }
+    },
+    {
+        id: '2',
+        name: 'Priya Patel',
+        title: 'ML Engineer',
+        company: 'Google',
+        email: 'priya.patel@gmail.com',
+        phone: '+1 (555) 345-6789',
+        location: 'Mountain View, CA',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        linkedinUrl: 'https://linkedin.com/in/priyapatel',
+        githubUrl: 'https://github.com/priyapatel',
+        status: 'interview_scheduled',
+        score: 98,
+        lastActivity: '1 day ago',
+        campaignName: 'ML Engineers',
+        tags: ['PhD', 'Interview Scheduled'],
+        experience: '5 years',
+        skills: ['Python', 'TensorFlow', 'PyTorch', 'NLP', 'Computer Vision'],
+        salary: '$190k - $250k',
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Priya, your research on conversational AI at Google caught my attention. We\'re building cutting-edge ML models for conversation analytics at Observe.ai and would love to chat.',
+                timestamp: '2024-01-12T10:00:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Hi! That sounds really interesting. I\'ve been looking for opportunities to apply my NLP research in a product setting. Can you tell me more about the technical challenges?',
+                timestamp: '2024-01-12T14:30:00Z'
+            },
+            {
+                id: '3',
+                type: 'sent',
+                content: 'Absolutely! We\'re working on real-time sentiment analysis, intent classification, and conversation summarization at scale. Would you be available for a technical interview next week?',
+                timestamp: '2024-01-12T15:00:00Z',
+                status: 'opened'
+            },
+            {
+                id: '4',
+                type: 'received',
+                content: 'Yes, I\'d love to learn more. How about Tuesday at 3 PM?',
+                timestamp: '2024-01-12T15:30:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 2,
+            emailsSent: 4,
+            opens: 3,
+            clicks: 2,
+            replies: 2
+        }
+    },
+    {
+        id: '3',
+        name: 'David Kim',
+        title: 'Product Manager',
+        company: 'Stripe',
+        email: 'david.kim@gmail.com',
+        phone: '+1 (555) 456-7891',
+        location: 'San Francisco, CA',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+        linkedinUrl: 'https://linkedin.com/in/davidkim',
+        status: 'not_interested',
+        score: 76,
+        lastActivity: '3 days ago',
+        campaignName: 'Product Managers',
+        tags: ['Not Available', 'Future Opportunity'],
+        experience: '6 years',
+        skills: ['Product Strategy', 'Data Analysis', 'A/B Testing', 'User Research'],
+        salary: '$170k - $200k',
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi David, I\'ve been following your work on Stripe\'s ML-powered fraud detection. We have a Senior PM role focusing on AI products that might interest you.',
+                timestamp: '2024-01-10T11:00:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Thanks for thinking of me! I\'m really happy at Stripe right now and not looking to make a move. Maybe we can connect again in the future?',
+                timestamp: '2024-01-10T16:20:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 2,
+            opens: 1,
+            clicks: 0,
+            replies: 1
+        }
+    },
+    {
+        id: '4',
+        name: 'Sarah Martinez',
+        title: 'Senior Data Scientist',
+        company: 'Netflix',
+        email: 'sarah.martinez@gmail.com',
+        phone: '+1 (555) 789-0123',
+        location: 'Los Gatos, CA',
+        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150',
+        linkedinUrl: 'https://linkedin.com/in/sarahmartinez',
+        githubUrl: 'https://github.com/sarahmartinez',
+        status: 'interested',
+        score: 92,
+        lastActivity: '2 hours ago',
+        campaignName: 'Data Scientists',
+        tags: ['NLP Expert', 'Available Soon'],
+        experience: '6 years',
+        skills: ['Python', 'R', 'SQL', 'NLP', 'Deep Learning', 'Spark'],
+        salary: '$170k - $210k',
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Sarah, your work on recommendation systems and NLP at Netflix is impressive! Observe.ai is looking for a Senior Data Scientist to work on conversation intelligence and I think you\'d be a great fit.',
+                timestamp: '2024-01-14T11:30:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Thanks for reaching out! I\'m intrigued by conversation intelligence. What kind of NLP challenges are you working on at Observe.ai?',
+                timestamp: '2024-01-14T15:45:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 2,
+            opens: 2,
+            clicks: 1,
+            replies: 1
+        }
+    },
+    {
+        id: '5',
+        name: 'James Wilson',
+        title: 'DevOps Engineer',
+        company: 'Uber',
+        email: 'james.wilson@gmail.com',
+        phone: '+1 (555) 890-1234',
+        location: 'San Francisco, CA',
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
+        linkedinUrl: 'https://linkedin.com/in/jameswilson',
+        githubUrl: 'https://github.com/jameswilson',
+        status: 'replied',
+        score: 85,
+        lastActivity: '1 day ago',
+        campaignName: 'DevOps Engineers',
+        tags: ['Kubernetes', 'Cloud Native'],
+        experience: '8 years',
+        skills: ['Kubernetes', 'Docker', 'AWS', 'Terraform', 'Python', 'Go'],
+        salary: '$160k - $200k',
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi James, I saw your contributions to Uber\'s infrastructure scaling. Observe.ai is looking for a DevOps Engineer to help scale our conversation analytics platform. Interested in learning more?',
+                timestamp: '2024-01-13T14:20:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Hi! I\'m always interested in infrastructure challenges. What\'s the scale you\'re operating at and what technologies are you using?',
+                timestamp: '2024-01-13T17:30:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 2,
+            opens: 1,
+            clicks: 1,
+            replies: 1
+        }
+    },
+    {
+        id: '6',
+        name: 'Emily Chen',
+        title: 'Frontend Engineer',
+        company: 'Airbnb',
+        email: 'emily.chen@gmail.com',
+        phone: '+1 (555) 901-2345',
+        location: 'San Francisco, CA',
+        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
+        linkedinUrl: 'https://linkedin.com/in/emilychen',
+        githubUrl: 'https://github.com/emilychen',
+        status: 'meeting_scheduled',
+        score: 90,
+        lastActivity: '3 hours ago',
+        campaignName: 'Frontend Engineers',
+        tags: ['React', 'Meeting Scheduled'],
+        experience: '5 years',
+        skills: ['React', 'TypeScript', 'Next.js', 'GraphQL', 'CSS-in-JS'],
+        salary: '$150k - $190k',
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Emily, your work on Airbnb\'s design system caught my attention. Observe.ai is building beautiful, intuitive interfaces for conversation analytics and we\'d love to have you join our frontend team.',
+                timestamp: '2024-01-12T10:15:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'That sounds interesting! I\'d love to learn more about the product and the technical challenges. Are you available for a call this week?',
+                timestamp: '2024-01-12T13:45:00Z'
+            },
+            {
+                id: '3',
+                type: 'sent',
+                content: 'Absolutely! I\'ll send you a calendar link. We can discuss the role and show you some of the exciting UI challenges we\'re working on.',
+                timestamp: '2024-01-12T14:00:00Z',
+                status: 'opened'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 3,
+            opens: 2,
+            clicks: 1,
+            replies: 1
+        }
+    },
+    {
+        id: '7',
+        name: 'Michael Rodriguez',
+        title: 'Security Engineer',
+        company: 'Cloudflare',
+        email: 'michael.rodriguez@gmail.com',
+        phone: '+1 (555) 012-3456',
+        location: 'Austin, TX',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+        linkedinUrl: 'https://linkedin.com/in/michaelrodriguez',
+        githubUrl: 'https://github.com/michaelrodriguez',
+        status: 'not_interested',
+        score: 78,
+        lastActivity: '4 days ago',
+        campaignName: 'Security Engineers',
+        tags: ['Security', 'Not Available'],
+        experience: '7 years',
+        skills: ['Cybersecurity', 'Penetration Testing', 'Python', 'Go', 'AWS Security'],
+        salary: '$160k - $200k',
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Michael, your expertise in cloud security at Cloudflare is impressive. Observe.ai is looking for a Security Engineer to help secure our conversation analytics platform. Would you be interested?',
+                timestamp: '2024-01-09T16:30:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Thanks for reaching out! I\'m really focused on my current projects at Cloudflare and not looking to make a change right now.',
+                timestamp: '2024-01-09T18:45:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 1,
+            opens: 1,
+            clicks: 0,
+            replies: 1
+        }
+    },
+    {
+        id: '8',
+        name: 'Lisa Park',
+        title: 'UX Designer',
+        company: 'Figma',
+        email: 'lisa.park@gmail.com',
+        phone: '+1 (555) 123-4567',
+        location: 'San Francisco, CA',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        linkedinUrl: 'https://linkedin.com/in/lisapark',
+        status: 'interested',
+        score: 88,
+        lastActivity: '5 hours ago',
+        campaignName: 'UX Designers',
+        tags: ['Design Systems', 'B2B Experience'],
+        experience: '6 years',
+        skills: ['Figma', 'User Research', 'Prototyping', 'Design Systems', 'B2B UX'],
+        salary: '$140k - $180k',
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Lisa, your work on Figma\'s collaborative features is amazing! Observe.ai is looking for a UX Designer to help make conversation analytics more intuitive for enterprise users. Interested in chatting?',
+                timestamp: '2024-01-11T12:00:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Thank you! I\'m always interested in B2B design challenges. What kind of users would I be designing for at Observe.ai?',
+                timestamp: '2024-01-11T16:20:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 2,
+            opens: 2,
+            clicks: 1,
+            replies: 1
+        }
+    },
+    {
+        id: '9',
+        name: 'Kevin Zhang',
+        title: 'Backend Engineer',
+        company: 'Slack',
+        email: 'kevin.zhang@gmail.com',
+        phone: '+1 (555) 234-5678',
+        location: 'San Francisco, CA',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+        linkedinUrl: 'https://linkedin.com/in/kevinzhang',
+        githubUrl: 'https://github.com/kevinzhang',
+        status: 'replied',
+        score: 86,
+        lastActivity: '2 days ago',
+        campaignName: 'Backend Engineers',
+        tags: ['Microservices', 'Scala'],
+        experience: '6 years',
+        skills: ['Scala', 'Java', 'Kafka', 'PostgreSQL', 'Redis', 'Microservices'],
+        salary: '$160k - $200k',
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Kevin, your work on Slack\'s messaging infrastructure is impressive! Observe.ai is building real-time conversation processing systems and we\'d love to have someone with your expertise join our backend team.',
+                timestamp: '2024-01-10T09:45:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Thanks! Real-time processing sounds interesting. What kind of scale are you handling and what\'s your tech stack like?',
+                timestamp: '2024-01-10T14:30:00Z'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 2,
+            opens: 1,
+            clicks: 1,
+            replies: 1
+        }
+    },
+    {
+        id: '10',
+        name: 'Rachel Foster',
+        title: 'Technical Program Manager',
+        company: 'Apple',
+        email: 'rachel.foster@gmail.com',
+        phone: '+1 (555) 345-6789',
+        location: 'Cupertino, CA',
+        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150',
+        linkedinUrl: 'https://linkedin.com/in/rachelfoster',
+        status: 'interview_scheduled',
+        score: 93,
+        lastActivity: '1 hour ago',
+        campaignName: 'Technical PMs',
+        tags: ['TPM', 'Interview Scheduled'],
+        experience: '8 years',
+        skills: ['Program Management', 'Agile', 'Cross-functional Leadership', 'Technical Strategy'],
+        salary: '$180k - $220k',
+        messages: [
+            {
+                id: '1',
+                type: 'sent',
+                content: 'Hi Rachel, your experience leading cross-functional teams at Apple is exactly what we\'re looking for. Observe.ai needs a Technical Program Manager to help coordinate our AI platform development. Interested?',
+                timestamp: '2024-01-08T11:30:00Z',
+                status: 'opened'
+            },
+            {
+                id: '2',
+                type: 'received',
+                content: 'Hi! I\'m definitely interested in learning more about the role and the technical challenges. Can we schedule a call to discuss?',
+                timestamp: '2024-01-08T15:45:00Z'
+            },
+            {
+                id: '3',
+                type: 'sent',
+                content: 'Perfect! I\'ll send you a calendar link. We can discuss the role and how you\'d help coordinate our engineering and product teams.',
+                timestamp: '2024-01-08T16:00:00Z',
+                status: 'opened'
+            }
+        ],
+        metrics: {
+            emailsReceived: 1,
+            emailsSent: 3,
+            opens: 2,
+            clicks: 1,
+            replies: 1
+        }
     }
-}
+]
 
-function formatConnectionStatus(status: LinkedInConnectionStatus): string {
-    return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+// Agent configuration
+const agentPageConfig = {
+    'ai-sdr': {
+        pageTitle: 'Leads',
+        entityName: 'leads',
+        gradient: 'linear(to-r, purple.400, pink.400)',
+        mockData: mockSDRLeads
+    },
+    'ai-recruiter': {
+        pageTitle: 'Candidates',
+        entityName: 'candidates',
+        gradient: 'linear(to-r, blue.400, teal.400)',
+        mockData: mockRecruiterCandidates
+    },
+    'ai-marketer': {
+        pageTitle: 'Prospects',
+        entityName: 'prospects',
+        gradient: 'linear(to-r, green.400, blue.400)',
+        mockData: mockSDRLeads // Using SDR data for now
+    }
 }
 
 export default function LeadsPage() {
     const router = useRouter()
-    // const isFirstRun = useRef(true);
     const { organization } = useOrganization()
     const { hasPlan } = useOrgPlan()
-    const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
-    const glassBg = useColorModeValue('rgba(255, 255, 255, 0.1)', 'rgba(26, 32, 44, 0.1)')
-    const borderColor = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
-    const { isOpen, onOpen, onClose } = useDisclosure()
-    const toast = useToast()
-
-    // State management
-    const [leads, setLeads] = useState<LeadWithSyndieData[]>([])
-    const [stats, setStats] = useState<LeadStats | null>(null)
-    const [selectedLead, setSelectedLead] = useState<LeadWithSyndieData | null>(null)
-    const [selectedLeadTimeline, setSelectedLeadTimeline] = useState<LeadActivityTimeline | null>(null)
+    const [selectedAgent, setSelectedAgent] = useState<string>('ai-sdr')
     const [loading, setLoading] = useState(false)
-    const [leadDetailLoading, setLeadDetailLoading] = useState(false);
+    const [selectedLead, setSelectedLead] = useState<any>(null)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [statusFilter, setStatusFilter] = useState('all')
 
-    const [page, setPage] = useState(1)
-    const [totalPages, setTotalPages] = useState(1)
-    const [totalLeads, setTotalLeads] = useState(0)
+    const currentPageConfig = agentPageConfig[selectedAgent as keyof typeof agentPageConfig] || agentPageConfig['ai-sdr']
+    const leads = currentPageConfig.mockData || []
+    
+    const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
+    const borderColor = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
 
-    // Filter state
-    const [filters, setFilters] = useState<LeadFilters>({})
-    const [searchTerm, setSearchTerm] = useState('')
-
-    // Filter options state
-    const [campaignOptions, setCampaignOptions] = useState<{ id: string, name: string }[]>([])
-    const [accountOptions, setAccountOptions] = useState<{ id: string, display_name: string }[]>([])
-    const [leadListOptions, setLeadListOptions] = useState<{ id: string, name: string }[]>([])
-    const [filterOptionsLoading, setFilterOptionsLoading] = useState(false)
-
-    // Handle search
-    const handleSearch = () => {
-        const updatedFilters = { ...filters, search: searchTerm || undefined }
-        setFilters(updatedFilters)
-        fetchLeads(1, updatedFilters)
-    }
-
-    // Fetch leads with current filters and pagination
-    const fetchLeads = async (newPage = 1, newFilters = filters) => {
-        if (!hasPlan) {
-            return
-        }
-        setLoading(true)
-        try {
-            const params = new URLSearchParams({
-                page: newPage.toString(),
-                limit: '15',
-                ...(newFilters.status && { status: newFilters.status.join(',') }),
-                ...(newFilters.connectionStatus && { connectionStatus: newFilters.connectionStatus.join(',') }),
-                ...(newFilters.account && { account: newFilters.account }),
-                ...(newFilters.campaign && { campaign: newFilters.campaign }),
-                ...(newFilters.leadListId && { lead_list_id: newFilters.leadListId }),
-                ...(newFilters.source && { source: newFilters.source }),
-                ...(newFilters.search && { search: newFilters.search }),
-            })
-
-            const response = await fetch(`/api/leads?${params}`)
-            if (!response.ok) throw new Error('Failed to fetch leads')
-
-            const result = await response.json()
-            console.log(result);
-            if (result.success) {
-                setLeads(result.data.data) //get leads from syndie
-                setPage(result.data.pagination.currentPage)
-                setTotalPages(result.data.pagination.pages)
-                setTotalLeads(result.data.pagination.total || 0)
-            }
-        } catch (error) {
-            console.error('Error fetching leads:', error)
-            toast({
-                title: 'Error',
-                description: 'Failed to fetch leads',
-                status: 'error',
-                duration: 3000,
-                isClosable: true,
-            })
-        }
-        setLoading(false)
-    }
-
-    // Handle lead selection for detail view
-    const handleLeadSelect = async (lead: LeadWithSyndieData) => {
-        setSelectedLead(lead)
-        try {
-            const response = await fetch(`/api/leads/${lead.id}`)
-            if (!response.ok) throw new Error('Failed to fetch lead details')
-
-            const result = await response.json()
-            if (result.success) {
-                setSelectedLeadTimeline(result.data)
-                console.log(result.data.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook') && it.success))
-            }
-        } catch (error) {
-            console.error('Error fetching lead details:', error)
-        }
-        onOpen()
-    }
-
-    // Handle filter changes
-    const handleFilterChange = (newFilters: Partial<LeadFilters>) => {
-        const updatedFilters = { ...filters, ...newFilters }
-        setFilters(updatedFilters)
-        fetchLeads(1, updatedFilters)
-    }
-
-    // Fetch filter options
-    const fetchStats = async () => {
-        try {
-            const response = await fetch(`/api/leads?stats=true`)
-            if (!response.ok) throw new Error('Failed to fetch lead stats')
-            const result = await response.json();
-            if (result.success) {
-                setStats(result.data)
-            }
-            // setStats()
-        } catch (err) {
-            console.error('Error fetching lead stats:', err)
-        }
-    }
-
-    // Initial data fetch
+    // Load selected agent from localStorage
     useEffect(() => {
-        // if (isFirstRun.current) {
-        //     isFirstRun.current = false;
-        //     return; // skip first run
-        // }
-        if (hasPlan) {
-            console.log("fetching leads");
-            fetchLeads()
-            fetchStats()
+        const agent = localStorage.getItem('selectedAgent') || 'ai-sdr'
+        setSelectedAgent(agent)
+    }, [])
+
+    // Filter leads based on search and status
+    const filteredLeads = leads.filter(lead => {
+        const matchesSearch = lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            lead.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            lead.title.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchesStatus = statusFilter === 'all' || lead.status === statusFilter
+        return matchesSearch && matchesStatus
+    })
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'interested': return 'green'
+            case 'replied': return 'blue'
+            case 'meeting_scheduled': return 'purple'
+            case 'interview_scheduled': return 'purple'
+            case 'not_interested': return 'red'
+            default: return 'gray'
         }
-        // fetchFilterOptions()
-    }, [hasPlan])
+    }
+
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'interested': return CheckCircle
+            case 'replied': return Reply
+            case 'meeting_scheduled': return Calendar
+            case 'interview_scheduled': return Calendar
+            case 'not_interested': return XCircle
+            default: return AlertCircle
+        }
+    }
 
     return (
         <DashboardLayout>
@@ -246,708 +947,298 @@ export default function LeadsPage() {
                             <VStack spacing={1} align="start">
                                 <Heading
                                     size="xl"
-                                    bgGradient="linear(to-r, purple.400, blue.400)"
+                                    bgGradient={currentPageConfig.gradient}
                                     bgClip="text"
                                     fontWeight="bold"
                                 >
-                                    Lead Management
+                                    {currentPageConfig.pageTitle}
                                 </Heading>
                                 <Text color="gray.600" fontSize="lg">
-                                    Track and manage your outreach leads
+                                    Manage your {currentPageConfig.entityName} and track engagement
                                 </Text>
                             </VStack>
-                            <HStack spacing={3}>
+                            <HStack spacing={4}>
                                 <GradientButton
-                                    leftIcon={<Download size={16} />}
-                                    variant="tertiary"
-                                    size="sm"
-                                >
-                                    Export
-                                </GradientButton>
-                                <GradientButton
-                                    leftIcon={<Plus size={16} />}
-                                    variant="primary"
-                                    size="sm"
+                                    leftIcon={<Plus size={20} />}
                                     onClick={() => router.push('/campaigns/new')}
                                 >
-                                    New Campaign
+                                    Create Campaign
                                 </GradientButton>
                             </HStack>
                         </HStack>
-                    </Box>
 
-                    {/* Stats Overview */}
-                    {stats && (
-                        <SimpleGrid columns={{ base: 2, md: 3 }} spacing={6}>
-                            <Card
-                                bg={cardBg}
-                                border="1px solid"
-                                borderColor={borderColor}
-                                borderRadius="xl"
-                                p={4}
-                                _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                                transition="all 0.2s ease"
-                            >
-                                <VStack spacing={1}>
-                                    <Icon as={Users} boxSize={5} color="purple.500" />
-                                    <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.requestsSent}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.600">Requests Sent</Text>
-                                </VStack>
+                        {/* Stats Cards */}
+                        <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6} mb={6}>
+                            <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+                                <CardBody>
+                                    <VStack spacing={2}>
+                                        <Icon as={Users} boxSize={6} color="purple.500" />
+                                        <Text fontSize="2xl" fontWeight="bold">{leads.length}</Text>
+                                        <Text fontSize="sm" color="gray.600">Total {currentPageConfig.entityName}</Text>
+                                    </VStack>
+                                </CardBody>
                             </Card>
-
-                            <Card
-                                bg={cardBg}
-                                border="1px solid"
-                                borderColor={borderColor}
-                                borderRadius="xl"
-                                p={4}
-                                _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                                transition="all 0.2s ease"
-                            >
-                                <VStack spacing={1}>
-                                    <Icon as={Linkedin} boxSize={5} color="green.500" />
-                                    <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.accepted}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.600">Connected</Text>
-                                </VStack>
+                            <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+                                <CardBody>
+                                    <VStack spacing={2}>
+                                        <Icon as={MessageCircle} boxSize={6} color="blue.500" />
+                                        <Text fontSize="2xl" fontWeight="bold">
+                                            {leads.reduce((sum, lead) => sum + lead.metrics.replies, 0)}
+                                        </Text>
+                                        <Text fontSize="sm" color="gray.600">Total Replies</Text>
+                                    </VStack>
+                                </CardBody>
                             </Card>
-
-                            <Card
-                                bg={cardBg}
-                                border="1px solid"
-                                borderColor={borderColor}
-                                borderRadius="xl"
-                                p={4}
-                                _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                                transition="all 0.2s ease"
-                            >
-                                <VStack spacing={1}>
-                                    <Icon as={MessageCircle} boxSize={5} color="blue.500" />
-                                    <Text fontSize="2xl" fontWeight="bold">
-                                        {stats.replied}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.600">Replied</Text>
-                                </VStack>
+                            <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+                                <CardBody>
+                                    <VStack spacing={2}>
+                                        <Icon as={TrendingUp} boxSize={6} color="green.500" />
+                                        <Text fontSize="2xl" fontWeight="bold">
+                                            {Math.round((leads.filter(l => l.status === 'interested' || l.status === 'meeting_scheduled' || l.status === 'interview_scheduled').length / leads.length) * 100)}%
+                                        </Text>
+                                        <Text fontSize="sm" color="gray.600">Response Rate</Text>
+                                    </VStack>
+                                </CardBody>
+                            </Card>
+                            <Card bg={cardBg} border="1px solid" borderColor={borderColor}>
+                                <CardBody>
+                                    <VStack spacing={2}>
+                                        <Icon as={Calendar} boxSize={6} color="orange.500" />
+                                        <Text fontSize="2xl" fontWeight="bold">
+                                            {leads.filter(l => l.status === 'meeting_scheduled' || l.status === 'interview_scheduled').length}
+                                        </Text>
+                                        <Text fontSize="sm" color="gray.600">Meetings Booked</Text>
+                                    </VStack>
+                                </CardBody>
                             </Card>
                         </SimpleGrid>
-                    )}
 
-                    {/* Filters and Search */}
-                    <Card
-                        bg={cardBg}
-                        backdropFilter="blur(10px)"
-                        border="1px solid"
-                        borderColor={borderColor}
-                        borderRadius="xl"
-                        shadow="lg"
-                        px={4}
-                        py={2}
-                    >
-                        <HStack spacing={6} align="end" justify="start">
-                            <Text
-                                fontSize="sm"
-                                fontWeight="bold"
-                                bgGradient="linear(to-r, purple.400, blue.400)"
-                                bgClip="text"
-                                mb={5}
-                                whiteSpace="nowrap"
-                            >
-                                Filter Leads
-                            </Text>
-
-                            <Box width={'2xl'}>
-                                <Text
-                                    fontSize="xs"
-                                    fontWeight="semibold"
-                                    color="gray.500"
-                                    textTransform="uppercase"
-                                    letterSpacing="wider"
-                                    mb={1}
-                                    ml={5}
-                                >
-                                    Search
-                                </Text>
-                                <InputGroup size="lg" width={{ base: '100%', md: '400px', lg: '500px' }}>
-                                    <InputLeftElement pointerEvents="none">
-                                        <Icon as={Search} color="gray.500" boxSize={4} />
-                                    </InputLeftElement>
-                                    <Input
-                                        placeholder="Search leads by name, email, or company..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleSearch()
-                                            }
-                                        }}
-                                        bg={glassBg}
-                                        border="1px solid"
-                                        borderColor={borderColor}
-                                        borderRadius="lg"
-                                        fontSize="sm"
-                                        _hover={{ borderColor: 'purple.300' }}
-                                        _focus={{
-                                            borderColor: 'purple.400',
-                                            boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)',
-                                            bg: 'white'
-                                        }}
-                                    />
-                                </InputGroup>
-                            </Box>
-
-                            {/* Filter Options */}
-                            <Box width="100%">
-                                <SimpleGrid columns={{ base: 1, md: 4 }} spacing={3}>
-                                    <VStack align="stretch" spacing={1}>
-                                        <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
-                                            Connection Status
-                                        </Text>
-                                        <Select
-                                            placeholder="All Statuses"
-                                            size="sm"
-                                            bg={glassBg}
-                                            border="1px solid"
-                                            borderColor={borderColor}
-                                            borderRadius="lg"
-                                            _hover={{ borderColor: 'purple.300' }}
-                                            _focus={{
-                                                borderColor: 'purple.400',
-                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)'
-                                            }}
-                                            onChange={(e) => handleFilterChange({
-                                                connectionStatus: e.target.value ? [e.target.value as LinkedInConnectionStatus] : undefined
-                                            })}
-                                        >
-                                            <option value="pending">Pending</option>
-                                            <option value="accepted">Accepted</option>
-                                            <option value="replied">Replied</option>
-                                        </Select>
-                                    </VStack>
-
-                                    {/* <VStack align="stretch" spacing={1}>
-                                        <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
-                                            Account (Seat)
-                                        </Text>
-                                        <Select
-                                            placeholder="All Accounts"
-                                            size="sm"
-                                            bg={glassBg}
-                                            border="1px solid"
-                                            borderColor={borderColor}
-                                            borderRadius="lg"
-                                            _hover={{ borderColor: 'purple.300' }}
-                                            _focus={{
-                                                borderColor: 'purple.400',
-                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)'
-                                            }}
-                                            onChange={(e) => handleFilterChange({
-                                                account: e.target.value || undefined
-                                            })}
-                                            disabled={filterOptionsLoading}
-                                        >
-                                            {accountOptions.map(account => (
-                                                <option key={account.id} value={account.id}>
-                                                    {account.display_name}
-                                                </option>
-                                            ))}
-                                        </Select>
-                                    </VStack>
-
-                                    <VStack align="stretch" spacing={1}>
-                                        <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
-                                            Campaign
-                                        </Text>
-                                        <Select
-                                            placeholder="All Campaigns"
-                                            size="sm"
-                                            bg={glassBg}
-                                            border="1px solid"
-                                            borderColor={borderColor}
-                                            borderRadius="lg"
-                                            _hover={{ borderColor: 'purple.300' }}
-                                            _focus={{
-                                                borderColor: 'purple.400',
-                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)'
-                                            }}
-                                            onChange={(e) => handleFilterChange({
-                                                campaign: e.target.value || undefined
-                                            })}
-                                            disabled={filterOptionsLoading}
-                                        >
-                                            {campaignOptions.map(campaign => (
-                                                <option key={campaign.id} value={campaign.id}>
-                                                    {campaign.name}
-                                                </option>
-                                            ))}
-                                        </Select>
-                                    </VStack>
-
-                                    <VStack align="stretch" spacing={1}>
-                                        <Text fontSize="xs" fontWeight="medium" color="gray.500" textTransform="uppercase">
-                                            Lead List
-                                        </Text>
-                                        <Select
-                                            placeholder="All Lists"
-                                            size="sm"
-                                            bg={glassBg}
-                                            border="1px solid"
-                                            borderColor={borderColor}
-                                            borderRadius="lg"
-                                            _hover={{ borderColor: 'purple.300' }}
-                                            _focus={{
-                                                borderColor: 'purple.400',
-                                                boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)'
-                                            }}
-                                            onChange={(e) => handleFilterChange({
-                                                leadListId: e.target.value || undefined
-                                            })}
-                                            disabled={filterOptionsLoading}
-                                        >
-                                            {leadListOptions.map(leadList => (
-                                                <option key={leadList.id} value={leadList.id}>
-                                                    {leadList.name}
-                                                </option>
-                                            ))}
-                                        </Select>
-                                    </VStack> */}
-                                </SimpleGrid>
-                            </Box>
+                        {/* Filters */}
+                        <HStack spacing={4} mb={6}>
+                            <InputGroup maxW="400px">
+                                <InputLeftElement>
+                                    <Icon as={Search} boxSize={5} color="gray.400" />
+                                </InputLeftElement>
+                                <Input
+                                    placeholder={`Search ${currentPageConfig.entityName}...`}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </InputGroup>
+                            <Select maxW="200px" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                                <option value="all">All Status</option>
+                                <option value="interested">Interested</option>
+                                <option value="replied">Replied</option>
+                                <option value="meeting_scheduled">Meeting Scheduled</option>
+                                <option value="interview_scheduled">Interview Scheduled</option>
+                                <option value="not_interested">Not Interested</option>
+                            </Select>
                         </HStack>
-                    </Card>
+                    </Box>
 
-                    {/* Lead Detail Modal */}
-                    <Modal isOpen={isOpen} onClose={onClose} size="4xl">
-                        <ModalOverlay backdropFilter="blur(10px)" />
-                        <ModalContent bg={cardBg} borderRadius="xl">
-                            <ModalHeader>
-                                <HStack spacing={4}>
-                                    <Avatar size="lg" name={selectedLead?.name} />
-                                    <VStack align="start" spacing={1}>
-                                        <Heading size="lg">{selectedLead?.name}</Heading>
-                                        <Text color="gray.600">{selectedLead?.headline}</Text>
-                                        <HStack spacing={2}>
-                                            <Badge
-                                                colorScheme={getConnectionStatusColor(selectedLead?.status || 'not_connected')}
-                                                variant="subtle"
-                                            >
-                                                {formatConnectionStatus(selectedLead?.status || 'not_connected')}
-                                            </Badge>
-                                        </HStack>
-                                    </VStack>
-                                </HStack>
-                            </ModalHeader>
-                            <ModalCloseButton />
-                            <ModalBody pb={6}>
-                                {selectedLeadTimeline && (
-                                    <VStack spacing={6} align="stretch">
-                                        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                                            <VStack spacing={4} align="stretch">
-                                                <Box>
-                                                    <Text fontWeight="semibold" mb={2}>Contact Information</Text>
-                                                    <VStack spacing={2} align="stretch">
-                                                        <HStack>
-                                                            <Icon as={Linkedin} boxSize={4} color="blue.500" />
-                                                            <Text
-                                                                as="a"
-                                                                href={'https://linkedin.com/in/' + selectedLeadTimeline.profile.public_identifier || '#'}
-                                                                target="_blank"
-                                                                color="blue.500"
-                                                                fontSize="sm"
-                                                                _hover={{ textDecoration: 'underline' }}
-                                                            >
-                                                                LinkedIn Profile
-                                                            </Text>
+                    {/* Main Content */}
+                    <Flex gap={6}>
+                        {/* Leads List */}
+                        <Box flex="1">
+                            <VStack spacing={4} align="stretch">
+                                {filteredLeads.map((lead) => {
+                                    const StatusIcon = getStatusIcon(lead.status)
+                                    return (
+                                        <Card
+                                            key={lead.id}
+                                            bg={cardBg}
+                                            border="1px solid"
+                                            borderColor={selectedLead?.id === lead.id ? 'purple.300' : borderColor}
+                                            borderRadius="xl"
+                                            cursor="pointer"
+                                            onClick={() => setSelectedLead(lead)}
+                                            _hover={{ borderColor: 'purple.200', transform: 'translateY(-1px)' }}
+                                            transition="all 0.2s"
+                                        >
+                                            <CardBody>
+                                                <HStack spacing={4}>
+                                                    <Avatar src={lead.avatar} name={lead.name} size="md" />
+                                                    <VStack align="start" spacing={1} flex="1">
+                                                        <HStack justify="space-between" w="100%">
+                                                            <Text fontWeight="bold" fontSize="lg">{lead.name}</Text>
+                                                            <Badge colorScheme={getStatusColor(lead.status)} variant="subtle">
+                                                                <HStack spacing={1}>
+                                                                    <Icon as={StatusIcon} boxSize={3} />
+                                                                    <Text>{lead.status.replace('_', ' ')}</Text>
+                                                                </HStack>
+                                                            </Badge>
                                                         </HStack>
-                                                        {selectedLeadTimeline.profile.location && (
-                                                            <HStack>
-                                                                <Text fontWeight="semibold" fontSize="sm">Location:</Text>
-                                                                <Text fontSize="sm">{selectedLeadTimeline.profile.location}</Text>
+                                                        <Text color="gray.600">{lead.title} at {lead.company}</Text>
+                                                        <HStack spacing={4} fontSize="sm" color="gray.500">
+                                                            <HStack spacing={1}>
+                                                                <Icon as={MapPin} boxSize={3} />
+                                                                <Text>{lead.location}</Text>
                                                             </HStack>
-                                                        )}
+                                                            <HStack spacing={1}>
+                                                                <Icon as={Clock} boxSize={3} />
+                                                                <Text>{lead.lastActivity}</Text>
+                                                            </HStack>
+                                                            <HStack spacing={1}>
+                                                                <Icon as={Star} boxSize={3} />
+                                                                <Text>{lead.score}/100</Text>
+                                                            </HStack>
+                                                        </HStack>
+                                                        <HStack spacing={2} mt={2}>
+                                                            {lead.tags.map((tag, index) => (
+                                                                <Badge key={index} size="sm" colorScheme="purple" variant="outline">
+                                                                    {tag}
+                                                                </Badge>
+                                                            ))}
+                                                        </HStack>
+                                                        {/* Metrics */}
+                                                        <HStack spacing={4} mt={2} fontSize="sm">
+                                                            <HStack spacing={1}>
+                                                                <Icon as={Send} boxSize={3} color="blue.500" />
+                                                                <Text>{lead.metrics.emailsSent} sent</Text>
+                                                            </HStack>
+                                                            <HStack spacing={1}>
+                                                                <Icon as={Reply} boxSize={3} color="green.500" />
+                                                                <Text>{lead.metrics.replies} replies</Text>
+                                                            </HStack>
+                                                            <HStack spacing={1}>
+                                                                <Icon as={Eye} boxSize={3} color="purple.500" />
+                                                                <Text>{lead.metrics.opens} opens</Text>
+                                                            </HStack>
+                                                        </HStack>
                                                     </VStack>
-                                                </Box>
+                                                </HStack>
+                                            </CardBody>
+                                        </Card>
+                                    )
+                                })}
+                            </VStack>
+                        </Box>
+
+                        {/* Lead Detail Panel */}
+                        {selectedLead && (
+                            <Box w="400px">
+                                <Card bg={cardBg} border="1px solid" borderColor={borderColor} borderRadius="xl">
+                                    <CardBody>
+                                        <VStack spacing={4} align="stretch">
+                                            {/* Header */}
+                                            <HStack spacing={4}>
+                                                <Avatar src={selectedLead.avatar} name={selectedLead.name} size="lg" />
+                                                <VStack align="start" spacing={1}>
+                                                    <Text fontWeight="bold" fontSize="xl">{selectedLead.name}</Text>
+                                                    <Text color="gray.600">{selectedLead.title}</Text>
+                                                    <Text color="gray.500">{selectedLead.company}</Text>
+                                                </VStack>
+                                            </HStack>
+
+                                            <Divider />
+
+                                            {/* Contact Info */}
+                                            <VStack align="stretch" spacing={2}>
+                                                <HStack>
+                                                    <Icon as={Mail} boxSize={4} color="gray.500" />
+                                                    <Link href={`mailto:${selectedLead.email}`} color="blue.500">
+                                                        {selectedLead.email}
+                                                    </Link>
+                                                </HStack>
+                                                <HStack>
+                                                    <Icon as={Phone} boxSize={4} color="gray.500" />
+                                                    <Text>{selectedLead.phone}</Text>
+                                                </HStack>
+                                                <HStack>
+                                                    <Icon as={Linkedin} boxSize={4} color="gray.500" />
+                                                    <Link href={selectedLead.linkedinUrl} color="blue.500" isExternal>
+                                                        LinkedIn Profile
+                                                    </Link>
+                                                </HStack>
+                                                {selectedLead.githubUrl && (
+                                                    <HStack>
+                                                        <Icon as={ExternalLink} boxSize={4} color="gray.500" />
+                                                        <Link href={selectedLead.githubUrl} color="blue.500" isExternal>
+                                                            GitHub Profile
+                                                        </Link>
+                                                    </HStack>
+                                                )}
                                             </VStack>
 
-                                            <VStack spacing={4} align="stretch">
-                                                <Box>
-                                                    <Text fontWeight="semibold" mb={2}>Automation Progress</Text>
-                                                    <VStack spacing={3} align="stretch">
+                                            {/* Recruiter-specific info */}
+                                            {selectedAgent === 'ai-recruiter' && (
+                                                <>
+                                                    <Divider />
+                                                    <VStack align="stretch" spacing={2}>
+                                                        <Text fontWeight="semibold">Candidate Details</Text>
                                                         <HStack justify="space-between">
-                                                            <Text fontSize="sm">Connection Progress</Text>
-                                                            <Text fontWeight="bold" fontSize="sm">
-                                                                {selectedLeadTimeline.steps
-                                                                    ? Math.round(
-                                                                        (selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook') && it.success).length / selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook')).length) * 100
-                                                                    )
-                                                                    : 0}%
-                                                            </Text>
+                                                            <Text color="gray.600">Experience:</Text>
+                                                            <Text>{selectedLead.experience}</Text>
                                                         </HStack>
-                                                        <Progress
-                                                            value={selectedLeadTimeline.steps
-                                                                ? Math.round(
-                                                                    (selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook') && it.success).length / selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook')).length) * 100
-                                                                )
-                                                                : 0}
-                                                            colorScheme="purple"
-                                                            borderRadius="md"
-                                                        />
-                                                        <SimpleGrid columns={3} spacing={4}>
-                                                            <VStack>
-                                                                <Text fontSize="lg" fontWeight="bold">
-                                                                    {selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook')).length || 0}
-                                                                </Text>
-                                                                <Text fontSize="xs" color="gray.600">Total Steps</Text>
-                                                            </VStack>
-                                                            <VStack>
-                                                                <Text fontSize="lg" fontWeight="bold" color="green.500">
-                                                                    {selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook') && it.success).length || 0}
-                                                                </Text>
-                                                                <Text fontSize="xs" color="gray.600">Completed</Text>
-                                                            </VStack>
-                                                            <VStack>
-                                                                <Text fontSize="lg" fontWeight="bold" color="red.500">
-                                                                    {selectedLeadTimeline.steps.filter(it => it.errorMessage !== null && it.errorMessage !== undefined || it.success === false && !it.stepNodeId.startsWith('notify_webhook')).length || 0}
-                                                                </Text>
-                                                                <Text fontSize="xs" color="gray.600">Failed</Text>
-                                                            </VStack>
-                                                        </SimpleGrid>
-                                                    </VStack>
-                                                </Box>
-                                            </VStack>
-                                        </SimpleGrid>
-                                        <Box justifyContent={"start"}>
-                                            <VStack align="stretch" spacing={4}>
-                                                <Text fontWeight="semibold" mb={2}>Step Progress</Text>
-                                                <VStack align="stretch" spacing={0}>
-                                                    {selectedLeadTimeline.steps.filter(it => !it.stepNodeId.startsWith('notify_webhook')).map((step, idx) => (
-                                                        <React.Fragment key={idx}>
-                                                            {idx !== 0 && (
-                                                                <Box
-                                                                    alignSelf={'start'}
-                                                                    width="2px"
-                                                                    height="32px"
-                                                                    bg={step.success ? 'green.400' : step.errorMessage ? 'red.400' : 'orange.300'}
-                                                                    mx={2}
-                                                                />
-                                                            )}
-                                                            <HStack align="center" spacing={3}>
-                                                                <Box
-                                                                    boxSize={6}
-                                                                    borderRadius="full"
-                                                                    bg={step.success ? 'green.400' : step.errorMessage ? 'red.400' : 'orange.300'}
-                                                                    display="flex"
-                                                                    alignItems="center"
-                                                                    justifyContent="center"
-                                                                >
-                                                                    {step.success ? (
-                                                                        <Icon as={TrendingUp} color="white" boxSize={4} />
-                                                                    ) : step.errorMessage ? (
-                                                                        <Icon as={Clock} color="white" boxSize={4} />
-                                                                    ) : (
-                                                                        <Icon as={Activity} color="white" boxSize={4} />
-                                                                    )}
-                                                                </Box>
-                                                                <VStack align="start" spacing={0}>
-                                                                    <Text fontWeight="medium" fontSize="sm" textTransform={'capitalize'} color={step.success ? 'green.400' : step.errorMessage ? 'red.400' : 'orange.300'}>
-                                                                        {step.stepNodeId.startsWith('send-invite') ? 'Sent Invite' : step.stepNodeId.split('-')[0].split('_').join(' ')}
-                                                                    </Text>
-                                                                    <Text fontSize="xs" color={step.success ? 'green.400' : step.errorMessage ? 'red.400' : 'gray.400'}>
-                                                                        {step.success
-                                                                            ? 'Completed'
-                                                                            : step.errorMessage
-                                                                                ? `Failed: ${step.errorMessage}`
-                                                                                : '⚠️'}
-                                                                    </Text>
-                                                                    {step?.details?.comments?.map((it, key) => (
-                                                                        <React.Fragment key={key}>
-                                                                            <HStack>
-                                                                                <Text fontWeight="xs" fontSize="xs" textTransform={'capitalize'} color={'grey.200'}>
-                                                                                    {it.comment}
-                                                                                </Text>
-                                                                                {it.reason && (
-                                                                                    <Text fontSize="xs" color={step.success ? 'green.400' : step.errorMessage ? 'red.400' : 'gray.400'}>
-                                                                                        {it.reason}
-                                                                                    </Text>
-                                                                                )}
-                                                                                {!it.reason && it.post && (
-                                                                                    <IconButton
-                                                                                        icon={<ExternalLink size={14} />}
-                                                                                        size="xs"
-                                                                                        variant="ghost"
-                                                                                        colorScheme="blue"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation()
-                                                                                            window.open(it.post || '#', '_blank')
-                                                                                        }}
-                                                                                        aria-label="Open LinkedIn profile"
-                                                                                    />
-                                                                                )}
-                                                                            </HStack>
-                                                                        </React.Fragment>
-                                                                    ))}
-                                                                    <Text fontWeight="xs" fontSize="xs" textTransform={'capitalize'} color={'grey.200'}>
-                                                                        {step.message}
-                                                                    </Text>
-                                                                </VStack>
+                                                        <HStack justify="space-between">
+                                                            <Text color="gray.600">Salary Range:</Text>
+                                                            <Text>{selectedLead.salary}</Text>
+                                                        </HStack>
+                                                        <Box>
+                                                            <Text color="gray.600" mb={2}>Skills:</Text>
+                                                            <HStack spacing={1} flexWrap="wrap">
+                                                                {selectedLead.skills?.map((skill: string, index: number) => (
+                                                                    <Badge key={index} size="sm" colorScheme="blue">
+                                                                        {skill}
+                                                                    </Badge>
+                                                                ))}
                                                             </HStack>
-                                                        </React.Fragment>
+                                                        </Box>
+                                                    </VStack>
+                                                </>
+                                            )}
+
+                                            <Divider />
+
+                                            {/* Messages */}
+                                            <Box>
+                                                <Text fontWeight="semibold" mb={3}>Conversation</Text>
+                                                <VStack spacing={3} align="stretch" maxH="400px" overflowY="auto">
+                                                    {selectedLead.messages.map((message: any) => (
+                                                        <Box
+                                                            key={message.id}
+                                                            bg={message.type === 'sent' ? 'purple.50' : 'gray.50'}
+                                                            p={3}
+                                                            borderRadius="lg"
+                                                            border="1px solid"
+                                                            borderColor={message.type === 'sent' ? 'purple.200' : 'gray.200'}
+                                                        >
+                                                            <HStack justify="space-between" mb={2}>
+                                                                <Badge
+                                                                    colorScheme={message.type === 'sent' ? 'purple' : 'gray'}
+                                                                    size="sm"
+                                                                >
+                                                                    {message.type === 'sent' ? 'Sent' : 'Received'}
+                                                                </Badge>
+                                                                <Text fontSize="xs" color="gray.500">
+                                                                    {new Date(message.timestamp).toLocaleDateString()}
+                                                                </Text>
+                                                            </HStack>
+                                                            <Text fontSize="sm">{message.content}</Text>
+                                                            {message.status && (
+                                                                <Text fontSize="xs" color="gray.500" mt={1}>
+                                                                    Status: {message.status}
+                                                                </Text>
+                                                            )}
+                                                        </Box>
                                                     ))}
                                                 </VStack>
-                                            </VStack>
-                                        </Box>
-                                    </VStack>
-                                )}
-                            </ModalBody>
-                        </ModalContent>
-                    </Modal>
-
-                    {/* Loading State */}
-                    {loading && (
-                        <Flex justify="center" py={8}>
-                            <Spinner size="lg" color="purple.500" />
-                        </Flex>
-                    )}
-
-                    {!hasPlan && (
-                        <LeadNoPlan />
-                    )}
-
-                    {/* Empty State */}
-                    {hasPlan && !loading && leads.length === 0 && (
-                        <Card
-                            bg={cardBg}
-                            border="1px solid"
-                            borderColor={borderColor}
-                            borderRadius="xl"
-                            py={16}
-                        >
-                            <VStack spacing={4}>
-                                <Icon as={Users} boxSize={16} color="gray.400" />
-                                <Heading size="lg" color="gray.500">No Leads Found</Heading>
-                                <Text color="gray.600" textAlign="center">
-                                    Start a campaign to begin collecting leads, or adjust your<br />
-                                    filters to see more results.
-                                </Text>
-                                <GradientButton
-                                    leftIcon={<Plus size={16} />}
-                                    onClick={() => router.push('/campaigns/new')}
-                                >
-                                    Create Your First Campaign
-                                </GradientButton>
-                            </VStack>
-                        </Card>
-                    )}
-
-                    {/* Leads Table */}
-                    {!loading && leads.length > 0 && (
-                        <>
-                            <Card
-                                bg={cardBg}
-                                backdropFilter="blur(10px)"
-                                border="1px solid"
-                                borderColor={borderColor}
-                                borderRadius="xl"
-                                overflow="hidden"
-                            >
-                                <TableContainer>
-                                    <Table variant="simple" size="sm">
-                                        <Thead bg={glassBg}>
-                                            <Tr>
-                                                <Th color="gray.600" fontWeight="semibold" py={4}>Lead</Th>
-                                                <Th color="gray.600" fontWeight="semibold">Company</Th>
-                                                <Th color="gray.600" fontWeight="semibold">Account</Th>
-                                                <Th color="gray.600" fontWeight="semibold">Connection</Th>
-                                                <Th color="gray.600" fontWeight="semibold">Campaign</Th>
-                                                <Th color="gray.600" fontWeight="semibold">Last Activity</Th>
-                                                <Th color="gray.600" fontWeight="semibold">Actions</Th>
-                                            </Tr>
-                                        </Thead>
-                                        <Tbody >
-                                            {leads.map((lead) => (
-                                                <Tr
-                                                    key={lead.id}
-                                                    _hover={{
-                                                        bgGradient: 'linear(to-r, purple.50 0%, white 100%)',
-                                                        transform: 'scale(1.01)',
-                                                        cursor: 'pointer',
-                                                        transition: 'background 0.8s cubic-bezier(0.4,0,0.2,1)'
-                                                    }}
-                                                    transition="all 0.2s ease"
-                                                    onClick={() => handleLeadSelect(lead)}
-                                                    bg={selectedLead?.id === lead.id ? 'purple.50' : undefined}
-                                                    style={selectedLead?.id === lead.id
-                                                        ? { transition: 'background 0.8s cubic-bezier(0.4,0,0.2,1)' }
-                                                        : undefined
-                                                    }
-                                                >
-                                                    <Td py={4}>
-                                                        <HStack spacing={3}>
-                                                            <Avatar
-                                                                src={lead.profilePicture}
-                                                                size="sm"
-                                                                name={lead.name}
-                                                                border="2px solid"
-                                                                borderColor={borderColor}
-                                                            />
-                                                            <VStack align="start" spacing={0}>
-                                                                <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
-                                                                    {lead.name}
-                                                                </Text>
-                                                                <Text fontSize="xs" color="gray.500" noOfLines={1}>
-                                                                    {lead.headline?.length > 40
-                                                                        ? `${lead.headline.slice(0, 40)}...`
-                                                                        : lead.headline}
-                                                                </Text>
-                                                            </VStack>
-                                                        </HStack>
-                                                    </Td>
-                                                    <Td>
-                                                        <VStack align="start" spacing={0}>
-                                                            <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
-                                                                {lead.company}
-                                                            </Text>
-                                                            <Text fontSize="xs" color="gray.500" noOfLines={1}>
-                                                                {lead.location}
-                                                            </Text>
-                                                        </VStack>
-                                                    </Td>
-                                                    <Td>
-                                                        <Text fontSize="sm" color="gray.600">
-                                                            {lead.senderName
-                                                                ? `${lead.senderName}`
-                                                                : 'No Account'
-                                                            }
-                                                        </Text>
-                                                    </Td>
-                                                    <Td>
-                                                        <Badge
-                                                            colorScheme={getConnectionStatusColor(lead.status)}
-                                                            variant="subtle"
-                                                            fontSize="xs"
-                                                        >
-                                                            {formatConnectionStatus(lead.status)}
-                                                        </Badge>
-                                                    </Td>
-                                                    <Td>
-                                                        <Text fontSize="sm" color="gray.600">
-                                                            {lead.campaign
-                                                                ? `${lead.campaign}`
-                                                                : 'No Account'
-                                                            }
-                                                        </Text>
-                                                    </Td>
-
-                                                    <Td>
-                                                        {lead.updatedAt ? (
-                                                            <Text fontSize="xs" color="gray.500">
-                                                                {new Date(lead.updatedAt).toLocaleDateString()}
-                                                            </Text>
-                                                        ) : (
-                                                            <Text fontSize="xs" color="gray.400">No activity</Text>
-                                                        )}
-                                                    </Td>
-                                                    <Td>
-                                                        <HStack spacing={1}>
-                                                            <Tooltip label="View Details">
-                                                                <IconButton
-                                                                    icon={<Eye size={14} />}
-                                                                    size="xs"
-                                                                    variant="ghost"
-                                                                    colorScheme="purple"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation()
-                                                                        handleLeadSelect(lead)
-                                                                    }}
-                                                                    aria-label="View lead details"
-                                                                />
-                                                            </Tooltip>
-                                                            {lead.publicIdentifier && (
-                                                                <Tooltip label="Open LinkedIn">
-                                                                    <IconButton
-                                                                        icon={<ExternalLink size={14} />}
-                                                                        size="xs"
-                                                                        variant="ghost"
-                                                                        colorScheme="blue"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation()
-                                                                            window.open(`https://linkedin.com/in/` + lead.publicIdentifier || '#', '_blank')
-                                                                        }}
-                                                                        aria-label="Open LinkedIn profile"
-                                                                    />
-                                                                </Tooltip>
-                                                            )}
-                                                        </HStack>
-                                                    </Td>
-                                                </Tr>
-                                            ))}
-                                        </Tbody>
-                                    </Table>
-                                </TableContainer>
-                            </Card>
-
-                            {/* Pagination */}
-                            {totalPages > 1 && (
-                                <Card
-                                    bg={cardBg}
-                                    backdropFilter="blur(10px)"
-                                    border="1px solid"
-                                    borderColor={borderColor}
-                                    borderRadius="xl"
-                                    p={4}
-                                >
-                                    <Flex justify="space-between" align="center">
-                                        <Text fontSize="sm" color="gray.600">
-                                            Page {page} of {totalPages} • Showing {leads.length} of {totalLeads} leads
-                                        </Text>
-                                        <HStack spacing={2}>
-                                            <IconButton
-                                                icon={<ChevronLeft size={16} />}
-                                                size="sm"
-                                                onClick={() => fetchLeads(page - 1)}
-                                                isDisabled={page <= 1}
-                                                variant="outline"
-                                                borderColor={borderColor}
-                                                aria-label="Previous page"
-                                            />
-
-                                            {/* Simple pagination showing current page */}
-                                            <Button
-                                                size="sm"
-                                                variant="solid"
-                                                colorScheme="purple"
-                                                minW="40px"
-                                            >
-                                                {page}
-                                            </Button>
-
-                                            <IconButton
-                                                icon={<ChevronRight size={16} />}
-                                                size="sm"
-                                                onClick={() => fetchLeads(page + 1)}
-                                                isDisabled={page >= totalPages}
-                                                variant="outline"
-                                                borderColor={borderColor}
-                                                aria-label="Next page"
-                                            />
-                                        </HStack>
-                                    </Flex>
+                                            </Box>
+                                        </VStack>
+                                    </CardBody>
                                 </Card>
-                            )}
-                        </>
-                    )}
+                            </Box>
+                        )}
+                    </Flex>
                 </VStack>
             </Container>
         </DashboardLayout>
     )
 }
 
-
 const LeadNoPlan = () => {
     return (
-        < Card bg="purple.50" border="2px solid" borderColor="purple.200" >
+        <Card bg="purple.50" border="2px solid" borderColor="purple.200">
             <CardBody textAlign="center" py={12}>
                 <VStack spacing={4}>
                     <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
@@ -959,11 +1250,8 @@ const LeadNoPlan = () => {
                     <Text color="purple.600" maxW="md">
                         We haven't started your sending yet contact your POC for more Information.
                     </Text>
-                    {/* <GradientButton size="lg">
-                        Upgrade to Pro
-                    </GradientButton> */}
                 </VStack>
             </CardBody>
-        </Card >
+        </Card>
     )
 }

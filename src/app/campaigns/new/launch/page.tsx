@@ -24,7 +24,6 @@ import {
     SimpleGrid,
     Divider,
     useColorModeValue,
-    useToast,
     Badge,
     Progress,
     Icon,
@@ -38,7 +37,6 @@ import { FiCalendar, FiClock, FiShield, FiZap, FiCheckCircle, FiPlay, FiTarget }
 import { HiOutlineOfficeBuilding } from 'react-icons/hi'
 import { format } from 'date-fns'
 import { useOrganization } from '@clerk/nextjs'
-import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 // Enhanced animations
 const float = keyframes`
@@ -81,8 +79,6 @@ const saveCampaignSettings = async (launchSettings: LaunchSettings) => {
 
 export default function LaunchPage() {
     const router = useRouter()
-    const toast = useToast()
-    const customToast = createCustomToast(toast)
     const { organization } = useOrganization()
     const [isLaunching, setIsLaunching] = useState(false)
 
@@ -155,10 +151,7 @@ export default function LaunchPage() {
 
     const handleLaunchCampaign = async () => {
         if (!launchSettings.campaignName.trim()) {
-            customToast.warning({
-                title: 'Campaign name required',
-                description: 'Please enter a name for your campaign.',
-            })
+            console.log('Campaign name required')
             return
         }
 
@@ -175,6 +168,9 @@ export default function LaunchPage() {
             const campaignPayload = {
                 campaignName: launchSettings.campaignName,
                 organizationId: organization?.id,
+                selectedAgent: typeof window !== 'undefined'
+                    ? localStorage.getItem('selectedAgent') || 'ai-sdr'
+                    : 'ai-sdr',
                 targeting: targetingData,
                 pitch: typeof window !== 'undefined'
                     ? JSON.parse(localStorage.getItem('campaignPitchData') || '{}')
@@ -215,13 +211,7 @@ export default function LaunchPage() {
             localStorage.removeItem('campaignLaunch')
             localStorage.removeItem('selectedLeads')
 
-            customToast.success({
-                title: 'Campaign Launched!',
-                description: organization
-                    ? `"${launchSettings.campaignName}" has been successfully created in ${organization.name} and is ready to start.`
-                    : `"${launchSettings.campaignName}" has been successfully created and is ready to start.`,
-                duration: 5000,
-            })
+            console.log(`Campaign launched successfully: ${launchSettings.campaignName}`)
 
             // Navigate to campaign dashboard or campaigns list
             setTimeout(() => {
@@ -230,11 +220,7 @@ export default function LaunchPage() {
 
         } catch (error) {
             console.error('Error launching campaign:', error)
-            customToast.error({
-                title: 'Launch Failed',
-                description: error instanceof Error ? error.message : 'Failed to launch campaign',
-                duration: 5000,
-            })
+            console.log('Launch failed:', error instanceof Error ? error.message : 'Failed to launch campaign')
         } finally {
             setIsLaunching(false)
         }

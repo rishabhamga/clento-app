@@ -6,7 +6,6 @@ import {
   Button,
   Text,
   VStack,
-  useToast,
   Progress,
   Table,
   Thead,
@@ -27,15 +26,12 @@ import { useDropzone } from 'react-dropzone'
 import { FiUpload, FiFile, FiCheck, FiX, FiAlertCircle, FiHelpCircle } from 'react-icons/fi'
 import type { CSVLeadData, CSVUploadState } from '@/types/csv'
 import { CSVFormatGuide } from './CSVFormatGuide'
-import { createCustomToast, commonToasts } from '@/lib/utils/custom-toast'
 
 interface CSVUploadProps {
   onLeadsSelected: (leads: CSVLeadData[]) => void
 }
 
 export function CSVUpload({ onLeadsSelected }: CSVUploadProps) {
-  const toast = useToast()
-  const customToast = createCustomToast(toast)
   const { isOpen, onToggle } = useDisclosure()
   const [state, setState] = useState<CSVUploadState>({
     file: null,
@@ -166,10 +162,7 @@ export function CSVUpload({ onLeadsSelected }: CSVUploadProps) {
           .filter((_, i) => validatedLeads[i].validation_status === 'valid'),
       }))
 
-      customToast.success({
-        title: summary.invalid === 0 ? 'File Uploaded Successfully' : 'Validation Warning',
-        description: `Found ${summary.total} leads (${summary.valid} valid, ${summary.invalid} invalid)`,
-      })
+      console.log(`CSV processed: ${summary.total} leads (${summary.valid} valid, ${summary.invalid} invalid)`)
 
     } catch (error) {
       setState(prev => ({
@@ -179,12 +172,9 @@ export function CSVUpload({ onLeadsSelected }: CSVUploadProps) {
         error: error instanceof Error ? error.message : 'Unknown error',
       }))
 
-      customToast.error({
-        title: 'CSV Upload Failed',
-        description: error instanceof Error ? error.message : 'Failed to process CSV file',
-      })
+      console.log('CSV upload failed:', error instanceof Error ? error.message : 'Failed to process CSV file')
     }
-  }, [toast, customToast])
+  }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -198,10 +188,7 @@ export function CSVUpload({ onLeadsSelected }: CSVUploadProps) {
   const handleRowSelect = (index: string) => {
     const lead = state.parsedData[parseInt(index)]
     if (lead.validation_status === 'invalid') {
-      customToast.warning({
-        title: 'Cannot Select Invalid Lead',
-        description: lead.validation_message,
-      })
+      console.log('Cannot select invalid lead:', lead.validation_message)
       return
     }
 

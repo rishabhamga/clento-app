@@ -302,4 +302,4 @@ localStorage.setItem('workflow-debug', 'true');
 
 ## 📄 License
 
-This workflow builder is part of the Clento platform and follows the project's licensing terms.
+This workflow builder is part of the Observe.ai platform and follows the project's licensing terms.

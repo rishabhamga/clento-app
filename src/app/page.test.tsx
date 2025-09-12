@@ -25,9 +25,9 @@ describe('Home', () => {
     expect(screen.getByText('AI-Powered Sales Development')).toBeInTheDocument()
   })
 
-  it('renders the clento logo', () => {
+  it('renders the observe.ai logo', () => {
     renderWithProviders(<Home />)
-    expect(screen.getByText('clento')).toBeInTheDocument()
+    expect(screen.getByText('Observe Agents')).toBeInTheDocument()
   })
 
   it('renders feature cards', () => {

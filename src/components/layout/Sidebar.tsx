@@ -21,11 +21,21 @@ import {
   Megaphone,
   // Clock, // TODO: Re-enable when Pending Messages page is ready
   // Send // TODO: Re-enable when Senders page is ready
+  UserCheck,
+  MessageCircle,
+  Headphones,
+  Shield,
+  MessageSquare,
+  Activity,
+  Filter,
+  Clock,
+  TrendingUp,
+  PieChart,
+  Calendar
 } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import OrganizationSwitcher from '../OrganizationSwitcher'
 import { UserButton, UserProfile } from '@clerk/nextjs';
-import { userAgent } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { useUser } from '@clerk/nextjs';
 
 interface NavItemProps {
@@ -115,22 +125,87 @@ export default function Sidebar() {
   const pathname = usePathname()
   const bgColor = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.700')
+  const [selectedAgent, setSelectedAgent] = useState<string>('ai-sdr')
 
-  const mainNavItems = [
-    { icon: BarChart3, label: 'Analytics', href: '/analytics' },
-    // { icon: Settings, label: 'Integrations', href: '/integrations' }, // TODO: Re-enable when ready
-    { icon: Users, label: 'Leads', href: '/leads' },
-    { icon: Database, label: 'Lead Lists', href: '/lead-lists' },
-    { icon: UserPlus, label: 'Accounts', href: '/accounts' },
-    // { icon: Eye, label: 'Website Visitors', href: '/website-visitors' }, // TODO: Re-enable when ready
-  ]
+  // Load selected agent from localStorage
+  useEffect(() => {
+    const savedAgent = localStorage.getItem('selectedAgent')
+    if (savedAgent) {
+      setSelectedAgent(savedAgent)
+    }
+  }, [])
 
-  const outboundNavItems = [
-    // { icon: Inbox, label: 'Inbox', href: '/inbox' }, // TODO: Re-enable when ready
-    { icon: Megaphone, label: 'Campaigns', href: '/dashboard' },
-    // { icon: Clock, label: 'Pending Messages', href: '/pending-messages' }, // TODO: Re-enable when ready
-    // { icon: Send, label: 'Senders', href: '/senders' }, // TODO: Re-enable when ready
-  ]
+  // Agent-specific navigation configurations
+  const agentNavConfig = {
+    'ai-sdr': {
+      mainNavItems: [
+        { icon: BarChart3, label: 'Analytics', href: '/analytics' },
+        { icon: Users, label: 'Leads', href: '/leads' },
+        { icon: Database, label: 'Lead Lists', href: '/lead-lists' },
+        { icon: UserPlus, label: 'Accounts', href: '/accounts' },
+      ],
+      outboundNavItems: [
+        { icon: Megaphone, label: 'Campaigns', href: '/dashboard' },
+      ],
+      outboundLabel: 'Outbound'
+    },
+    'ai-marketer': {
+      mainNavItems: [
+        { icon: BarChart3, label: 'Analytics', href: '/analytics' },
+        { icon: MessageCircle, label: 'Contacts', href: '/leads' },
+        { icon: Database, label: 'Contact Lists', href: '/lead-lists' },
+        { icon: UserPlus, label: 'Accounts', href: '/accounts' },
+      ],
+      outboundNavItems: [
+        { icon: Megaphone, label: 'Marketing Campaigns', href: '/dashboard' },
+      ],
+      outboundLabel: 'Marketing'
+    },
+    'ai-recruiter': {
+      mainNavItems: [
+        { icon: BarChart3, label: 'Analytics', href: '/analytics' },
+        { icon: UserCheck, label: 'Candidates', href: '/leads' },
+        { icon: Database, label: 'Candidate Lists', href: '/lead-lists' },
+        { icon: UserPlus, label: 'Accounts', href: '/accounts' },
+      ],
+      outboundNavItems: [
+        { icon: Megaphone, label: 'Recruitment Campaigns', href: '/dashboard' },
+      ],
+      outboundLabel: 'Recruitment'
+    },
+    'ai-sales-buddy': {
+      mainNavItems: [
+        { icon: MessageSquare, label: 'Conversation Intelligence', href: '/ai-sales-buddy' },
+        { icon: Activity, label: 'Activity Dashboard', href: '/activity-dashboard' },
+        { icon: BarChart3, label: 'Conversation Analytics', href: '/conversation-analytics' },
+        { icon: Filter, label: 'Stage-based Filters', href: '/stage-filters' },
+        { icon: Clock, label: 'Sales Prep Sessions', href: '/dashboard' },
+        { icon: TrendingUp, label: 'Performance Metrics', href: '/performance-metrics' },
+      ],
+      outboundNavItems: [
+        { icon: Calendar, label: 'Meeting Scheduler', href: '/meeting-scheduler' },
+        { icon: PieChart, label: 'Team Analytics', href: '/team-analytics' },
+      ],
+      outboundLabel: 'Conversation Intelligence'
+    },
+    'asset-inventory-agent': {
+      mainNavItems: [
+        { icon: BarChart3, label: 'Analytics', href: '/analytics' },
+        { icon: Shield, label: 'Assets', href: '/leads' },
+        { icon: Database, label: 'Asset Lists', href: '/lead-lists' },
+        { icon: UserPlus, label: 'Tenants', href: '/accounts' },
+      ],
+      outboundNavItems: [
+        { icon: Megaphone, label: 'Security Queries', href: '/dashboard' },
+      ],
+      outboundLabel: 'Security'
+    }
+  }
+
+  const currentConfig = agentNavConfig[selectedAgent as keyof typeof agentNavConfig] || agentNavConfig['ai-sdr']
+  const mainNavItems = currentConfig.mainNavItems
+  const outboundNavItems = currentConfig.outboundNavItems
+  const outboundLabel = currentConfig.outboundLabel
 
   return (
     <Box
@@ -152,7 +227,7 @@ export default function Sidebar() {
         {/* Logo/Brand */}
         <Box mb={4}>
           <Text fontSize="xl" fontWeight="bold" color="purple.600">
-            Clento
+            Observe Agents
           </Text>
         </Box>
 
@@ -198,7 +273,7 @@ export default function Sidebar() {
             letterSpacing="wider"
             mb={2}
           >
-            Outbound
+            {outboundLabel}
           </Text>
           {outboundNavItems.map((item) => (
             <NavItem

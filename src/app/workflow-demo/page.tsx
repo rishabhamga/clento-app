@@ -80,7 +80,7 @@ const sampleFlowData: FlowData = {
           "language": "english",
           "mentionPost": false,
           "customGuidelines": "",
-          "message": "Hi [first_name], I'm from Clento—a leading automation platform. We specialize in safe, natural LinkedIn outreach performed by industry experts."
+          "message": "Hi [first_name], I'm from Observe.ai—a leading conversation intelligence platform. We specialize in AI-powered analysis of customer interactions to help businesses improve performance."
         }
       },
       "measured": {
@@ -108,7 +108,7 @@ const sampleFlowData: FlowData = {
           "messageLength": "medium",
           "tone": "casual",
           "customGuidelines": "",
-          "message": "Thanks for connecting, [first_name]! Just sharing for your awareness—at Clento, we help professionals automate their LinkedIn outreach safely and effectively."
+          "message": "Thanks for connecting, [first_name]! Just sharing for your awareness—at Observe.ai, we help businesses gain valuable insights from customer conversations using AI-powered analysis."
         },
         "pathType": "accepted"
       },

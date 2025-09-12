@@ -31,10 +31,10 @@ export default function SignUpPage() {
               mb={2}
               fontWeight="bold"
             >
-              clento
+              observe.ai
             </Heading>
             <Text fontSize="lg" color="gray.600" fontWeight="medium">
-              AI-powered Sales Development Representative
+              AI-powered Conversation Intelligence Platform
             </Text>
           </Box>
 

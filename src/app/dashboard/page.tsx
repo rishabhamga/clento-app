@@ -31,9 +31,11 @@ import {
     StatHelpText,
     Card,
     CardBody,
-    Button
+    Button,
+    IconButton,
+    Tooltip
 } from '@chakra-ui/react'
-import { Search, Activity, Users, MessageCircle, TrendingUp, Plus } from 'lucide-react'
+import { Search, Activity, Users, MessageCircle, TrendingUp, Plus, ArrowLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -97,6 +99,8 @@ export default function Dashboard() {
     const { organization } = useOrganization()
     const router = useRouter()
 
+    const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
+    
     const [state, setState] = useState({
         profile: null as UserProfile | null,
         loading: true,
@@ -111,6 +115,99 @@ export default function Dashboard() {
             responseRate: 0
         }
     })
+
+    // Agent configuration
+    const agentConfig = {
+        'ai-sdr': {
+            name: 'AI SDR',
+            color: 'purple.500',
+            gradient: 'linear(to-r, purple.400, blue.400)',
+            entityName: 'Leads',
+            entityNameSingle: 'Lead',
+            campaignName: 'Campaigns',
+            campaignType: 'outreach campaigns',
+            actionText: 'Create a Campaign',
+            description: 'Manage your outreach campaigns and track performance',
+            statLabels: {
+                activeCampaigns: 'Active Campaigns',
+                totalEntities: 'Total Leads',
+                totalMessages: 'Messages Sent',
+                responseRate: 'Response Rate'
+            }
+        },
+        'ai-marketer': {
+            name: 'Marketer AI',
+            color: 'blue.500',
+            gradient: 'linear(to-r, blue.400, blue.600)',
+            entityName: 'Contacts',
+            entityNameSingle: 'Contact',
+            campaignName: 'Marketing Campaigns',
+            campaignType: 'marketing campaigns',
+            actionText: 'Create Marketing Campaign',
+            description: 'Manage your marketing campaigns and track engagement',
+            statLabels: {
+                activeCampaigns: 'Active Campaigns',
+                totalEntities: 'Total Contacts',
+                totalMessages: 'Campaigns Sent',
+                responseRate: 'Engagement Rate'
+            }
+        },
+        'ai-recruiter': {
+            name: 'AI Recruiter',
+            color: 'green.500',
+            gradient: 'linear(to-r, green.400, green.600)',
+            entityName: 'Candidates',
+            entityNameSingle: 'Candidate',
+            campaignName: 'Recruitment Campaigns',
+            campaignType: 'recruitment campaigns',
+            actionText: 'Create Recruitment Campaign',
+            description: 'Manage your recruitment campaigns and track candidate responses',
+            statLabels: {
+                activeCampaigns: 'Active Campaigns',
+                totalEntities: 'Total Candidates',
+                totalMessages: 'Outreach Sent',
+                responseRate: 'Response Rate'
+            }
+        },
+        'ai-sales-buddy': {
+            name: 'Conversation Intelligence AI',
+            color: 'orange.500',
+            gradient: 'linear(to-r, orange.400, orange.600)',
+            entityName: 'Call Preparations',
+            entityNameSingle: 'Call Prep',
+            campaignName: 'Sales Prep Sessions',
+            campaignType: 'call preparation sessions',
+            actionText: 'Create Prep Session',
+            description: 'Manage your call preparations and track sales performance',
+            statLabels: {
+                activeCampaigns: 'Active Sessions',
+                totalEntities: 'Total Preps',
+                totalMessages: 'Insights Generated',
+                responseRate: 'Success Rate'
+            }
+        },
+        'asset-inventory-agent': {
+            name: 'Asset Inventory AI',
+            color: 'red.500',
+            gradient: 'linear(to-r, red.400, red.600)',
+            entityName: 'Assets',
+            entityNameSingle: 'Asset',
+            campaignName: 'Security Queries',
+            campaignType: 'security assessments',
+            actionText: 'Create Security Query',
+            description: 'Query asset inventory and manage security assessments',
+            statLabels: {
+                activeCampaigns: 'Active Queries',
+                totalEntities: 'Total Assets',
+                totalMessages: 'Scans Completed',
+                responseRate: 'Issues Found'
+            }
+        }
+    }
+
+    const currentAgent = selectedAgent && agentConfig[selectedAgent as keyof typeof agentConfig] 
+        ? agentConfig[selectedAgent as keyof typeof agentConfig] 
+        : agentConfig['ai-sdr'] // Default to AI SDR
 
     const searchBg = useColorModeValue('white', 'gray.800')
     const searchBorder = useColorModeValue('gray.200', 'gray.700')
@@ -127,6 +224,17 @@ export default function Dashboard() {
         router.push('/campaigns/new')
     }
 
+    // Load selected agent from localStorage
+    useEffect(() => {
+        const savedAgent = localStorage.getItem('selectedAgent')
+        if (savedAgent && agentConfig[savedAgent as keyof typeof agentConfig]) {
+            setSelectedAgent(savedAgent)
+        } else {
+            // Default to AI SDR if no agent is selected or invalid agent
+            setSelectedAgent('ai-sdr')
+        }
+    }, [])
+
     useEffect(() => {
         const fetchProfile = async () => {
             if (!user) return
@@ -141,13 +249,9 @@ export default function Dashboard() {
                 const data = await response.json()
                 setState((prev) => ({
                     ...prev,
-                    profile: data.profile,
+                    profile: data.profile || { completed: true }, // Default to completed if no profile
                     loading: false
                 }))
-
-                if (!data.profile?.completed || data.isNewUser) {
-                    router.push('/onboarding')
-                }
             } catch (err) {
                 setState((prev) => ({
                     ...prev,
@@ -227,9 +331,16 @@ export default function Dashboard() {
 
 
 
-    const filteredCampaigns = state.campaigns.filter((campaign) =>
-        campaign.name.toLowerCase().includes(state.searchQuery.toLowerCase())
-    )
+    const filteredCampaigns = state.campaigns.filter((campaign) => {
+        // Filter by search query
+        const matchesSearch = campaign.name.toLowerCase().includes(state.searchQuery.toLowerCase())
+        
+        // Filter by selected agent - check the campaign's selectedAgent setting
+        const campaignAgent = state.dbCampaigns.find(dbCampaign => dbCampaign.id === campaign.id)?.settings?.selectedAgent || 'ai-sdr'
+        const matchesAgent = campaignAgent === selectedAgent
+        
+        return matchesSearch && matchesAgent
+    })
 
     if (!isLoaded || state.loading) {
         return (
@@ -264,42 +375,47 @@ export default function Dashboard() {
         )
     }
 
-    if (!state.profile?.completed) {
-        return (
-            <DashboardLayout>
-                <VStack spacing={6} justify="center" h="400px">
-                    <Spinner size="xl" color="purple.500" />
-                    <Text>Redirecting to onboarding...</Text>
-                </VStack>
-            </DashboardLayout>
-        )
-    }
-
     return (
         <DashboardLayout>
             <VStack spacing={8} align="stretch">
-                {/* Campaigns Header */}
+                {/* Dynamic Header based on selected agent */}
                 <HStack justify="space-between" align="center">
-                    <VStack spacing={1} align="start">
-                        <Heading
-                            size="xl"
-                            bgGradient="linear(to-r, purple.400, blue.400)"
-                            bgClip="text"
-                            fontWeight="bold"
-                        >
-                            Campaigns
-                        </Heading>
-                        <Text color="gray.600" fontSize="lg">
-                            Manage your outreach campaigns and track performance
-                        </Text>
-                    </VStack>
+                    <HStack spacing={4} align="center">
+                        <Tooltip label="Back to Agent Selection" placement="bottom">
+                            <IconButton
+                                aria-label="Back to agents"
+                                icon={<ArrowLeft size={16} />}
+                                size="sm"
+                                variant="ghost"
+                                color="gray.500"
+                                _hover={{ 
+                                    color: "gray.700", 
+                                    bg: "gray.100" 
+                                }}
+                                onClick={() => router.push('/')}
+                            />
+                        </Tooltip>
+                        <VStack spacing={1} align="start">
+                            <Heading
+                                size="xl"
+                                bgGradient={currentAgent.gradient}
+                                bgClip="text"
+                                fontWeight="bold"
+                            >
+                                {currentAgent.campaignName}
+                            </Heading>
+                            <Text color="gray.600" fontSize="lg">
+                                {currentAgent.description}
+                            </Text>
+                        </VStack>
+                    </HStack>
                     <GradientButton
                         leftIcon={<Plus size={16} />}
                         variant="primary"
                         size="lg"
                         onClick={() => handleCreateCampaign()}
                     >
-                        Create a Campaign
+                        {currentAgent.actionText}
                     </GradientButton>
                 </HStack>
 
@@ -309,7 +425,7 @@ export default function Dashboard() {
                         <Icon as={Search} boxSize={5} color="gray.400" />
                     </InputLeftElement>
                     <Input
-                        placeholder="Search campaigns"
+                        placeholder={`Search ${currentAgent.campaignType}`}
                         value={state.searchQuery}
                         onChange={(e) => setState((prev) => ({ ...prev, searchQuery: e.target.value }))}
                         bg={searchBg}
@@ -317,8 +433,8 @@ export default function Dashboard() {
                         borderColor={searchBorder}
                         borderRadius="lg"
                         _focus={{
-                            borderColor: "purple.400",
-                            boxShadow: "0 0 0 1px var(--chakra-colors-purple-400)"
+                            borderColor: currentAgent.color,
+                            boxShadow: `0 0 0 1px var(--chakra-colors-${currentAgent.color.replace('.', '-')})`
                         }}
                     />
                 </InputGroup>
@@ -336,11 +452,11 @@ export default function Dashboard() {
                         transition="all 0.2s ease"
                     >
                         <VStack spacing={1}>
-                            <Icon as={Activity} boxSize={5} color="purple.500" />
+                            <Icon as={Activity} boxSize={5} color={currentAgent.color} />
                             <Text fontSize="2xl" fontWeight="bold">
                                 {state.dashboardStats.activeCampaigns}
                             </Text>
-                            <Text fontSize="xs" color="gray.600">Active Campaigns</Text>
+                            <Text fontSize="xs" color="gray.600">{currentAgent.statLabels.activeCampaigns}</Text>
                         </VStack>
                     </Card>
 
@@ -359,7 +475,7 @@ export default function Dashboard() {
                             <Text fontSize="2xl" fontWeight="bold">
                                 {state.dashboardStats.totalLeads}
                             </Text>
-                            <Text fontSize="xs" color="gray.600">Total Leads</Text>
+                            <Text fontSize="xs" color="gray.600">{currentAgent.statLabels.totalEntities}</Text>
                         </VStack>
                     </Card>
 
@@ -378,7 +494,7 @@ export default function Dashboard() {
                             <Text fontSize="2xl" fontWeight="bold">
                                 {state.dashboardStats.totalMessages}
                             </Text>
-                            <Text fontSize="xs" color="gray.600">Messages Sent</Text>
+                            <Text fontSize="xs" color="gray.600">{currentAgent.statLabels.totalMessages}</Text>
                         </VStack>
                     </Card>
 
@@ -397,7 +513,7 @@ export default function Dashboard() {
                             <Text fontSize="2xl" fontWeight="bold">
                                 {state.dashboardStats.responseRate}%
                             </Text>
-                            <Text fontSize="xs" color="gray.600">Response Rate</Text>
+                            <Text fontSize="xs" color="gray.600">{currentAgent.statLabels.responseRate}</Text>
                         </VStack>
                     </Card>
                 </SimpleGrid>
@@ -411,35 +527,41 @@ export default function Dashboard() {
                         gap={6}
                         w="100%"
                     >
-                        {filteredCampaigns.map((campaign) => (
-                            <CampaignCard
-                                key={campaign.id}
-                                id={campaign.id}
-                                name={campaign.name}
-                                type={campaign.type}
-                                leads={campaign.leads}
-                                createdAt={campaign.createdAt}
-                                onClick={() => router.push(`/campaigns/${campaign.id}`)}
-                                onMenuClick={() => {
-                                    // For now, just navigate to campaign view
-                                    router.push(`/campaigns/${campaign.id}`)
-                                }}
-                                onDelete={(deletedId) => {
-                                    // Remove the deleted campaign from the state
-                                    setState(prev => ({
-                                        ...prev,
-                                        campaigns: prev.campaigns.filter(c => c.id !== deletedId),
-                                        dbCampaigns: prev.dbCampaigns.filter(c => c.id !== deletedId)
-                                    }))
-                                }}
-                            />
-                        ))}
+                        {filteredCampaigns.map((campaign) => {
+                            const dbCampaign = state.dbCampaigns.find(dbCampaign => dbCampaign.id === campaign.id)
+                            const agentType = dbCampaign?.settings?.selectedAgent || 'ai-sdr'
+                            
+                            return (
+                                <CampaignCard
+                                    key={campaign.id}
+                                    id={campaign.id}
+                                    name={campaign.name}
+                                    type={campaign.type}
+                                    agentType={agentType}
+                                    leads={campaign.leads}
+                                    createdAt={campaign.createdAt}
+                                    onClick={() => router.push(`/campaigns/${campaign.id}`)}
+                                    onMenuClick={() => {
+                                        // For now, just navigate to campaign view
+                                        router.push(`/campaigns/${campaign.id}`)
+                                    }}
+                                    onDelete={(deletedId) => {
+                                        // Remove the deleted campaign from the state
+                                        setState(prev => ({
+                                            ...prev,
+                                            campaigns: prev.campaigns.filter(c => c.id !== deletedId),
+                                            dbCampaigns: prev.dbCampaigns.filter(c => c.id !== deletedId)
+                                        }))
+                                    }}
+                                />
+                            )
+                        })}
                     </Grid>
 
                     {filteredCampaigns.length === 0 && state.searchQuery && (
                         <Box textAlign="center" py={12}>
                             <Text color="gray.500" fontSize="lg">
-                                No campaigns found matching &quot;{state.searchQuery}&quot;
+                                No {currentAgent.campaignType} found matching &quot;{state.searchQuery}&quot;
                             </Text>
                         </Box>
                     )}
@@ -449,12 +571,12 @@ export default function Dashboard() {
                             <VStack spacing={4}>
                                 <Text color="gray.500" fontSize="lg">
                                     {organization
-                                        ? `No campaigns yet in ${organization.name}. Create your first campaign to get started!`
-                                        : "No campaigns yet. Create your first campaign to get started!"
+                                        ? `No ${currentAgent.campaignType} yet in ${organization.name}. Create your first ${currentAgent.campaignType.slice(0, -1)} to get started!`
+                                        : `No ${currentAgent.campaignType} yet. Create your first ${currentAgent.campaignType.slice(0, -1)} to get started!`
                                     }
                                 </Text>
                                 <GradientButton onClick={() => router.push('/campaigns/new')}>
-                                    Create Your First Campaign
+                                    {currentAgent.actionText}
                                 </GradientButton>
                             </VStack>
                         </Box>

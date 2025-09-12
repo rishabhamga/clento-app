@@ -11,10 +11,10 @@ const supabase = createClient(
 // Mock data for testing - in real implementation this would come from CSV or database
 const TEST_CONTACTS = [
   {
-    firstName: 'udit',
-    lastName: 'pandoh',
-    linkedinUrl: 'https://www.linkedin.com/in/udit-pandoh-aliste/',
-    linkedinIdentifier: 'udit-pandoh-aliste'
+    firstName: 'shivam',
+    lastName: 'mhaskar',
+    linkedinUrl: 'https://www.linkedin.com/in/shivam-mhaskar/',
+    linkedinIdentifier: 'shivam-mhaskar'
   }
 ]
 
@@ -180,7 +180,7 @@ export async function POST(
       }
       
       // Step 2: Verify connection and send test message 
-      const testMessage = `Hi ${testContact.firstName.charAt(0).toUpperCase() + testContact.firstName.slice(1)}, I'm testing my LinkedIn integration with Clento. This is a test message from our AI-powered outreach system! 🚀`
+      const testMessage = `Hi ${testContact.firstName.charAt(0).toUpperCase() + testContact.firstName.slice(1)}, I'm testing my LinkedIn integration with Observe AI agent. This is a test message from our AI-powered outreach system! 🚀`
       
       console.log('🧪 TEST MESSAGE (SDK): 💬 Step 2: Attempting to send test message via Unipile SDK')
       console.log('🧪 TEST MESSAGE (SDK): 📊 Message content:', testMessage)
@@ -286,7 +286,7 @@ export async function POST(
           try {
             // Use the provider_id from profile info for connection request
             const recipientId = profileInfo ? profileInfo.provider_id : testContact.linkedinIdentifier
-            const connectionMessage = `Hi ${testContact.firstName.charAt(0).toUpperCase() + testContact.firstName.slice(1)}, I'd like to connect with you to test my LinkedIn integration with Clento. Thanks!`
+            const connectionMessage = `Hi ${testContact.firstName.charAt(0).toUpperCase() + testContact.firstName.slice(1)}, I'd like to connect with you to test my LinkedIn integration with Observe.ai. Thanks!`
             
             console.log('🧪 TEST MESSAGE (SDK): 📊 SDK Parameters for connection request:', {
               account_id: unipileAccountId,

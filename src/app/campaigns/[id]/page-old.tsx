@@ -754,10 +754,10 @@ function CampaignDetailInner() {
                               </Box>
                               <VStack spacing={2}>
                                 <Text fontWeight="medium" fontSize="lg" color="purple.600">
-                                  Clento AI is working on it
+                                  Observe.ai is working on it
                                 </Text>
                                 <Text color="gray.500" textAlign="center" maxW="md">
-                                  Clento AI is working to get the best leads based on your set ICP, 
+                                  Observe.ai is working to get the best leads based on your set ICP, 
                                   how you selected filters, and your campaign objectives.
                                 </Text>
                               </VStack>
@@ -791,10 +791,10 @@ function CampaignDetailInner() {
                             </Box>
                             <VStack spacing={2}>
                               <Text fontWeight="medium" fontSize="lg" color="purple.600">
-                                Clento AI is personalizing messages
+                                Observe.ai is personalizing messages
                               </Text>
                               <Text color="gray.500" textAlign="center" maxW="md">
-                                Clento AI is finding data about the leads to personalize the messages to send to them 
+                                Observe.ai is finding data about the leads to personalize the messages to send to them 
                                 based on their profiles, interests, and company information.
                               </Text>
                             </VStack>

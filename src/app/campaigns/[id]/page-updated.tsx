@@ -329,7 +329,7 @@ export default function CampaignDetailPage() {
             </CardHeader>
             <CardBody pt={0}>
               <Text fontSize="md" color="gray.800" lineHeight="1.6">
-                {offering.description || pitch.coreOffering || campaign?.description || 'Clento provides an all-in-one AI-powered sales development platform that automates the entire outreach process, enhancing SDR performance and reducing costs.'}
+                {offering.description || pitch.coreOffering || campaign?.description || 'Observe.ai provides an AI-powered conversation intelligence platform that helps businesses analyze customer interactions, extract insights, and improve performance across sales, support, and marketing teams.'}
               </Text>
             </CardBody>
           </Card>

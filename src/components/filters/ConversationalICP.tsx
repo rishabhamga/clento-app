@@ -133,47 +133,151 @@ interface ConversationalICPProps {
     disabled?: boolean
 }
 
-const AI_SDR_MESSAGES = {
-    welcome: "👋 Hi! I'm Alex, your AI SDR. Tell me about your ideal customer and I'll help you build the perfect targeting filters. You can click on the examples below or describe your own requirements!",
-    thinking: "🤔 Let me analyze that...",
-    processing: "⚡ Building your target audience...",
-    success: "✅ Perfect! I've updated your filters.",
-    error: "❌ Sorry, I had trouble understanding that. Could you rephrase?",
-    followup: "💡 Want to refine anything else?"
+// Agent-specific configurations
+const AGENT_CONFIGS = {
+    'ai-sdr': {
+        name: 'Alex',
+        title: 'AI SDR Assistant',
+        color: 'purple.500',
+        welcome: "👋 Hi! I'm Alex, your AI SDR. Tell me about your ideal customer and I'll help you build the perfect targeting filters. You can click on the examples below or describe your own requirements!",
+        thinking: "🤔 Let me analyze that...",
+        processing: "⚡ Building your target audience...",
+        success: "✅ Perfect! Here are the filters you should apply to find your ideal prospects:",
+        error: "❌ Sorry, I had trouble understanding that. Could you rephrase?",
+        followup: "💡 Want to refine anything else?",
+        readyText: "Ready to help you target the perfect audience"
+    },
+    'ai-recruiter': {
+        name: 'Rachel',
+        title: 'AI Recruitment Assistant',
+        color: 'green.500',
+        welcome: "👋 Hi! I'm Rachel, your AI Recruitment Assistant. Tell me about your ideal candidate and I'll help you build the perfect targeting filters for your recruitment campaign. You can click on the examples below or describe your own requirements!",
+        thinking: "🤔 Let me analyze that...",
+        processing: "⚡ Building your candidate profile...",
+        success: "✅ Perfect! Here are the filters you should apply to find your ideal candidates:",
+        error: "❌ Sorry, I had trouble understanding that. Could you rephrase?",
+        followup: "💡 Want to refine your candidate criteria?",
+        readyText: "Ready to help you find the perfect candidates"
+    },
+    'ai-marketer': {
+        name: 'Maya',
+        title: 'AI Marketing Assistant',
+        color: 'blue.500',
+        welcome: "👋 Hi! I'm Maya, your AI Marketing Assistant. Tell me about your target audience and I'll help you build the perfect targeting filters for your marketing campaign. You can click on the examples below or describe your own requirements!",
+        thinking: "🤔 Let me analyze that...",
+        processing: "⚡ Building your audience profile...",
+        success: "✅ Perfect! Here are the filters you should apply to find your ideal audience:",
+        error: "❌ Sorry, I had trouble understanding that. Could you rephrase?",
+        followup: "💡 Want to refine your audience targeting?",
+        readyText: "Ready to help you target the perfect audience"
+    }
 }
 
-const SAMPLE_MESSAGES = [
-    {
-        title: "Basic Targeting",
-        message: "I want to target CTOs at mid-size tech companies in the US with 50-500 employees",
-        category: "basic"
-    },
-    {
-        title: "With Hiring Signals",
-        message: "Find VPs of Engineering at SaaS companies who are actively hiring React developers in the past 30 days",
-        category: "hiring"
-    },
-    {
-        title: "Technology Stack",
-        message: "Target marketing managers at companies using Salesforce and HubSpot with $10M-100M revenue",
-        category: "tech"
-    },
-    {
-        title: "Funding & Growth",
-        message: "Show me founders at Series A-B startups in fintech that raised funding in the last 12 months",
-        category: "funding"
-    },
-    {
-        title: "Geographic Focus",
-        message: "I need sales directors at manufacturing companies in Texas, California, and New York",
-        category: "location"
-    },
-    {
-        title: "Refinement Example",
-        message: "Change CTO to CMO and add companies with 100+ employees",
-        category: "refine"
-    }
-]
+// Legacy support
+const AI_SDR_MESSAGES = AGENT_CONFIGS['ai-sdr']
+
+// Agent-specific sample messages
+const AGENT_SAMPLE_MESSAGES = {
+    'ai-sdr': [
+        {
+            title: "Basic Targeting",
+            message: "I want to target CTOs at mid-size tech companies in the US with 50-500 employees",
+            category: "basic"
+        },
+        {
+            title: "With Hiring Signals",
+            message: "Find VPs of Engineering at SaaS companies who are actively hiring React developers in the past 30 days",
+            category: "hiring"
+        },
+        {
+            title: "Technology Stack",
+            message: "Target marketing managers at companies using Salesforce and HubSpot with $10M-100M revenue",
+            category: "tech"
+        },
+        {
+            title: "Funding & Growth",
+            message: "Show me founders at Series A-B startups in fintech that raised funding in the last 12 months",
+            category: "funding"
+        },
+        {
+            title: "Geographic Focus",
+            message: "I need sales directors at manufacturing companies in Texas, California, and New York",
+            category: "location"
+        },
+        {
+            title: "Refinement Example",
+            message: "Change CTO to CMO and add companies with 100+ employees",
+            category: "refine"
+        }
+    ],
+    'ai-recruiter': [
+        {
+            title: "Basic Targeting",
+            message: "I want to find Senior Software Engineers at mid-size tech companies in the US with 3+ years experience",
+            category: "basic"
+        },
+        {
+            title: "Skills & Experience",
+            message: "Find React developers with 5+ years experience at companies using modern JavaScript frameworks",
+            category: "hiring"
+        },
+        {
+            title: "Technology Stack",
+            message: "Target full-stack developers at companies using Node.js, React, and AWS with startup experience",
+            category: "tech"
+        },
+        {
+            title: "Growth Companies",
+            message: "Show me engineering managers at Series A-B startups that are actively hiring developers",
+            category: "funding"
+        },
+        {
+            title: "Location Based",
+            message: "I need remote-friendly developers currently working at companies in San Francisco, Austin, or New York",
+            category: "location"
+        },
+        {
+            title: "Refinement Example",
+            message: "Change Senior to Principal level and add candidates with AI/ML experience",
+            category: "refine"
+        }
+    ],
+    'ai-marketer': [
+        {
+            title: "Basic Targeting",
+            message: "I want to target Marketing Directors at B2B SaaS companies with 100-1000 employees",
+            category: "basic"
+        },
+        {
+            title: "Industry Focus",
+            message: "Find CMOs at fintech startups that recently raised Series A funding",
+            category: "hiring"
+        },
+        {
+            title: "Technology Users",
+            message: "Target marketing managers at companies using HubSpot, Salesforce, and marketing automation tools",
+            category: "tech"
+        },
+        {
+            title: "Growth Stage",
+            message: "Show me marketing leaders at high-growth companies with $10M-50M ARR",
+            category: "funding"
+        },
+        {
+            title: "Geographic Focus",
+            message: "I need digital marketing specialists at e-commerce companies in California and Texas",
+            category: "location"
+        },
+        {
+            title: "Refinement Example",
+            message: "Change Marketing Director to VP Marketing and add companies with 500+ employees",
+            category: "refine"
+        }
+    ]
+}
+
+// Legacy support
+const SAMPLE_MESSAGES = AGENT_SAMPLE_MESSAGES['ai-sdr']
 
 // Whitelist of supported filter keys (should match ParsedICP interface)
 const SUPPORTED_FILTER_KEYS = [
@@ -349,6 +453,20 @@ function filterSupportedFields(obj: any): ParsedICP {
 }
 
 export function ConversationalICP({ onICPParsed, onReset, disabled = false }: ConversationalICPProps) {
+    // Agent detection
+    const [selectedAgent, setSelectedAgent] = useState<string>('ai-sdr')
+    
+    useEffect(() => {
+        const savedAgent = localStorage.getItem('selectedAgent')
+        if (savedAgent && AGENT_CONFIGS[savedAgent as keyof typeof AGENT_CONFIGS]) {
+            setSelectedAgent(savedAgent)
+        }
+    }, [])
+    
+    // Get current agent config
+    const currentAgentConfig = AGENT_CONFIGS[selectedAgent as keyof typeof AGENT_CONFIGS] || AGENT_CONFIGS['ai-sdr']
+    const currentSampleMessages = AGENT_SAMPLE_MESSAGES[selectedAgent as keyof typeof AGENT_SAMPLE_MESSAGES] || AGENT_SAMPLE_MESSAGES['ai-sdr']
+    
     // Conversation state
     const { filters, searchType } = useSearchFilters()
     const { setPeopleFilters, setCompanyFilters, setSearchType } = useApolloSearch()
@@ -381,18 +499,28 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
         scrollToBottom()
     }, [messages])
 
-    // Show welcome message on mount
+    // Show welcome message on mount and when agent changes
     useEffect(() => {
-        if (showWelcome && messages.length === 0) {
+        if (showWelcome) {
             const welcomeMessage: ConversationMessage = {
                 id: 'welcome',
                 role: 'assistant',
-                content: AI_SDR_MESSAGES.welcome,
+                content: currentAgentConfig.welcome,
                 timestamp: new Date()
             }
-            setMessages([welcomeMessage])
+            
+            setMessages(prevMessages => {
+                if (prevMessages.length === 0) {
+                    // Initial welcome message
+                    return [welcomeMessage]
+                } else if (prevMessages[0].id === 'welcome' && prevMessages[0].content !== currentAgentConfig.welcome) {
+                    // Update existing welcome message when agent changes
+                    return [welcomeMessage, ...prevMessages.slice(1)]
+                }
+                return prevMessages
+            })
         }
-    }, [showWelcome, messages.length])
+    }, [showWelcome, currentAgentConfig.welcome, selectedAgent])
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -476,7 +604,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                     SUPPORTED_FILTER_KEYS.includes(fc.field)
                 )
 
-                console.log("CHaNges====================================", filteredFilterChanges)
+                console.log("Filter Changes from API:", filteredFilterChanges)
 
                 // Update conversation ID if this is the first message
                 if (!conversationId) {
@@ -484,10 +612,71 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                     setShowWelcome(false)
                 }
 
-                // Add Alex's response (with filtered filterChanges)
-                addMessage('assistant', conversation.assistantMessage, {
+                // Format filter changes to show actual values with friendly labels
+                const formatFilterValues = (filterChanges: any[], parsedFilters: ParsedICP) => {
+                    const fieldLabels: { [key: string]: string } = {
+                        'jobTitles': 'Job Titles',
+                        'seniorities': 'Seniority Levels',
+                        'industries': 'Industries',
+                        'companyHeadcount': 'Company Size',
+                        'organizationLocations': 'Company Locations',
+                        'organizationJobTitles': 'Hiring for Roles',
+                        'organizationJobPostedAtMin': 'Job Posted After',
+                        'organizationJobPostedAtMax': 'Job Posted Before',
+                        'organizationNumJobsMin': 'Min Job Openings',
+                        'organizationNumJobsMax': 'Max Job Openings',
+                        'technologies': 'Technologies',
+                        'technologyUids': 'Technology Stack',
+                        'revenueMin': 'Min Revenue',
+                        'revenueMax': 'Max Revenue',
+                        'fundingStages': 'Funding Stages',
+                        'personLocations': 'Person Locations',
+                        'hasEmail': 'Has Email',
+                        'keywords': 'Keywords'
+                    }
+                    
+                    // Use parsed filters to get actual values instead of relying on filterChanges
+                    const appliedFilters: string[] = []
+                    
+                    // Check each field in parsedFilters and format with values
+                    Object.entries(parsedFilters).forEach(([field, value]) => {
+                        const friendlyField = fieldLabels[field] || field
+                        
+                        if (Array.isArray(value) && value.length > 0) {
+                            appliedFilters.push(`${friendlyField}: ${value.join(', ')}`)
+                        } else if (value !== null && value !== undefined && value !== '' && value !== 0) {
+                            // Format specific types
+                            if (typeof value === 'boolean') {
+                                appliedFilters.push(`${friendlyField}: ${value ? 'Yes' : 'No'}`)
+                            } else if (field.includes('Date') && typeof value === 'string' && value.includes('T')) {
+                                const date = new Date(value)
+                                appliedFilters.push(`${friendlyField}: ${date.toLocaleDateString()}`)
+                            } else if (typeof value === 'number' && value > 0) {
+                                // Format numbers with appropriate units
+                                if (field.includes('revenue') || field.includes('funding')) {
+                                    appliedFilters.push(`${friendlyField}: $${value.toLocaleString()}`)
+                                } else {
+                                    appliedFilters.push(`${friendlyField}: ${value}`)
+                                }
+                            } else if (typeof value === 'string' && value.trim() !== '') {
+                                appliedFilters.push(`${friendlyField}: ${value}`)
+                            }
+                        }
+                    })
+                    
+                    return appliedFilters.length > 0 ? appliedFilters : ['No specific filters applied']
+                }
+
+                // Update assistant message to be more actionable
+                const actionableMessage = conversation.assistantMessage.replace(
+                    /I've set up the filters|I've updated your filters|I've configured the filters/g,
+                    `Here are the filters you should apply to find your ideal ${selectedAgent === 'ai-recruiter' ? 'candidates' : selectedAgent === 'ai-marketer' ? 'audience' : 'prospects'}:`
+                )
+
+                // Add assistant response (with actual filter values)
+                addMessage('assistant', actionableMessage, {
                     confidence: conversation.confidence,
-                    filtersApplied: filteredFilterChanges.map((fc: any) => fc.field) || [],
+                    filtersApplied: formatFilterValues(filteredFilterChanges, filteredFilters) || [],
                     reasoningExplanation: conversation.reasoningExplanation,
                     conflictsDetected: conversation.conflictsDetected,
                     clarificationNeeded: conversation.clarificationNeeded
@@ -543,7 +732,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
             setError(error instanceof Error ? error.message : 'Unknown error occurred')
 
             // Add error message from Alex
-            addMessage('assistant', AI_SDR_MESSAGES.error + ' ' + (error instanceof Error ? error.message : ''))
+            addMessage('assistant', currentAgentConfig.error + ' ' + (error instanceof Error ? error.message : ''))
         } finally {
             setIsProcessing(false)
         }
@@ -587,7 +776,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                     </Text>
 
                     <VStack spacing={2} align="stretch">
-                        {SAMPLE_MESSAGES.slice(0, 4).map((sample, index) => (
+                        {currentSampleMessages.slice(0, 4).map((sample, index) => (
                             <Card
                                 key={index}
                                 size="sm"
@@ -614,11 +803,11 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                                                                 sample.category === 'location' ? FiUser :
                                                                     FiRefreshCw
                                             }
-                                            color="purple.500"
+                                            color={currentAgentConfig.color}
                                             flexShrink={0}
                                         />
                                         <VStack align="start" spacing={1} flex={1}>
-                                            <Text fontSize="xs" fontWeight="semibold" color="purple.600">
+                                            <Text fontSize="xs" fontWeight="semibold" color={currentAgentConfig.color.replace('.500', '.600')}>
                                                 {sample.title}
                                             </Text>
                                             <Text fontSize="xs" color={mutedColor} noOfLines={2}>
@@ -643,7 +832,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
     const renderRefinementSuggestions = () => {
         if (!conversationId || !currentFilters) return null
 
-        const refinementSamples = SAMPLE_MESSAGES.filter(sample => sample.category === 'refine').slice(0, 2)
+        const refinementSamples = currentSampleMessages.filter(sample => sample.category === 'refine').slice(0, 2)
 
         return (
             <Box mt={2} mb={2}>
@@ -683,7 +872,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                         <Avatar
                             size="sm"
                             mr={3}
-                            bg="purple.500"
+                            bg={currentAgentConfig.color}
                             icon={<Icon as={FiZap} color="white" />}
                             flexShrink={0}
                         />
@@ -729,7 +918,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                         {!isUser && !isWelcome && (
                             <HStack mb={2} spacing={2}>
                                 <Text fontSize="xs" fontWeight="bold" opacity={0.8}>
-                                    Alex
+                                    {currentAgentConfig.name}
                                 </Text>
                                 {message.metadata?.confidence && (
                                     <Badge size="xs" colorScheme="green">
@@ -744,31 +933,33 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                         </Text>
 
                         {message.metadata?.filtersApplied && message.metadata.filtersApplied.length > 0 && (
-                            <HStack mt={2} spacing={1} flexWrap="wrap">
-                                <Text fontSize="xs" opacity={0.7}>
-                                    Updated:
+                            <Box mt={3} p={3} bg={useColorModeValue(`${currentAgentConfig.color.split('.')[0]}.50`, `${currentAgentConfig.color.split('.')[0]}.900`)} borderRadius="md" border="1px solid" borderColor={useColorModeValue(`${currentAgentConfig.color.split('.')[0]}.200`, `${currentAgentConfig.color.split('.')[0]}.700`)}>
+                                <Text fontSize="xs" fontWeight="semibold" color={useColorModeValue(`${currentAgentConfig.color.split('.')[0]}.700`, `${currentAgentConfig.color.split('.')[0]}.200`)} mb={2}>
+                                    🎯 Filters you can apply:
                                 </Text>
-                                {message.metadata.filtersApplied.map((filter: string) => (
-                                    <Badge key={filter} size="xs" variant="outline">
-                                        {filter}
-                                    </Badge>
-                                ))}
-                            </HStack>
+                                <VStack align="start" spacing={1}>
+                                    {message.metadata.filtersApplied.map((filter: string, index: number) => (
+                                        <Text key={index} fontSize="xs" color={useColorModeValue(`${currentAgentConfig.color.split('.')[0]}.800`, `${currentAgentConfig.color.split('.')[0]}.100`)}>
+                                            • {filter}
+                                        </Text>
+                                    ))}
+                                </VStack>
+                            </Box>
                         )}
 
                         {message.metadata?.reasoningExplanation && (
-                            <Box mt={2} p={2} bg="purple.50" borderRadius="md" border="1px solid" borderColor="purple.200">
-                                <Text fontSize="xs" fontWeight="semibold" color="purple.600">
-                                    Reasoning:
+                            <Box mt={2} p={2} bg={useColorModeValue('gray.50', 'gray.800')} borderRadius="md" border="1px solid" borderColor={useColorModeValue('gray.200', 'gray.700')}>
+                                <Text fontSize="xs" fontWeight="semibold" color={useColorModeValue('gray.600', 'gray.300')}>
+                                    💭 How I chose these filters:
                                 </Text>
-                                <Text fontSize="sm" whiteSpace="pre-wrap">{message.metadata.reasoningExplanation}</Text>
+                                <Text fontSize="sm" whiteSpace="pre-wrap" color={useColorModeValue('gray.700', 'gray.200')}>{message.metadata.reasoningExplanation}</Text>
                             </Box>
                         )}
 
                         {message.metadata?.conflictsDetected && message.metadata.conflictsDetected.length > 0 && (
                             <Box mt={2} p={2} bg="red.50" borderRadius="md" border="1px solid" borderColor="red.200">
                                 <Text fontSize="xs" fontWeight="semibold" color="red.600">
-                                    Conflicts:
+                                    ⚠️ Potential Issues:
                                 </Text>
                                 <Text fontSize="sm" whiteSpace="pre-wrap">{message.metadata.conflictsDetected.join(', ')}</Text>
                             </Box>
@@ -777,7 +968,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                         {message.metadata?.clarificationNeeded && message.metadata.clarificationNeeded.length > 0 && (
                             <Box mt={2} p={2} bg="yellow.50" borderRadius="md" border="1px solid" borderColor="yellow.200">
                                 <Text fontSize="xs" fontWeight="semibold" color="yellow.600">
-                                    Clarification Needed:
+                                    ❓ Need more details about:
                                 </Text>
                                 <Text fontSize="sm" whiteSpace="pre-wrap">{message.metadata.clarificationNeeded.join(', ')}</Text>
                             </Box>
@@ -809,15 +1000,15 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                 <HStack p={4} borderBottom="1px solid" borderColor={borderColor} flexShrink={0}>
                     <Avatar
                         size="sm"
-                        bg="purple.500"
+                        bg={currentAgentConfig.color}
                         icon={<Icon as={FiZap} color="white" />}
                     />
                     <VStack align="start" spacing={0} flex={1}>
                         <Text fontWeight="bold" fontSize="sm">
-                            Alex - AI SDR Assistant
+                            {currentAgentConfig.name} - {currentAgentConfig.title}
                         </Text>
                         <Text fontSize="xs" color={mutedColor}>
-                            {conversationId ? 'Conversation active' : 'Ready to help you target the perfect audience'}
+                            {conversationId ? 'Conversation active' : currentAgentConfig.readyText}
                         </Text>
                     </VStack>
 
@@ -847,7 +1038,7 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                                     <Avatar
                                         size="sm"
                                         mr={3}
-                                        bg="purple.500"
+                                        bg={currentAgentConfig.color}
                                         icon={<Spinner size="xs" color="white" />}
                                         flexShrink={0}
                                     />
@@ -878,21 +1069,21 @@ export function ConversationalICP({ onICPParsed, onReset, disabled = false }: Co
                                                     <Box
                                                         w="3px"
                                                         h="3px"
-                                                        bg="purple.400"
+                                                        bg={currentAgentConfig.color.replace('.500', '.400')}
                                                         borderRadius="full"
                                                         animation="pulse 1.5s ease-in-out infinite"
                                                     />
                                                     <Box
                                                         w="3px"
                                                         h="3px"
-                                                        bg="purple.400"
+                                                        bg={currentAgentConfig.color.replace('.500', '.400')}
                                                         borderRadius="full"
                                                         animation="pulse 1.5s ease-in-out infinite 0.2s"
                                                     />
                                                     <Box
                                                         w="3px"
                                                         h="3px"
-                                                        bg="purple.400"
+                                                        bg={currentAgentConfig.color.replace('.500', '.400')}
                                                         borderRadius="full"
                                                         animation="pulse 1.5s ease-in-out infinite 0.4s"
                                                     />

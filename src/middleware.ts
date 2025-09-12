@@ -6,8 +6,7 @@ import { supabase } from './lib/supabase'
 // Define routes that should be protected (require authentication)
 const isProtectedRoute = createRouteMatcher([
     '/dashboard(.*)',
-    '/campaigns(.*)',
-    '/onboarding'
+    '/campaigns(.*)'
 ])
 
 // Define public routes (accessible without authentication)
@@ -35,52 +34,6 @@ export default clerkMiddleware(async (auth, req) => {
             const signInUrl = new URL('/sign-in', req.url)
             signInUrl.searchParams.set('redirect_url', req.url)
             return NextResponse.redirect(signInUrl)
-        }
-
-        if (req.nextUrl.pathname !== '/onboarding') {
-            const referer = req.headers.get('referer')
-            const isComingFromOnboarding = referer?.includes('/onboarding')
-
-            if (!isComingFromOnboarding) {
-                try {
-                    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-                    // Fetch user and profile in a single query using Supabase's join feature
-                    const { data: user, error: userError } = await supabase
-                        .from('users')
-                        .select('id')
-                        .eq('clerk_id', userId)
-                        .single();
-
-                    if (userError) {
-                        console.error('Error fetching user:', userError);
-                        throw new Error('Failed to fetch user');
-                    }
-
-                    if (!user) {
-                        const onboardingUrl = new URL('/onboarding', req.url);
-                        return NextResponse.redirect(onboardingUrl);
-                    }
-
-                    const { data: profile, error: profileError } = await supabase
-                        .from('user_profile')
-                        .select('onboarding_completed')
-                        .eq('user_id', user.id)
-                        .single();
-
-                    if (profileError) {
-                        console.error('Error fetching user profile:', profileError);
-                        throw new Error('Failed to fetch user profile');
-                    }
-
-                    if (!profile?.onboarding_completed) {
-                        const onboardingUrl = new URL('/onboarding', req.url);
-                        return NextResponse.redirect(onboardingUrl);
-                    }
-                } catch (error) {
-                    console.error('Error checking onboarding status:', error)
-                }
-            }
         }
     }
     if (isConsoleRoute(req)) {

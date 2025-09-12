@@ -30,7 +30,7 @@ class ApolloHttpClient {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'Clento-Clay/1.0',
+        'User-Agent': 'Observe-AI/1.0',
       },
     })
 

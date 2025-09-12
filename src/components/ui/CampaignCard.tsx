@@ -29,6 +29,7 @@ interface CampaignCardProps {
   id: string
   name: string
   type: 'Standard' | 'Watchtower' | 'Local'
+  agentType?: string
   leads: {
     current: number
     total: number
@@ -43,6 +44,7 @@ export default function CampaignCard({
   id,
   name,
   type,
+  agentType,
   leads,
   createdAt,
   onClick,
@@ -70,6 +72,23 @@ export default function CampaignCard({
     }
   }
 
+  const getAgentInfo = (agentType: string) => {
+    switch (agentType) {
+      case 'ai-sdr':
+        return { name: 'AI SDR', color: 'purple' }
+      case 'ai-recruiter':
+        return { name: 'AI Recruiter', color: 'green' }
+      case 'ai-marketer':
+        return { name: 'AI Marketer', color: 'blue' }
+      case 'ai-sales-buddy':
+        return { name: 'Conversation Intelligence Agent', color: 'orange' }
+      case 'asset-inventory-agent':
+        return { name: 'Asset Inventory AI', color: 'red' }
+      default:
+        return { name: 'AI SDR', color: 'purple' }
+    }
+  }
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'Watchtower':
@@ -80,6 +99,7 @@ export default function CampaignCard({
   }
 
   const TypeIcon = getTypeIcon(type)
+  const agentInfo = getAgentInfo(agentType || 'ai-sdr')
 
   const handleDelete = async () => {
     setIsDeleting(true)
@@ -135,17 +155,29 @@ export default function CampaignCard({
       <VStack spacing={4} align="stretch">
         {/* Header */}
         <HStack justify="space-between" align="start">
-          <Badge 
-            colorScheme={getTypeColor(type)} 
-            variant="subtle"
-            fontSize="xs"
-            px={2}
-            py={1}
-            borderRadius="md"
-          >
-            {TypeIcon && <Icon as={TypeIcon} boxSize={3} mr={1} />}
-            {type}
-          </Badge>
+          <HStack spacing={2}>
+            <Badge 
+              colorScheme={getTypeColor(type)} 
+              variant="subtle"
+              fontSize="xs"
+              px={2}
+              py={1}
+              borderRadius="md"
+            >
+              {TypeIcon && <Icon as={TypeIcon} boxSize={3} mr={1} />}
+              {type}
+            </Badge>
+            <Badge 
+              colorScheme={agentInfo.color} 
+              variant="solid"
+              fontSize="xs"
+              px={2}
+              py={1}
+              borderRadius="md"
+            >
+              {agentInfo.name}
+            </Badge>
+          </HStack>
           <Menu placement="bottom-end">
             <MenuButton
               as={IconButton}

@@ -1,6 +1,6 @@
-# AI SDR Platform.
+# Observe.ai Agents Platform
 
-AI-powered Sales Development Representative platform for automated lead generation and multichannel outreach. This platform finds ideal leads, enriches their data, and engages them via LinkedIn and email with AI-crafted messages.
+AI-powered Conversation Intelligence Platform that provides specialized AI agents for different business functions. This platform includes AI SDR, AI Marketer, AI Recruiter, AI Sales Buddy, and Asset Inventory AI agents to automate and enhance various business processes.
 
 ## Features
 

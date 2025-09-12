@@ -68,7 +68,7 @@ interface UserAccount {
     user_id: string
     organization_id: string | null
     unipile_account_id: string | null
-    provider: 'linkedin' | 'email' | 'twitter' | 'facebook' | 'instagram' | 'whatsapp' | 'telegram' | 'messenger'
+    provider: 'linkedin' | 'gmail' | 'outlook' | 'twitter' | 'facebook' | 'instagram' | 'whatsapp' | 'telegram' | 'messenger'
     account_type: 'personal' | 'business' | 'page'
     display_name: string
     username: string | null
@@ -106,12 +106,19 @@ const PROVIDERS = {
         available: true,
         description: 'Connect your LinkedIn account for professional outreach'
     },
-    email: {
-        name: 'Email',
+    gmail: {
+        name: 'Gmail',
         icon: Mail,
-        color: 'green',
-        available: false,
-        description: 'Connect your email accounts'
+        color: 'red',
+        available: true,
+        description: 'Connect your Gmail account for automated email outreach'
+    },
+    outlook: {
+        name: 'Outlook',
+        icon: Mail,
+        color: 'blue',
+        available: true,
+        description: 'Connect your Outlook account for automated email outreach'
     },
     twitter: {
         name: 'Twitter',

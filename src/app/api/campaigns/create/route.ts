@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
 
     const {
       campaignName,
+      selectedAgent,
       targeting,
       pitch,
       outreach,
@@ -172,6 +173,7 @@ export async function POST(request: NextRequest) {
           workflow, // Keep for backward compatibility
           startedAt: launch?.autopilot ? new Date().toISOString() : null,
           // Store additional campaign metadata
+          selectedAgent: selectedAgent || 'ai-sdr',
           campaignType: targeting?.searchType || 'b2b',
           industry: targeting?.filters?.industries?.[0] || null,
           country: targeting?.filters?.locations?.[0] || 'US',

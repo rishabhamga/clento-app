@@ -8,15 +8,16 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI SDR Platform",
-  description: "AI-powered Sales Development Representative platform for automated lead generation and outreach",
+  title: "Observe Agents",
+  description: "Internal suite of AI-powered employees that automate repetitive tasks across functions - sales, marketing, recruitment, and security",
   icons: {
     icon: [
+      { url: '/observe-ai.svg', sizes: 'any', type: 'image/svg+xml' },
+      { url: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
-      { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico',
-    apple: '/favicon.png',
+    shortcut: '/favicon.svg',
+    apple: '/observe-ai.svg',
   },
 };
 

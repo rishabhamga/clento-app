@@ -1,6 +1,5 @@
 'use client'
 
-import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
 import {
   Box,
   Container,
@@ -11,217 +10,141 @@ import {
   SimpleGrid,
   Card,
   CardBody,
-  useColorModeValue
+  useColorModeValue,
+  Icon,
+  Flex
 } from '@chakra-ui/react'
 import Link from 'next/link'
 import { GradientButton } from '@/components/ui/GradientButton'
+import { Users, MessageCircle, UserCheck, Headphones, Shield } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
+  const router = useRouter()
   const cardBg = useColorModeValue('white', 'gray.700')
+  const cardHoverBg = useColorModeValue('gray.50', 'gray.600')
+
+  const agents = [
+    {
+      id: 'ai-sdr',
+      name: 'SDR AI',
+      description: 'Automate lead generation and outreach with AI. Find prospects, craft personalized messages, and book meetings.',
+      icon: Users,
+      color: 'purple.500'
+    },
+    {
+      id: 'ai-marketer',
+      name: 'Marketer AI',
+      description: 'Create personalized marketing campaigns and automate customer engagement across multiple channels.',
+      icon: MessageCircle,
+      color: 'blue.500'
+    },
+    {
+      id: 'ai-recruiter',
+      name: 'Recruiter AI',
+      description: 'Engage top candidates with personalized job offers and automate recruitment outreach.',
+      icon: UserCheck,
+      color: 'green.500'
+    },
+    {
+      id: 'ai-sales-buddy',
+      name: 'Conversation Intelligence AI',
+      description: 'Analyze 100% of conversations across teams, extract insights, automate quality assurance, and provide real-time coaching for enhanced customer experience.',
+      icon: Headphones,
+      color: 'orange.500'
+    },
+    {
+      id: 'asset-inventory-agent',
+      name: 'Asset Inventory AI',
+      description: 'Query asset inventory, identify critical assets, vulnerabilities, and provide security insights.',
+      icon: Shield,
+      color: 'red.500'
+    }
+  ]
+
+  const handleAgentSelect = (agentId: string) => {
+    if (agentId === 'asset-inventory-agent') {
+      // Redirect to Observe.AI Slack app for Asset Inventory AI
+      window.open('https://observeai.slack.com/app_redirect?app=A08TXBQJGGK', '_blank')
+      return
+    }
+    
+    localStorage.setItem('selectedAgent', agentId)
+    router.push('/dashboard')
+  }
 
   return (
     <Box minH="100vh" bg={useColorModeValue('gray.50', 'gray.900')}>
-      {/* Header */}
-      <Box bg="white" shadow="sm" borderBottom="1px" borderColor="gray.200">
-        <Container maxW="7xl" py={4}>
-          <HStack justify="space-between">
-            <Heading 
-              size="lg" 
-              bgGradient="linear(to-r, purple.400, purple.600)" 
-              bgClip="text"
-            >
-              clento
-            </Heading>
-            <HStack spacing={4}>
-              <SignedOut>
-                <Link href="/sign-in">
-                  <GradientButton 
-                    variant="tertiary"
-                    size="sm"
-                  >
-                    Sign In
-                  </GradientButton>
-                </Link>
-                <Link href="/sign-up">
-                  <GradientButton 
-                    variant="primary"
-                    size="sm"
-                  >
-                    Sign Up
-                  </GradientButton>
-                </Link>
-              </SignedOut>
-              <SignedIn>
-                <Link href="/dashboard">
-                  <GradientButton 
-                    variant="primary"
-                    size="sm"
-                  >
-                    Dashboard
-                  </GradientButton>
-                </Link>
-                <UserButton />
-              </SignedIn>
-            </HStack>
-          </HStack>
-        </Container>
-      </Box>
-
-      {/* Hero Section */}
-      <Container maxW="7xl" py={20}>
-        <VStack spacing={8} textAlign="center">
-          <Box>
-            <Heading 
-              size="3xl" 
-              bgGradient="linear(to-r, purple.400, purple.600)" 
-              bgClip="text"
-              mb={4}
-            >
-              AI-Powered Sales Development
-            </Heading>
-            <Text fontSize="xl" color="gray.600" maxW="2xl">
-              Automate lead generation and outreach with AI. Find prospects, craft personalized messages, 
-              and book meetings while you focus on closing deals.
-            </Text>
-          </Box>
-
-          <Link href="/dashboard">
-            <GradientButton 
-              size="xl"
-              _hover={{
-                transform: 'translateY(-2px)',
-                shadow: 'xl',
-              }}
-              transition="all 0.3s ease"
-            >
-              Go to Dashboard
-            </GradientButton>
-          </Link>
+      <Container maxW="7xl" py={12}>
+        <VStack spacing={6} textAlign="center" mb={8}>
+          <Heading size="3xl" bgGradient="linear(to-r, purple.400, purple.600)" bgClip="text">
+            Observe Agents
+          </Heading>
+          <Text fontSize="lg" color="gray.600" maxW="3xl">
+            Your internal suite of AI-powered employees that automate repetitive tasks across functions. Choose your AI agent and transform how your teams work.
+          </Text>
         </VStack>
-      </Container>
 
-      {/* Features Section */}
-      <Container maxW="7xl" py={16}>
-        <VStack spacing={12}>
-          <Box textAlign="center">
-            <Heading size="xl" mb={4}>
-              Everything You Need for Outbound Sales
-            </Heading>
-            <Text fontSize="lg" color="gray.600">
-              Your AI SDR handles the entire sales process from lead discovery to booking meetings
-            </Text>
-          </Box>
-
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={8}>
-            <Card bg={cardBg} shadow="lg">
-              <CardBody p={8}>
-                <VStack spacing={4} align="start">
-                  <Text fontSize="3xl">•</Text>
-                  <Heading size="md">Smart Lead Discovery</Heading>
-                  <Text color="gray.600">
-                    Find ideal prospects using AI-powered search across millions of contacts. 
-                    Filter by industry, role, company size, and more.
-                  </Text>
-                </VStack>
-              </CardBody>
-            </Card>
-
-            <Card bg={cardBg} shadow="lg">
-              <CardBody p={8}>
-                <VStack spacing={4} align="start">
-                  <Text fontSize="3xl">✍️</Text>
-                  <Heading size="md">Personalized Outreach</Heading>
-                  <Text color="gray.600">
-                    AI crafts personalized emails and LinkedIn messages for each prospect, 
-                    incorporating their company info and pain points.
-                  </Text>
-                </VStack>
-              </CardBody>
-            </Card>
-
-            <Card bg={cardBg} shadow="lg">
-              <CardBody p={8}>
-                <VStack spacing={4} align="start">
-                  <Text fontSize="3xl">•</Text>
-                  <Heading size="md">Multi-Channel Sequences</Heading>
-                  <Text color="gray.600">
-                    Automate follow-ups across email and LinkedIn with intelligent timing 
-                    and conditional workflows.
-                  </Text>
-                </VStack>
-              </CardBody>
-            </Card>
-
-            <Card bg={cardBg} shadow="lg">
-              <CardBody p={8}>
-                <VStack spacing={4} align="start">
-                  <Text fontSize="3xl">🤖</Text>
-                  <Heading size="md">AI Reply Handling</Heading>
-                  <Text color="gray.600">
-                    Automatically classify responses and get AI-suggested replies to 
-                    keep conversations moving forward.
-                  </Text>
-                </VStack>
-              </CardBody>
-            </Card>
-
-            <Card bg={cardBg} shadow="lg">
-              <CardBody p={8}>
-                <VStack spacing={4} align="start">
-                  <Text fontSize="3xl">•</Text>
-                  <Heading size="md">Performance Analytics</Heading>
-                  <Text color="gray.600">
-                    Track open rates, reply rates, and meeting bookings with detailed 
-                    analytics and optimization insights.
-                  </Text>
-                </VStack>
-              </CardBody>
-            </Card>
-
-            <Card bg={cardBg} shadow="lg">
-              <CardBody p={8}>
-                <VStack spacing={4} align="start">
-                  <Text fontSize="3xl">•</Text>
-                  <Heading size="md">Seamless Integrations</Heading>
-                  <Text color="gray.600">
-                    Connect your existing email accounts, LinkedIn, and CRM tools 
-                    for a unified sales workflow.
-                  </Text>
-                </VStack>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
-        </VStack>
-      </Container>
-
-      {/* CTA Section */}
-      <Box bg="primary.500" color="white" py={16}>
-        <Container maxW="7xl">
-          <VStack spacing={8} textAlign="center">
-            <Heading size="xl">
-              Ready to Scale Your Outbound Sales?
-            </Heading>
-            <Text fontSize="lg" opacity={0.9}>
-              Join thousands of sales teams using AI to generate more qualified leads and book more meetings.
-            </Text>
-            <Link href="/dashboard">
-              <GradientButton 
-                size="lg" 
-                bg="white" 
-                color="purple.600" 
-                _hover={{ 
-                  bg: 'gray.100',
-                  transform: 'translateY(-2px)',
-                  shadow: 'xl',
-                }}
+        <Box>
+          {/* First row with 3 agents */}
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8} mb={8}>
+            {agents.slice(0, 3).map((agent) => (
+              <Card 
+                key={agent.id}
+                bg={cardBg}
+                shadow="lg"
+                cursor="pointer"
+                onClick={() => handleAgentSelect(agent.id)}
+                _hover={{ bg: cardHoverBg, transform: 'translateY(-4px)', shadow: 'xl' }}
                 transition="all 0.3s ease"
+                borderRadius="xl"
+                p={2}
               >
-                Get Started Now
-              </GradientButton>
-            </Link>
-          </VStack>
-        </Container>
-      </Box>
+                <CardBody p={8}>
+                  <VStack spacing={5} align="center" textAlign="center">
+                    <Box p={4} borderRadius="full" bg={useColorModeValue('gray.100', 'gray.700')}>
+                      <Icon as={agent.icon} boxSize={8} color={agent.color} />
+                    </Box>
+                    <Heading size="md">{agent.name}</Heading>
+                    <Text color="gray.600" fontSize="sm">{agent.description}</Text>
+                    <GradientButton size="sm">Get Started</GradientButton>
+                  </VStack>
+                </CardBody>
+              </Card>
+            ))}
+          </SimpleGrid>
+          
+          {/* Second row with 2 agents centered */}
+          <Flex justify="center">
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={8} maxW="800px">
+              {agents.slice(3).map((agent) => (
+                <Card 
+                  key={agent.id}
+                  bg={cardBg}
+                  shadow="lg"
+                  cursor="pointer"
+                  onClick={() => handleAgentSelect(agent.id)}
+                  _hover={{ bg: cardHoverBg, transform: 'translateY(-4px)', shadow: 'xl' }}
+                  transition="all 0.3s ease"
+                  borderRadius="xl"
+                  p={2}
+                >
+                  <CardBody p={8}>
+                    <VStack spacing={5} align="center" textAlign="center">
+                      <Box p={4} borderRadius="full" bg={useColorModeValue('gray.100', 'gray.700')}>
+                        <Icon as={agent.icon} boxSize={8} color={agent.color} />
+                      </Box>
+                      <Heading size="md">{agent.name}</Heading>
+                      <Text color="gray.600" fontSize="sm">{agent.description}</Text>
+                      <GradientButton size="sm">Get Started</GradientButton>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              ))}
+            </SimpleGrid>
+          </Flex>
+        </Box>
+      </Container>
     </Box>
   )
 }
