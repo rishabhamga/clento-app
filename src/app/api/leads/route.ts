@@ -18,7 +18,7 @@ const getCampaigns = async (tokenData: { api_token: string }) => {
             return
         }
         const campaignsArray: any[] = res.data.data
-        console.log(JSON.stringify(res.data.data, null, 4))
+        // console.log(JSON.stringify(res.data.data, null, 4))
 
         return campaignsArray.filter(it => it.status !== 'paused' && it.status !== 'draft')
     } catch (err) {

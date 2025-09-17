@@ -105,7 +105,7 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
           if((existingLead as any).crm_entry === 0){
               console.log("entrying into the db and crm")
               try {
-                  await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "SYNDIE_REPLY", linkedIn: leadData.linkedin_url || undefined })
+                  await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "LINKEDIN_REPLY", linkedIn: leadData.linkedin_url || undefined })
                   console.log("crm done")
                   await (supabaseAdmin as any)
                     .from('leads')

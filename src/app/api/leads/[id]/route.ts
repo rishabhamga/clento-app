@@ -18,6 +18,7 @@ const getLeadDetail = async (id: string, tokenData: { api_token: string }) => {
             return
         }
         const lead: any = res.data.data
+        console.log(JSON.stringify(lead, null, 4))
         return lead
     } catch (err) {
         console.log(err)
