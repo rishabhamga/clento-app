@@ -1,6 +1,21 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+CREATE TABLE public.account_activities (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  account_id uuid NOT NULL,
+  activity_type text NOT NULL CHECK (activity_type = ANY (ARRAY['test_message'::text, 'profile_visit'::text, 'connection_request'::text, 'message_sent'::text, 'comment_post'::text, 'like_post'::text, 'share_post'::text, 'follow_user'::text, 'unfollow_user'::text, 'campaign_start'::text, 'campaign_end'::text, 'webhook_notification'::text, 'sync_data'::text])),
+  activity_data jsonb DEFAULT '{}'::jsonb,
+  status text DEFAULT 'completed'::text CHECK (status = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text, 'cancelled'::text])),
+  error_message text,
+  external_id text,
+  target_profile_id text,
+  campaign_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT account_activities_pkey PRIMARY KEY (id),
+  CONSTRAINT account_activities_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.user_accounts(id)
+);
 CREATE TABLE public.campaign_drafts (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id text NOT NULL,
@@ -32,9 +47,10 @@ CREATE TABLE public.campaigns (
   organization_id uuid,
   smartlead_campaign_id character varying,
   syndie_campaign_ids ARRAY,
+  workflow_json_file text CHECK (workflow_json_file IS NULL OR workflow_json_file ~ '^workflows/[a-zA-Z0-9_-]+\.json$'::text),
   CONSTRAINT campaigns_pkey PRIMARY KEY (id),
-  CONSTRAINT campaigns_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-  CONSTRAINT campaigns_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+  CONSTRAINT campaigns_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT campaigns_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.company_active_jobs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -56,8 +72,8 @@ CREATE TABLE public.company_active_jobs (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT company_active_jobs_pkey PRIMARY KEY (id),
-  CONSTRAINT company_active_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT company_active_jobs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+  CONSTRAINT company_active_jobs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT company_active_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.icp_filter_profiles (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -119,9 +135,9 @@ CREATE TABLE public.lead_lists (
   updated_at timestamp with time zone DEFAULT now(),
   campaign_id uuid,
   CONSTRAINT lead_lists_pkey PRIMARY KEY (id),
+  CONSTRAINT lead_lists_connected_account_id_fkey FOREIGN KEY (connected_account_id) REFERENCES public.user_accounts(id),
   CONSTRAINT lead_lists_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
   CONSTRAINT lead_lists_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT lead_lists_connected_account_id_fkey FOREIGN KEY (connected_account_id) REFERENCES public.user_accounts(id),
   CONSTRAINT lead_lists_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
 );
 CREATE TABLE public.leads (
@@ -161,8 +177,8 @@ CREATE TABLE public.leads (
   lead_list_id uuid,
   user_id uuid,
   CONSTRAINT leads_pkey PRIMARY KEY (id),
-  CONSTRAINT leads_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT leads_lead_list_id_fkey FOREIGN KEY (lead_list_id) REFERENCES public.lead_lists(id),
+  CONSTRAINT leads_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT leads_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.organization_members (
@@ -178,9 +194,9 @@ CREATE TABLE public.organization_members (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT organization_members_pkey PRIMARY KEY (id),
+  CONSTRAINT organization_members_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES public.users(id),
   CONSTRAINT organization_members_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-  CONSTRAINT organization_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT organization_members_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES public.users(id)
+  CONSTRAINT organization_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.organizations (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -218,6 +234,12 @@ CREATE TABLE public.sequence_steps (
   CONSTRAINT sequence_steps_pkey PRIMARY KEY (id),
   CONSTRAINT sequence_steps_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
 );
+CREATE TABLE public.syndie_access_tokens (
+  organization_id text NOT NULL,
+  api_token text NOT NULL,
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  CONSTRAINT syndie_access_tokens_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.syndie_to_clento_orgs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   clento_org_id text NOT NULL,
@@ -251,20 +273,9 @@ CREATE TABLE public.user_profile (
   company_name text,
   website_url text,
   site_summary text,
-  icp jsonb DEFAULT '{}'::jsonb,
   linkedin_connected boolean DEFAULT false,
   completed boolean DEFAULT false,
   updated_at timestamp with time zone DEFAULT now(),
-  core_offer text,
-  icp_summary text,
-  target_personas jsonb,
-  case_studies jsonb,
-  lead_magnets jsonb,
-  competitive_advantages ARRAY,
-  technology_stack ARRAY,
-  social_proof jsonb,
-  website_analyzed_at timestamp with time zone,
-  analysis_version integer DEFAULT 1,
   onboarding_completed boolean DEFAULT false,
   onboarding_step_completed jsonb DEFAULT '{}'::jsonb,
   linkedin_accounts_connected integer DEFAULT 0,

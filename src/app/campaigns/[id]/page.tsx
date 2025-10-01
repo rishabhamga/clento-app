@@ -1360,12 +1360,12 @@ export default function CampaignDetailPage() {
                                 <Button
                                     size="sm"
                                     leftIcon={<Lock size={16} />}
-                                    onClick={handleEditAttempt}
+                                    onClick={() => router.push(`/campaigns/${campaign?.id}/workflow`)}
                                     variant="outline"
                                     borderColor="purple.200"
                                     _hover={{ borderColor: 'purple.400' }}
                                 >
-                                    Edit
+                                    Edit Workflow
                                 </Button>
                             </HStack>
                         </CardHeader>

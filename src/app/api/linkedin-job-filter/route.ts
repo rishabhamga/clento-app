@@ -97,10 +97,10 @@ export async function POST(request: Request) {
 
     // Get user's organization from database
     console.log('🏢 Fetching organization data...');
-    const { data: orgData, error: orgError } = await supabaseAdmin
+    const { data: orgData, error: orgError } = await (supabaseAdmin as any)
       .from('organizations')
       .select('id')
-      .eq('clerk_org_id', orgId)
+      .eq('clerk_org_id', orgId!)
       .single();
 
     console.log('🏢 Organization query result:', { orgData, orgError });
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
 
     // Get user data
     console.log('👤 Fetching user data...');
-    const { data: userData, error: userError } = await supabaseAdmin
+    const { data: userData, error: userError } = await (supabaseAdmin as any)
       .from('users')
       .select('id')
       .eq('clerk_id', userId)
@@ -302,8 +302,8 @@ export async function POST(request: Request) {
     // Create job filter request record
     console.log('💾 Creating job filter request in database...');
     const insertData = {
-      user_id: userData.id,
-      organization_id: orgData.id,
+      user_id: (userData as any).id,
+      organization_id: (orgData as any).id,
       job_id: jobId,
       original_filename: file.name,
       total_companies: validationResult.validRows.length,
@@ -314,9 +314,9 @@ export async function POST(request: Request) {
     };
     console.log('💾 Insert data:', insertData);
 
-    const { data: insertResult, error: requestError } = await supabaseAdmin
+    const { data: insertResult, error: requestError } = await (supabaseAdmin as any)
       .from('job_filter_requests')
-      .insert(insertData);
+      .insert(insertData as any);
 
     console.log('💾 Database insert result:', { insertResult, requestError });
 
@@ -331,8 +331,8 @@ export async function POST(request: Request) {
     // Start background processing
     processJobFilterRequest(
       jobId,
-      userData.id,
-      orgData.id,
+      (userData as any).id,
+      (orgData as any).id,
       validationResult.validRows,
       criteria
     );
@@ -517,12 +517,12 @@ async function processJobFilterRequest(
 ): Promise<void> {
   try {
     // Update status to processing
-    await supabaseAdmin
+    await ((supabaseAdmin as any) as any)
       .from('job_filter_requests')
       .update({ 
         processing_status: 'processing',
         started_at: new Date().toISOString()
-      })
+      } as any)
       .eq('job_id', jobId);
 
     let processedCount = 0;
@@ -580,7 +580,7 @@ async function processJobFilterRequest(
 
       // Update progress
       console.log(`💾 Updating progress in database...`);
-      const { error: updateError } = await supabaseAdmin
+      const { error: updateError } = await (supabaseAdmin as any)
         .from('job_filter_requests')
         .update({
           processed_companies: processedCount,
@@ -601,7 +601,7 @@ async function processJobFilterRequest(
     }
 
     // Mark as completed
-    await supabaseAdmin
+    await ((supabaseAdmin as any) as any)
       .from('job_filter_requests')
       .update({
         processing_status: 'completed',
@@ -618,7 +618,7 @@ async function processJobFilterRequest(
     console.error(`Job ${jobId} failed:`, error);
     
     // Mark as failed
-    await supabaseAdmin
+    await ((supabaseAdmin as any) as any)
       .from('job_filter_requests')
       .update({
         processing_status: 'failed',
@@ -721,7 +721,7 @@ async function processCompanyJobs(
     };
 
     // Store in database with duplicate check
-    const { data: existingData, error: checkError } = await supabaseAdmin
+    const { data: existingData, error: checkError } = await (supabaseAdmin as any)
       .from('company_active_jobs')
       .select('id')
       .eq('job_id', jobId)
@@ -735,7 +735,7 @@ async function processCompanyJobs(
       insertError = checkError;
     } else if (!existingData) {
       // Record doesn't exist, insert new one
-      const { error } = await supabaseAdmin
+      const { error } = await (supabaseAdmin as any)
         .from('company_active_jobs')
         .insert({
           user_id: userId,
@@ -756,7 +756,7 @@ async function processCompanyJobs(
       insertError = error;
     } else {
       // Record exists, update it
-      const { error } = await supabaseAdmin
+      const { error } = await (supabaseAdmin as any)
         .from('company_active_jobs')
         .update({
           match_count: totalMatches,
@@ -781,7 +781,7 @@ async function processCompanyJobs(
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     
     // Store failed result with duplicate check
-    const { data: existingData, error: checkError } = await supabaseAdmin
+    const { data: existingData, error: checkError } = await (supabaseAdmin as any)
       .from('company_active_jobs')
       .select('id')
       .eq('job_id', jobId)
@@ -791,7 +791,7 @@ async function processCompanyJobs(
     if (!checkError || checkError.code === 'PGRST116') { // PGRST116 = no rows found
       if (!existingData) {
         // Record doesn't exist, insert new one
-        await supabaseAdmin
+        await ((supabaseAdmin as any) as any)
           .from('company_active_jobs')
           .insert({
             user_id: userId,
@@ -822,7 +822,7 @@ async function processCompanyJobs(
           });
       } else {
         // Record exists, update it
-        await supabaseAdmin
+        await ((supabaseAdmin as any) as any)
           .from('company_active_jobs')
           .update({
             match_count: 0,

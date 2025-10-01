@@ -32,7 +32,7 @@ export async function GET(
     const { data: orgData, error: orgError } = await supabaseAdmin
       .from('organizations')
       .select('id')
-      .eq('clerk_org_id', orgId)
+      .eq('clerk_org_id', orgId!)
       .single();
 
     if (orgError || !orgData) {
@@ -61,8 +61,8 @@ export async function GET(
       .from('job_filter_requests')
       .select('*')
       .eq('job_id', jobId)
-      .eq('user_id', userData.id)
-      .eq('organization_id', orgData.id)
+      .eq('user_id', (userData as any).id)
+      .eq('organization_id', (orgData as any).id)
       .single();
 
     if (requestError || !jobRequest) {
@@ -73,24 +73,24 @@ export async function GET(
     }
 
     // Calculate progress percentage
-    const percentageComplete = jobRequest.total_companies > 0 
-      ? Math.round((jobRequest.processed_companies / jobRequest.total_companies) * 100)
+    const percentageComplete = (jobRequest as any).total_companies > 0 
+      ? Math.round(((jobRequest as any).processed_companies / (jobRequest as any).total_companies) * 100)
       : 0;
 
     // Estimate remaining time
     let estimatedTimeRemaining: number | undefined;
-    if (jobRequest.processing_status === 'processing' && jobRequest.started_at) {
-      const startTime = new Date(jobRequest.started_at).getTime();
+    if ((jobRequest as any).processing_status === 'processing' && (jobRequest as any).started_at) {
+      const startTime = new Date((jobRequest as any).started_at).getTime();
       const currentTime = Date.now();
       const elapsedTime = currentTime - startTime;
-      const avgTimePerCompany = elapsedTime / Math.max(jobRequest.processed_companies, 1);
-      const remainingCompanies = jobRequest.total_companies - jobRequest.processed_companies;
+      const avgTimePerCompany = elapsedTime / Math.max((jobRequest as any).processed_companies, 1);
+      const remainingCompanies = (jobRequest as any).total_companies - (jobRequest as any).processed_companies;
       estimatedTimeRemaining = Math.ceil(remainingCompanies * avgTimePerCompany / 1000); // in seconds
     }
 
     // Get current company being processed (if available)
     let currentCompany: string | undefined;
-    if (jobRequest.processing_status === 'processing') {
+    if ((jobRequest as any).processing_status === 'processing') {
       const { data: currentCompanyData } = await supabaseAdmin
         .from('company_active_jobs')
         .select('company_name')
@@ -100,24 +100,24 @@ export async function GET(
         .limit(1)
         .single();
       
-      currentCompany = currentCompanyData?.company_name;
+      currentCompany = (currentCompanyData as any)?.company_name;
     }
 
     // Prepare response
     const response: JobFilterStatusResponse = {
       jobId,
-      status: jobRequest.processing_status as any,
+      status: (jobRequest as any).processing_status as any,
       progress: {
-        totalCompanies: jobRequest.total_companies,
-        processedCompanies: jobRequest.processed_companies,
-        successfulCompanies: jobRequest.successful_companies,
-        failedCompanies: jobRequest.failed_companies,
+        totalCompanies: (jobRequest as any).total_companies,
+        processedCompanies: (jobRequest as any).processed_companies,
+        successfulCompanies: (jobRequest as any).successful_companies,
+        failedCompanies: (jobRequest as any).failed_companies,
         percentageComplete
       },
       currentCompany,
       estimatedTimeRemaining,
-      errorMessage: jobRequest.error_message || undefined,
-      completedAt: jobRequest.completed_at || undefined
+      errorMessage: (jobRequest as any).error_message || undefined,
+      completedAt: (jobRequest as any).completed_at || undefined
     };
 
     return NextResponse.json(response);

@@ -1,81 +1,40 @@
 'use client'
 
 // External libraries
-import { useUser } from '@clerk/nextjs'
-import { useOrganization } from '@clerk/nextjs'
 import {
+    Alert,
+    AlertIcon,
     Box,
-    Heading,
-    Text,
-    VStack,
-    HStack,
+    Button,
+    Card,
     Grid,
-    SimpleGrid,
+    Heading,
+    HStack,
+    Icon,
     Input,
     InputGroup,
     InputLeftElement,
-    Icon,
-    useColorModeValue,
-    Spinner,
-    Alert,
-    AlertIcon,
-    Badge,
-    Card,
-    CardBody,
-    Button,
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalFooter,
-    ModalBody,
-    ModalCloseButton,
-    useDisclosure,
-    useToast,
-    Tooltip,
-    Avatar,
-    Progress,
-    Menu,
-    MenuButton,
-    MenuList,
-    MenuItem,
-    IconButton,
-    Divider,
-    FormControl,
-    FormLabel,
-    Textarea,
     Select,
-    Drawer,
-    DrawerOverlay,
-    DrawerContent,
-    DrawerHeader,
-    DrawerCloseButton,
-    DrawerBody
+    SimpleGrid,
+    Spinner,
+    Text,
+    useColorModeValue,
+    useToast,
+    VStack
 } from '@chakra-ui/react'
+import { useOrganization, useUser } from '@clerk/nextjs'
 import {
-    Search,
-    Plus,
-    RefreshCw,
-    Settings,
-    Trash2,
+    AlertTriangle,
     CheckCircle,
-    AlertCircle,
     Clock,
-    XCircle,
-    ExternalLink,
     Database,
-    Upload,
     Download,
-    Eye,
-    MoreVertical,
-    FileText,
-    Users,
-    TrendingUp,
-    AlertTriangle
+    Plus,
+    Search,
+    Users
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 
 // Internal components
 import DashboardLayout from '@/components/layout/DashboardLayout'
@@ -83,235 +42,14 @@ import { GradientButton } from '@/components/ui/GradientButton'
 
 // Types
 import {
-    LeadListWithAccount,
+    Database as DatabaseType,
     LeadListStats,
-    CreateLeadListRequest,
-    Database as DatabaseType
+    LeadListWithAccount
 } from '@/types/database'
+import LeadListCard from '../../components/LeadListCard'
 import { useOrgPlan } from '../../hooks/useOrgPlan'
-import { ApolloPeopleFilters, ApolloCompanyFilters, IntentSignals, IIntentSignals } from '@/components/filters/ApolloFiltersNew'
-import { ApolloSearchProvider, useApolloSearch, useSearchFilters, useSearchResults } from '../../hooks/useApolloSearch'
-import { createCustomToast } from '../../lib/utils/custom-toast'
 
 type UserAccount = DatabaseType['public']['Tables']['user_accounts']['Row']
-
-// Lead List Card Component
-export const LeadListCard = ({
-    leadList,
-    onView,
-    onEdit,
-    onDelete,
-    isLoading,
-    borderColor,
-    onClickCard
-}: {
-    leadList: LeadListWithAccount
-    onView: (id: string) => void
-    onEdit: (leadList: LeadListWithAccount) => void
-    onDelete: (id: string) => void
-    isLoading: boolean,
-    borderColor?: string,
-    onClickCard?: () => void
-}) => {
-    const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
-    const cardBorder = 'rgba(255, 255, 255, 0.2)';
-    const textColor = useColorModeValue('gray.600', 'gray.400');
-    const toast = useToast();
-    const customToast = createCustomToast(toast);
-
-
-    const getStatusConfig = (status: string) => {
-        switch (status) {
-            case 'completed':
-                return { color: 'green', icon: CheckCircle, text: 'Completed' }
-            case 'processing':
-                return { color: 'blue', icon: Clock, text: 'Processing' }
-            case 'failed':
-                return { color: 'red', icon: XCircle, text: 'Failed' }
-            case 'draft':
-            default:
-                return { color: 'gray', icon: FileText, text: 'Draft' }
-        }
-    }
-
-    const statusConfig = getStatusConfig(leadList.status)
-    const StatusIcon = statusConfig.icon
-    const completionRate = leadList.total_leads > 0 ?
-        Math.round((leadList.processed_leads / leadList.total_leads) * 100) : 0
-
-    const onExport = () => {
-        customToast.warning({
-            title: 'Upgrade to enterprise to export Leads',
-            // description: 'Export CSV functionality will be available soon.',
-        })
-    }
-
-    return (
-        <Card
-            bg={cardBg}
-            backdropFilter="blur(10px)"
-            border="1px solid"
-            borderColor={borderColor ??  cardBorder}
-            borderRadius="xl"
-            p={6}
-            _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-            transition="all 0.2s ease"
-            position="relative"
-            onClick={onClickCard ?? undefined}
-        >
-            <VStack spacing={4} align="stretch">
-                {/* Header */}
-                <HStack justify="space-between" align="start">
-                    <VStack align="start" spacing={1} flex={1}>
-                        <HStack spacing={2} align="center">
-                            <Text fontWeight="semibold" fontSize="lg" noOfLines={1}>
-                                {leadList.name}
-                            </Text>
-                            <Badge
-                                colorScheme={statusConfig.color}
-                                variant="subtle"
-                                fontSize="xs"
-                                px={2}
-                                py={1}
-                                borderRadius="md"
-                            >
-                                <HStack spacing={1}>
-                                    <Icon as={StatusIcon} boxSize={3} />
-                                    <Text>{statusConfig.text}</Text>
-                                </HStack>
-                            </Badge>
-                        </HStack>
-                        {leadList.description && (
-                            <Text fontSize="sm" color={textColor} noOfLines={2}>
-                                {leadList.description}
-                            </Text>
-                        )}
-                    </VStack>
-                    <Menu placement="bottom-end">
-                        <MenuButton
-                            as={IconButton}
-                            icon={<MoreVertical size={16} />}
-                            variant="ghost"
-                            size="sm"
-                            isLoading={isLoading}
-                            zIndex={10}
-                        />
-                        <MenuList
-                            zIndex={1500}
-                            bg={cardBg}
-                            border="1px solid"
-                            borderColor={cardBorder}
-                            boxShadow="xl"
-                            borderRadius="md"
-                            backdropFilter="blur(10px)"
-                        >
-                            {/* <MenuItem icon={<Eye size={16} />} onClick={() => onView(leadList.id)}>
-                                View Details
-                            </MenuItem>
-                            <MenuItem icon={<Settings size={16} />} onClick={() => onEdit(leadList)}>
-                                Edit
-                            </MenuItem> */}
-                            <MenuItem icon={<Download size={16} />} onClick={onExport}>
-                                Export CSV
-                            </MenuItem>
-                            <Divider />
-                            <MenuItem
-                                icon={<Trash2 size={16} />}
-                                color="red.500"
-                                onClick={() => onDelete(leadList.id)}
-                            >
-                                Delete
-                            </MenuItem>
-                        </MenuList>
-                    </Menu>
-                </HStack>
-
-                {/* Stats */}
-                <SimpleGrid columns={3} spacing={4}>
-                    <VStack spacing={1}>
-                        <Text fontSize="2xl" fontWeight="bold" color="purple.500">
-                            {leadList.total_leads}
-                        </Text>
-                        <Text fontSize="xs" color={textColor}>Total Leads</Text>
-                    </VStack>
-                    <VStack spacing={1}>
-                        <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                            {leadList.processed_leads}
-                        </Text>
-                        <Text fontSize="xs" color={textColor}>Processed</Text>
-                    </VStack>
-                    <VStack spacing={1}>
-                        <Text fontSize="2xl" fontWeight="bold" color="red.500">
-                            {leadList.failed_leads}
-                        </Text>
-                        <Text fontSize="xs" color={textColor}>Failed</Text>
-                    </VStack>
-                </SimpleGrid>
-
-                {/* Progress Bar */}
-                {leadList.status === 'processing' && (
-                    <Box>
-                        <HStack justify="space-between" mb={2}>
-                            <Text fontSize="sm" color={textColor}>Processing Progress</Text>
-                            <Text fontSize="sm" color={textColor}>{completionRate}%</Text>
-                        </HStack>
-                        <Progress
-                            value={completionRate}
-                            colorScheme="purple"
-                            size="sm"
-                            borderRadius="full"
-                        />
-                    </Box>
-                )}
-
-                {/* Connected Account */}
-                <HStack spacing={2}>
-                    {leadList.connected_account ? (
-                        <>
-                            <Avatar
-                                size="xs"
-                                src={leadList.connected_account.profile_picture_url || undefined}
-                                name={leadList.connected_account.display_name}
-                            />
-                            <Text fontSize="sm" color={textColor}>
-                                Connected to {leadList.connected_account.display_name}
-                            </Text>
-                            <Badge
-                                size="sm"
-                                colorScheme={leadList.connected_account.connection_status === 'connected' ? 'green' : 'red'}
-                            >
-                                {leadList.connected_account.connection_status}
-                            </Badge>
-                        </>
-                    ) : (
-                        <>
-                            <Icon as={AlertCircle} boxSize={4} color="gray.400" />
-                            <Text fontSize="sm" color="gray.400">
-                                No account connected
-                            </Text>
-                        </>
-                    )}
-                </HStack>
-                {/* Last Updated */}
-                <Text fontSize="xs" color={textColor}>
-                    Updated {new Date(leadList.updated_at).toLocaleDateString()}
-                </Text>
-
-                {/* Actions */}
-                {/* <HStack spacing={2} justify="flex-end">
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        leftIcon={<Eye size={14} />}
-                        onClick={() => onView(leadList.id)}
-                    >
-                        View
-                    </Button>
-                </HStack> */}
-            </VStack>
-        </Card>
-    )
-}
 
 // Component that uses useSearchParams (needs to be wrapped in Suspense)
 function LeadListsPageContent() {
@@ -590,7 +328,7 @@ function LeadListsPageContent() {
 
                 {/* Stats Cards */}
                 {state.stats && (
-                    <SimpleGrid columns={{ base: 2, md: 5 }} spacing={6}>
+                    <SimpleGrid columns={{ base: 2, md:2 }} spacing={6}>
                         <Card
                             bg={cardBg}
                             backdropFilter="blur(10px)"
@@ -626,63 +364,6 @@ function LeadListsPageContent() {
                                     {state.stats.total_leads.toLocaleString()}
                                 </Text>
                                 <Text fontSize="xs" color="gray.600">Total Leads</Text>
-                            </VStack>
-                        </Card>
-
-                        <Card
-                            bg={cardBg}
-                            backdropFilter="blur(10px)"
-                            border="1px solid"
-                            borderColor={cardBorder}
-                            borderRadius="xl"
-                            p={4}
-                            _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                            transition="all 0.2s ease"
-                        >
-                            <VStack spacing={1}>
-                                <Icon as={Clock} boxSize={5} color="orange.500" />
-                                <Text fontSize="2xl" fontWeight="bold">
-                                    {state.stats.processing_lists}
-                                </Text>
-                                <Text fontSize="xs" color="gray.600">Processing</Text>
-                            </VStack>
-                        </Card>
-
-                        <Card
-                            bg={cardBg}
-                            backdropFilter="blur(10px)"
-                            border="1px solid"
-                            borderColor={cardBorder}
-                            borderRadius="xl"
-                            p={4}
-                            _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                            transition="all 0.2s ease"
-                        >
-                            <VStack spacing={1}>
-                                <Icon as={CheckCircle} boxSize={5} color="green.500" />
-                                <Text fontSize="2xl" fontWeight="bold">
-                                    {state.stats.completed_lists}
-                                </Text>
-                                <Text fontSize="xs" color="gray.600">Completed</Text>
-                            </VStack>
-                        </Card>
-
-                        <Card
-                            bg={cardBg}
-                            backdropFilter="blur(10px)"
-                            border="1px solid"
-                            borderColor={cardBorder}
-                            borderRadius="xl"
-                            p={4}
-                            _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                            transition="all 0.2s ease"
-                        >
-                            <VStack spacing={1}>
-                                <Icon as={AlertTriangle} boxSize={5} color="red.500" />
-                                <Text fontSize="2xl" fontWeight="bold">
-                                    {state.stats.failed_lists}
-                                </Text>
-                                <Text fontSize="xs" color="gray.600">Failed</Text>
                             </VStack>
                         </Card>
                     </SimpleGrid>

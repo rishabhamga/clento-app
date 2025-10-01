@@ -93,7 +93,7 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
       .contains('syndie_campaign_ids', [payload.campaign?.id])
       .single()
 
-    const leadData = mapSyndiePayloadToLead(payload, existingLead, clentoCampaign?.id, clentoCampaign?.organization_id)
+    const leadData = mapSyndiePayloadToLead(payload, existingLead, (clentoCampaign as any)?.id, (clentoCampaign as any)?.organization_id)
 
     let result: WebhookProcessingResult
 
@@ -102,12 +102,12 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
       console.log('existing lead')
       if(leadData.linkedin_connection_status === "replied"){
         console.log('inside')
-          if(existingLead.crm_entry === 0){
+          if((existingLead as any).crm_entry === 0){
               console.log("entrying into the db and crm")
               try {
-                  await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "SYNDIE_REPLY", linkedIn: leadData.linkedin_url || undefined })
+                  await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "LINKEDIN_REPLY", linkedIn: leadData.linkedin_url || undefined })
                   console.log("crm done")
-                  await supabaseAdmin
+                  await (supabaseAdmin as any)
                     .from('leads')
                     .update({ crm_entry: 1 })
                     .eq('syndie_lead_id', payload.id)
@@ -118,7 +118,7 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
                 }
           }
       }
-      const { data: updatedLead, error: updateError } = await supabaseAdmin
+      const { data: updatedLead, error: updateError } = await (supabaseAdmin as any)
         .from('leads')
         .update(leadData)
         .eq('syndie_lead_id', payload.id)
@@ -158,13 +158,13 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
       if(leadData.linkedin_connection_status === "replied"){
             console.log('inside')
               await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "SYNDIE_REPLY", linkedIn: leadData.linkedin_url || undefined })
-              await supabaseAdmin
+              await (supabaseAdmin as any)
                 .from('leads')
                 .update({ crm_entry: 1 })
                 .eq('syndie_lead_id', payload.id);
       }
 
-      const { data: newLead, error: insertError } = await supabaseAdmin
+      const { data: newLead, error: insertError } = await (supabaseAdmin as any)
         .from('leads')
         .insert(newLeadData)
         .select()
@@ -288,7 +288,7 @@ async function findUserForLead(payload: SyndieWebhookPayload): Promise<string | 
         .single()
 
       if (campaign) {
-        return campaign.user_id
+        return (campaign as any).user_id
       }
     }
 
@@ -300,7 +300,7 @@ async function findUserForLead(payload: SyndieWebhookPayload): Promise<string | 
       .limit(1)
       .single()
 
-    return defaultUser?.id || null
+    return (defaultUser as any)?.id || null
 
   } catch (error) {
     console.error('Error finding user for lead:', error)

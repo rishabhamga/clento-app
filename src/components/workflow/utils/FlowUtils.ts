@@ -2,9 +2,11 @@ import { FlowNode, FlowEdge, FlowData, ActionNodeData, DelayData } from '../type
 import { actionDefinitions } from './ActionDefinitions';
 
 export class FlowUtils {
-  // Generate unique node ID
+  // Generate unique node ID with additional randomness to prevent collisions
   static generateNodeId(type: string): string {
-    return `${type}-${Date.now()}`;
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 5);
+    return `${type}-${timestamp}-${random}`;
   }
 
   // Generate unique edge ID

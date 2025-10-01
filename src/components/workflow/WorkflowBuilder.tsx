@@ -39,10 +39,67 @@ import ActionSelectionModal from './panels/ActionSelectionModal';
 import DelayEditorModal from './panels/DelayEditorModal';
 import NodeSettingsPanel from './panels/NodeSettingsPanel';
 
+// Empty State Component - Canvas-centered options like Syndie
+const EmptyWorkflowState: React.FC<{
+  onAddFirstStep: () => void;
+  onLoadSample?: () => void;
+  onImportFlow: () => void;
+}> = ({ onAddFirstStep, onLoadSample, onImportFlow }) => {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center bg-white">
+      <div className="text-center space-y-6 max-w-md">
+        {/* Add First Step Button */}
+        <motion.button
+          onClick={onAddFirstStep}
+          className="w-full px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          + Add First Step
+        </motion.button>
+
+        <div className="text-gray-400 font-medium uppercase text-sm tracking-wider">
+          OR
+        </div>
+
+        {/* Load Sample Button */}
+        {onLoadSample && (
+          <>
+            <motion.button
+              onClick={onLoadSample}
+              className="w-full px-8 py-3 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg border-2 border-gray-300 hover:border-gray-400 transition-all duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              📋 Load Sample
+            </motion.button>
+
+            <div className="text-gray-400 font-medium uppercase text-sm tracking-wider">
+              OR
+            </div>
+          </>
+        )}
+
+        {/* Import Flow Button */}
+        <motion.button
+          onClick={onImportFlow}
+          className="w-full px-8 py-3 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg border-2 border-gray-300 hover:border-gray-400 transition-all duration-200"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          📥 Import Flow
+        </motion.button>
+      </div>
+    </div>
+  );
+};
+
 interface WorkflowBuilderProps {
   initialFlow?: FlowData;
   onSave?: (flowData: FlowData) => void;
   onValidationChange?: (isValid: boolean, errors: string[], warnings: string[]) => void;
+  onLoadSample?: () => void;
+  onStartFresh?: () => void;
   className?: string;
 }
 
@@ -50,6 +107,8 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
   initialFlow,
   onSave,
   onValidationChange,
+  onLoadSample,
+  onStartFresh,
   className = ''
 }) => {
   const reactFlowInstance = useReactFlow();
@@ -85,9 +144,8 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
       setNodes(initialNodes);
       setEdges(initialEdges);
     } else {
-      // Start with an empty flow with an add step node
-      const addStepNode = FlowUtils.createAddStepNode({ x: 100, y: 0 });
-      setNodes([addStepNode]);
+      // Start with completely empty canvas (no nodes) to show empty state
+      setNodes([]);
       setEdges([]);
     }
   }, [initialFlow, setNodes, setEdges]);
@@ -217,12 +275,13 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
 
   const onConnect = useCallback(
     (params: Connection | Edge) => {
+      // Since all nodes now have single central handles, manual connections are always non-conditional
       const newEdge = FlowUtils.createEdge(
         params.source!,
         params.target!,
         { delay: 15, unit: 'm' },
-        params.sourceHandle === 'accepted' || params.sourceHandle === 'not-accepted',
-        params.sourceHandle === 'accepted'
+        false, // Manual connections are not conditional
+        undefined
       );
       setEdges(eds => addEdge(newEdge, eds as FlowEdge[]) as Edge[]);
     },
@@ -232,9 +291,99 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
   const handleActionSelect = useCallback((actionType: string) => {
     const { sourceNodeId, pathType, replaceAddStep } = actionModalContext;
     
+    console.log('🎯 ACTION SELECT DEBUG:', {
+      actionType,
+      sourceNodeId,
+      pathType,
+      replaceAddStep,
+      actionModalContext
+    });
+    
+    // Handle empty state case - create first action node directly
+    if (sourceNodeId === 'empty-state') {
+      const newActionNode = FlowUtils.createActionNode(
+        actionType,
+        { x: 400, y: 200 }, // Center position
+        pathType
+      );
+      
+      setNodes([newActionNode]);
+      
+      // Check if this action has conditional branching and add appropriate Add Step nodes
+      const actionDef = actionDefinitions.find(a => a.type === actionType);
+      const hasConditionalBranching = actionDef?.hasConditionalBranching;
+
+      if (hasConditionalBranching) {
+        // Create two Add Step nodes for conditional branching (accepted/not-accepted)
+        const acceptedPosition = {
+          x: newActionNode.position.x + 200, // Right side for accepted
+          y: newActionNode.position.y + 150
+        };
+        const notAcceptedPosition = {
+          x: newActionNode.position.x - 200, // Left side for not-accepted
+          y: newActionNode.position.y + 150
+        };
+
+        const acceptedAddStepNode = FlowUtils.createAddStepNode(acceptedPosition, 'accepted');
+        const notAcceptedAddStepNode = FlowUtils.createAddStepNode(notAcceptedPosition, 'not-accepted');
+
+        console.log('📍 EMPTY STATE - CREATED NODES WITH UNIQUE IDS:', {
+          accepted: { id: acceptedAddStepNode.id, pathType: acceptedAddStepNode.data.pathType },
+          notAccepted: { id: notAcceptedAddStepNode.id, pathType: notAcceptedAddStepNode.data.pathType }
+        });
+
+        setNodes(nodes => [...nodes, acceptedAddStepNode, notAcceptedAddStepNode]);
+
+        // Create conditional edges for both paths
+        const acceptedEdge = FlowUtils.createEdge(
+          newActionNode.id,
+          acceptedAddStepNode.id,
+          { delay: 15, unit: 'm' },
+          true, // isConditional
+          true  // isPositive (accepted)
+        );
+
+        const notAcceptedEdge = FlowUtils.createEdge(
+          newActionNode.id,
+          notAcceptedAddStepNode.id,
+          { delay: 15, unit: 'm' },
+          true,  // isConditional
+          false  // isPositive (not-accepted)
+        );
+
+        setEdges([acceptedEdge, notAcceptedEdge]);
+      } else {
+        // Regular action - create single Add Step node
+        const nextPosition = {
+          x: newActionNode.position.x,
+          y: newActionNode.position.y + 150
+        };
+        const newAddStepNode = FlowUtils.createAddStepNode(nextPosition, pathType);
+        setNodes(nodes => [...nodes, newAddStepNode]);
+
+        // Connect the new action to the new add step
+        const connectingEdge = FlowUtils.createEdge(
+          newActionNode.id,
+          newAddStepNode.id,
+          { delay: 15, unit: 'm' },
+          false, // not conditional for regular actions from empty state
+          false
+        );
+        setEdges([connectingEdge]);
+      }
+      
+      return; // Exit early for empty state case
+    }
+    
     if (replaceAddStep && sourceNodeId) {
-      // Replace the add step node with the selected action
+      // Replace the add step node with the selected action (existing logic)
+      console.log('🔄 REPLACING ADD STEP NODE:', { sourceNodeId, replaceAddStep });
+      
       const addStepNode = nodes.find(n => n.id === sourceNodeId);
+      console.log('🔍 FOUND ADD STEP NODE:', { 
+        addStepNode: addStepNode ? { id: addStepNode.id, type: addStepNode.type, position: addStepNode.position } : null 
+      });
+      
       if (addStepNode) {
         const newActionNode = FlowUtils.createActionNode(
           actionType,
@@ -242,24 +391,52 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
           pathType
         );
         
+        console.log('🔄 CREATING NEW ACTION NODE:', {
+          newActionNodeId: newActionNode.id,
+          newActionType: newActionNode.data.type,
+          position: newActionNode.position
+        });
+        
         // Replace the add step node
-        setNodes(nodes => nodes.map(node => 
-          node.id === sourceNodeId ? newActionNode : node
-        ));
+        setNodes(nodes => {
+          const updatedNodes = nodes.map(node => 
+            node.id === sourceNodeId ? newActionNode : node
+          );
+          console.log('📝 NODES AFTER REPLACEMENT:', updatedNodes.length, 'nodes');
+          return updatedNodes;
+        });
 
         // Update any edges that were pointing to the AddStep node to now point to the new action node
-        setEdges(edges => edges.map(edge => {
-          if (edge.target === sourceNodeId) {
-            return { ...edge, target: newActionNode.id };
-          }
-          return edge;
-        }));
+        setEdges(edges => {
+          const updatedEdges = edges.map(edge => {
+            if (edge.target === sourceNodeId) {
+              console.log('🔗 UPDATING EDGE TARGET:', {
+                edgeId: edge.id,
+                oldTarget: edge.target,
+                newTarget: newActionNode.id
+              });
+              return { ...edge, target: newActionNode.id };
+            }
+            return edge;
+          });
+          console.log('📝 EDGES AFTER UPDATE:', updatedEdges.length, 'edges');
+          return updatedEdges;
+        });
 
         // Check if this action has conditional branching (like Connection Request)
         const actionDef = actionDefinitions.find(a => a.type === actionType);
         const hasConditionalBranching = actionDef?.hasConditionalBranching;
+        
+        console.log('🔀 CONDITIONAL BRANCHING DEBUG:', {
+          actionType,
+          actionDef: actionDef?.label,
+          hasConditionalBranching,
+          sourceNodeId,
+          pathType
+        });
 
         if (hasConditionalBranching) {
+          console.log('✅ Creating conditional branching for:', actionType);
           // Create two Add Step nodes for conditional branching (accepted/not-accepted)
           const acceptedPosition = {
             x: newActionNode.position.x + 200, // Right side for accepted
@@ -272,6 +449,11 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
 
           const acceptedAddStepNode = FlowUtils.createAddStepNode(acceptedPosition, 'accepted');
           const notAcceptedAddStepNode = FlowUtils.createAddStepNode(notAcceptedPosition, 'not-accepted');
+
+          console.log('📍 REPLACEMENT - CREATED NODES WITH UNIQUE IDS:', {
+            accepted: { id: acceptedAddStepNode.id, pathType: acceptedAddStepNode.data.pathType },
+            notAccepted: { id: notAcceptedAddStepNode.id, pathType: notAcceptedAddStepNode.data.pathType }
+          });
 
           setNodes(nodes => [...nodes, acceptedAddStepNode, notAcceptedAddStepNode]);
 
@@ -291,6 +473,11 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
             true,  // isConditional
             false  // isPositive (not-accepted)
           );
+
+          console.log('🔗 REPLACEMENT - ADDING CONDITIONAL EDGES TO EXISTING:', {
+            acceptedEdge: { id: acceptedEdge.id, target: acceptedEdge.target, isPositive: acceptedEdge.data?.isPositive },
+            notAcceptedEdge: { id: notAcceptedEdge.id, target: notAcceptedEdge.target, isPositive: notAcceptedEdge.data?.isPositive }
+          });
 
           setEdges(edges => [...edges, acceptedEdge, notAcceptedEdge]);
         } else {
@@ -321,6 +508,10 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
       // This should not happen - all "Add Step" clicks should come from AddStep nodes
       console.warn('Add Step clicked from non-AddStep node:', sourceNodeId);
     }
+    
+    // Close modal after any action selection
+    setIsActionModalOpen(false);
+    setActionModalContext({});
   }, [actionModalContext, nodes, setNodes, setEdges]);
 
   const handleSaveDelay = useCallback((newDelay: { delay: number; unit: 'd' | 'm' | 'h' }) => {
@@ -419,8 +610,25 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
     reactFlowInstance.fitView({ padding: 0.2 });
   }, [reactFlowInstance]);
 
+  // Handle Add First Step from empty state - directly show action selection modal
+  const handleAddFirstStep = useCallback(() => {
+    // Instead of creating AddStep node first, directly show the action selection modal
+    setActionModalContext({ 
+      sourceNodeId: 'empty-state', 
+      pathType: undefined, 
+      replaceAddStep: true 
+    });
+    setIsActionModalOpen(true);
+  }, []);
+
+  // Check if workflow is empty (no action nodes, only AddStep nodes or completely empty)
+  const isWorkflowEmpty = useCallback(() => {
+    const actionNodes = nodes.filter(node => node.type === 'action');
+    return actionNodes.length === 0;
+  }, [nodes]);
+
   return (
-    <div className={`h-full w-full bg-gray-50 dark:bg-gray-900 ${className}`}>
+    <div className={`${className} relative`} style={{ width: '100%', height: '700px', backgroundColor: '#f9fafb' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -554,6 +762,25 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
           </div>
         </Panel>
       </ReactFlow>
+
+      {/* Empty State Overlay - Show when workflow is empty */}
+      <AnimatePresence>
+        {isWorkflowEmpty() && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 z-10"
+          >
+            <EmptyWorkflowState
+              onAddFirstStep={handleAddFirstStep}
+              onLoadSample={onLoadSample}
+              onImportFlow={handleImport}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Hidden file input for import */}
       <input

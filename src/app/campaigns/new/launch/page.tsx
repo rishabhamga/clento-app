@@ -185,7 +185,8 @@ export default function LaunchPage() {
                 workflow: typeof window !== 'undefined'
                     ? JSON.parse(localStorage.getItem('campaignWorkflow') || '{}')
                     : {},
-                launch: launchSettings
+                launch: launchSettings,
+                leadListId: targetingData.selectedList
             }
 
             console.log('Creating campaign with payload:', campaignPayload)
@@ -203,6 +204,9 @@ export default function LaunchPage() {
             }
 
             console.log('Campaign created successfully:', data)
+
+            // Store campaign ID for workflow editing
+            localStorage.setItem('currentCampaignId', data.campaign.id)
 
             // Clear localStorage data after successful launch
             localStorage.removeItem('campaignTargeting')

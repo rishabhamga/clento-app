@@ -50,7 +50,9 @@ import {
     Mail,
     Twitter,
     Facebook,
-    Instagram
+    Instagram,
+    MessageSquare,
+    Send
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -87,6 +89,21 @@ interface UserAccount {
     capabilities: Record<string, unknown>[]
     created_at: string
     updated_at: string
+}
+
+interface SyndieSeat {
+    id: string,
+    name: string,
+    profilePictureUrl: string,
+    accountType: string,
+    isLinkedInConnected: boolean,
+    totalCampaigns: number,
+    totalLeads: number,
+    activeCampaigns: number,
+    totalDailyOutreach: number,
+    linkedinProfile: any,
+    createdAt: Date,
+    updatedAt: Date
 }
 
 interface AccountStats {
@@ -134,17 +151,94 @@ const PROVIDERS = {
     }
 } as const
 
+// Syndie Seat Card Component
+const SyndieSeatCard = ({
+    seat
+}: {
+    seat: SyndieSeat
+}) => {
+    const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
+    const cardBorder = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
+    const textColor = useColorModeValue('gray.600', 'gray.400')
+
+    return (
+        <Card
+            bg={cardBg}
+            backdropFilter="blur(10px)"
+            border="1px solid"
+            borderColor={cardBorder}
+            borderRadius="xl"
+            p={6}
+            _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+            transition="all 0.2s ease"
+            position="relative"
+        >
+            <VStack spacing={4} align="stretch">
+                {/* Header */}
+                <HStack justify="space-between" align="start">
+                    <HStack spacing={3}>
+                        <Avatar
+                            size="md"
+                            src={seat.profilePictureUrl || undefined}
+                            name={seat.name}
+                            bg="purple.500"
+                            icon={<Icon as={Linkedin} boxSize={5} />}
+                        />
+                        <VStack align="start" spacing={1}>
+                            <Text fontWeight="semibold" fontSize="md">
+                                {seat.name}
+                            </Text>
+                        </VStack>
+                    </HStack>
+                    <Badge
+                        colorScheme={seat.isLinkedInConnected ? 'green' : 'gray'}
+                        variant="subtle"
+                        fontSize="xs"
+                        px={2}
+                        py={1}
+                        borderRadius="md"
+                    >
+                        <HStack spacing={1}>
+                            <Icon as={seat.isLinkedInConnected ? CheckCircle : XCircle} boxSize={3} />
+                            <Text>{seat.isLinkedInConnected ? 'Connected' : 'Disconnected'}</Text>
+                        </HStack>
+                    </Badge>
+                </HStack>
+
+                {/* Account Type */}
+                <HStack spacing={2}>
+                    <Icon as={Linkedin} boxSize={4} color="blue.500" />
+                    <Text fontSize="sm" color={textColor}>
+                        LinkedIn • {seat.accountType}
+                    </Text>
+                </HStack>
+
+                {/* Last Updated */}
+                {seat.updatedAt && (
+                    <Text fontSize="xs" color={textColor}>
+                        Last updated: {new Date(seat.updatedAt).toLocaleDateString()}
+                    </Text>
+                )}
+            </VStack>
+        </Card>
+    )
+}
+
 // Account Card Component
-const AccountCard = ({ 
-    account, 
-    onSync, 
-    onDisconnect, 
-    isLoading 
-}: { 
+const AccountCard = ({
+    account,
+    onSync,
+    onDisconnect,
+    onTestMessage,
+    isLoading,
+    isTestingMessage
+}: {
     account: UserAccount
     onSync: (id: string) => void
     onDisconnect: (id: string) => void
+    onTestMessage: (id: string) => void
     isLoading: boolean
+    isTestingMessage: boolean
 }) => {
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
     const cardBorder = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
@@ -261,18 +355,33 @@ const AccountCard = ({
                 {/* Actions */}
                 <HStack spacing={2} justify="flex-end">
                     {account.connection_status === 'connected' && (
-                        <Tooltip label="Sync account data">
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                leftIcon={<RefreshCw size={14} />}
-                                onClick={() => onSync(account.id)}
-                                isLoading={isLoading}
-                                loadingText="Syncing"
-                            >
-                                Sync
-                            </Button>
-                        </Tooltip>
+                        <>
+                            <Tooltip label="Send test message">
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    colorScheme="green"
+                                    leftIcon={<Send size={14} />}
+                                    onClick={() => onTestMessage(account.id)}
+                                    isLoading={isTestingMessage}
+                                    loadingText="Testing"
+                                >
+                                    Test
+                                </Button>
+                            </Tooltip>
+                            <Tooltip label="Sync account data">
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    leftIcon={<RefreshCw size={14} />}
+                                    onClick={() => onSync(account.id)}
+                                    isLoading={isLoading}
+                                    loadingText="Syncing"
+                                >
+                                    Sync
+                                </Button>
+                            </Tooltip>
+                        </>
                     )}
                     <Tooltip label="Disconnect account">
                         <Button
@@ -293,12 +402,12 @@ const AccountCard = ({
 }
 
 // Connect New Account Card Component
-const ConnectAccountCard = ({ 
-    provider, 
-    config, 
-    onConnect, 
-    isLoading 
-}: { 
+const ConnectAccountCard = ({
+    provider,
+    config,
+    onConnect,
+    isLoading
+}: {
     provider: string
     config: typeof PROVIDERS[keyof typeof PROVIDERS]
     onConnect: (provider: string) => void
@@ -366,13 +475,16 @@ function AccountsPageContent() {
 
     const [state, setState] = useState({
         accounts: [] as UserAccount[],
+        syndieSeats: [] as SyndieSeat[],
+        isSyndieAccount: false,
         stats: null as AccountStats | null,
         loading: true,
         error: null as string | null,
         searchQuery: '',
         syncingAccountId: null as string | null,
         disconnectingAccountId: null as string | null,
-        connectingProvider: null as string | null
+        connectingProvider: null as string | null,
+        testingMessageAccountId: null as string | null
     })
 
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
@@ -427,16 +539,31 @@ function AccountsPageContent() {
                 }
 
                 const data = await response.json()
-                // Filter out disconnected accounts from the UI
-                const activeAccounts = (data.accounts || []).filter((account: UserAccount) => 
-                    account.connection_status !== 'disconnected'
-                )
-                setState(prev => ({
-                    ...prev,
-                    accounts: activeAccounts,
-                    stats: data.stats,
-                    loading: false
-                }))
+
+                // Check if the backend sent syndie seats
+                if(data.syndieSeats === true){
+                    setState(prev => ({
+                        ...prev,
+                        syndieSeats: data.accounts || [],
+                        isSyndieAccount: true,
+                        accounts: [],
+                        stats: null,
+                        loading: false
+                    }))
+                } else {
+                    // Filter out disconnected accounts from the UI
+                    const activeAccounts = (data.accounts || []).filter((account: UserAccount) =>
+                        account.connection_status !== 'disconnected'
+                    )
+                    setState(prev => ({
+                        ...prev,
+                        accounts: activeAccounts,
+                        syndieSeats: [],
+                        isSyndieAccount: false,
+                        stats: data.stats,
+                        loading: false
+                    }))
+                }
             } catch (err) {
                 setState(prev => ({
                     ...prev,
@@ -471,7 +598,7 @@ function AccountsPageContent() {
             }
 
             const data = await response.json()
-            
+
             // Redirect to Unipile hosted auth
             window.location.href = data.connection_url
 
@@ -502,11 +629,11 @@ function AccountsPageContent() {
             }
 
             const data = await response.json()
-            
+
             // Update the account in state
             setState(prev => ({
                 ...prev,
-                accounts: prev.accounts.map(acc => 
+                accounts: prev.accounts.map(acc =>
                     acc.id === accountId ? data.account : acc
                 )
             }))
@@ -552,11 +679,11 @@ function AccountsPageContent() {
             }
 
             const data = await response.json()
-            
+
             // Update the account in state
             setState(prev => ({
                 ...prev,
-                accounts: prev.accounts.map(acc => 
+                accounts: prev.accounts.map(acc =>
                     acc.id === accountId ? data.account : acc
                 )
             }))
@@ -583,10 +710,98 @@ function AccountsPageContent() {
         }
     }
 
+    const handleTestMessage = async (accountId: string) => {
+        setState(prev => ({ ...prev, testingMessageAccountId: accountId }))
+
+        try {
+            const response = await fetch(`/api/accounts/${accountId}/test-message`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.message || 'Failed to send test message')
+            }
+
+            const data = await response.json()
+
+            // Handle different types of successful actions
+            const actionTaken = data.data.actionTaken
+            let toastTitle = 'Test Successful! 🚀'
+            let toastDescription = ''
+
+            if (actionTaken === 'connection_request') {
+                toastTitle = 'Connection Request Sent! 🤝'
+                toastDescription = `Sent connection request to ${data.data.recipientProfile.name}. Direct messaging wasn't possible.`
+            } else {
+                toastTitle = 'Test Message Sent! 💬'
+                toastDescription = `Successfully sent test message to ${data.data.recipientProfile.name}`
+            }
+
+            toast({
+                title: toastTitle,
+                description: toastDescription,
+                status: 'success',
+                duration: 6000,
+                isClosable: true,
+            })
+
+        } catch (error: any) {
+            console.error('Error sending test message:', error)
+
+            let errorTitle = 'Test Failed'
+            let errorDescription = 'Failed to send test message. Please try again.'
+
+            if (error.message.includes('Profile not found')) {
+                errorTitle = 'Profile Not Found'
+                errorDescription = 'The test contact profile could not be found on LinkedIn.'
+            } else if (error.message.includes('Connection required')) {
+                errorTitle = 'Connection Required'
+                errorDescription = 'You need to connect with the test contact first before sending messages.'
+            } else if (error.message.includes('Rate limit')) {
+                errorTitle = 'Rate Limited'
+                errorDescription = 'LinkedIn messaging rate limit reached. Please try again later.'
+            } else if (error.message.includes('Invalid request parameters')) {
+                errorTitle = 'API Format Error'
+                errorDescription = 'There was an issue with the request format. This has been logged for debugging.'
+            } else if (error.message.includes('Recipient cannot be reached')) {
+                errorTitle = 'Cannot Reach Recipient'
+                errorDescription = 'The recipient may not be a first-degree connection. Try sending a connection request first.'
+            } else if (error.message.includes('Invalid credentials')) {
+                errorTitle = 'API Credentials Error'
+                errorDescription = 'There was an issue with the Unipile API credentials. Please check the configuration.'
+            } else if (error.message.includes('Account appears to be disconnected')) {
+                errorTitle = 'Account Disconnected'
+                errorDescription = 'Your LinkedIn account appears to be disconnected from Unipile. Please reconnect.'
+            } else if (error.message.includes('Invalid request parameters')) {
+                errorTitle = 'API Parameter Error'
+                errorDescription = 'There was an issue with the request format. This has been logged for debugging.'
+            }
+
+            toast({
+                title: errorTitle,
+                description: errorDescription,
+                status: 'error',
+                duration: 8000,
+                isClosable: true,
+            })
+        } finally {
+            setState(prev => ({ ...prev, testingMessageAccountId: null }))
+        }
+    }
+
     const filteredAccounts = state.accounts.filter(account =>
         account.display_name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
         account.provider.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
         (account.username && account.username.toLowerCase().includes(state.searchQuery.toLowerCase()))
+    )
+
+    const filteredSyndieSeats = state.syndieSeats.filter(seat =>
+        seat.name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+        seat.accountType.toLowerCase().includes(state.searchQuery.toLowerCase())
     )
 
     if (!isLoaded || state.loading) {
@@ -617,8 +832,8 @@ function AccountsPageContent() {
                 {/* Header */}
                 <HStack justify="space-between" align="center">
                     <VStack spacing={1} align="start">
-                        <Heading 
-                            size="xl" 
+                        <Heading
+                            size="xl"
                             bgGradient="linear(to-r, purple.400, blue.400)"
                             bgClip="text"
                             fontWeight="bold"
@@ -629,8 +844,8 @@ function AccountsPageContent() {
                             Manage your social media and communication accounts for automated outreach
                         </Text>
                     </VStack>
-                    <GradientButton 
-                        leftIcon={<Plus size={16} />} 
+                    <GradientButton
+                        leftIcon={<Plus size={16} />}
                         variant="primary"
                         size="lg"
                         onClick={onOpen}
@@ -662,10 +877,10 @@ function AccountsPageContent() {
                 {/* Stats Cards */}
                 {state.stats && (
                     <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
-                        <Card 
+                        <Card
                             bg={cardBg}
                             backdropFilter="blur(10px)"
-                            border="1px solid" 
+                            border="1px solid"
                             borderColor={cardBorder}
                             borderRadius="xl"
                             p={4}
@@ -681,10 +896,10 @@ function AccountsPageContent() {
                             </VStack>
                         </Card>
 
-                        <Card 
+                        <Card
                             bg={cardBg}
                             backdropFilter="blur(10px)"
-                            border="1px solid" 
+                            border="1px solid"
                             borderColor={cardBorder}
                             borderRadius="xl"
                             p={4}
@@ -700,10 +915,10 @@ function AccountsPageContent() {
                             </VStack>
                         </Card>
 
-                        <Card 
+                        <Card
                             bg={cardBg}
                             backdropFilter="blur(10px)"
-                            border="1px solid" 
+                            border="1px solid"
                             borderColor={cardBorder}
                             borderRadius="xl"
                             p={4}
@@ -719,10 +934,10 @@ function AccountsPageContent() {
                             </VStack>
                         </Card>
 
-                        <Card 
+                        <Card
                             bg={cardBg}
                             backdropFilter="blur(10px)"
-                            border="1px solid" 
+                            border="1px solid"
                             borderColor={cardBorder}
                             borderRadius="xl"
                             p={4}
@@ -742,47 +957,89 @@ function AccountsPageContent() {
 
                 {/* Accounts Grid */}
                 <Box>
-                    <Grid
-                        templateColumns="repeat(auto-fill, minmax(300px, 1fr))"
-                        gap={6}
-                        w="100%"
-                    >
-                        {filteredAccounts.map((account) => (
-                            <AccountCard
-                                key={account.id}
-                                account={account}
-                                onSync={handleSync}
-                                onDisconnect={handleDisconnect}
-                                isLoading={
-                                    state.syncingAccountId === account.id || 
-                                    state.disconnectingAccountId === account.id
-                                }
-                            />
-                        ))}
-                    </Grid>
+                    {state.isSyndieAccount ? (
+                        // Display Syndie Seats
+                        <>
+                            <Heading size="md" mb={4} color="purple.600">
+                                Accounts
+                            </Heading>
+                            <Grid
+                                templateColumns="repeat(auto-fill, minmax(300px, 1fr))"
+                                gap={6}
+                                w="100%"
+                            >
+                                {filteredSyndieSeats.map((seat) => (
+                                    <SyndieSeatCard
+                                        key={seat.id}
+                                        seat={seat}
+                                    />
+                                ))}
+                            </Grid>
 
-                    {filteredAccounts.length === 0 && state.searchQuery && (
-                        <Box textAlign="center" py={12}>
-                            <Text color="gray.500" fontSize="lg">
-                                No accounts found matching &quot;{state.searchQuery}&quot;
-                            </Text>
-                        </Box>
-                    )}
+                            {filteredSyndieSeats.length === 0 && state.searchQuery && (
+                                <Box textAlign="center" py={12}>
+                                    <Text color="gray.500" fontSize="lg">
+                                        No accounts found
+                                    </Text>
+                                </Box>
+                            )}
 
-                    {state.accounts.length === 0 && (
-                        <Box textAlign="center" py={12}>
-                            <VStack spacing={4}>
-                                <Text color="gray.500" fontSize="lg">
-                                    {organization
-                                        ? `No accounts connected yet in ${organization.name}. Connect your first account to get started!`
-                                        : "No accounts connected yet. Connect your first account to get started!"
-                                    }
-                                </Text>
-                                <GradientButton onClick={onOpen}>
-                                    Connect Your First Account
-                                </GradientButton>
-                            </VStack>
-                        </Box>
+                            {state.syndieSeats.length === 0 && (
+                                <Box textAlign="center" py={12}>
+                                    <Text color="gray.500" fontSize="lg">
+                                        No syndie accounts found.
+                                    </Text>
+                                </Box>
+                            )}
+                        </>
+                    ) : (
+                        // Display Regular Accounts
+                        <>
+                            <Grid
+                                templateColumns="repeat(auto-fill, minmax(300px, 1fr))"
+                                gap={6}
+                                w="100%"
+                            >
+                                {filteredAccounts.map((account) => (
+                                    <AccountCard
+                                        key={account.id}
+                                        account={account}
+                                        onSync={handleSync}
+                                        onDisconnect={handleDisconnect}
+                                        onTestMessage={handleTestMessage}
+                                        isLoading={
+                                            state.syncingAccountId === account.id ||
+                                            state.disconnectingAccountId === account.id
+                                        }
+                                        isTestingMessage={state.testingMessageAccountId === account.id}
+                                    />
+                                ))}
+                            </Grid>
+
+                            {filteredAccounts.length === 0 && state.searchQuery && (
+                                <Box textAlign="center" py={12}>
+                                    <Text color="gray.500" fontSize="lg">
+                                        No accounts found matching &quot;{state.searchQuery}&quot;
+                                    </Text>
+                                </Box>
+                            )}
+
+                            {state.accounts.length === 0 && (
+                                <Box textAlign="center" py={12}>
+                                    <VStack spacing={4}>
+                                        <Text color="gray.500" fontSize="lg">
+                                            {organization
+                                                ? `No accounts connected yet in ${organization.name}. Connect your first account to get started!`
+                                                : "No accounts connected yet. Connect your first account to get started!"
+                                            }
+                                        </Text>
+                                        <GradientButton onClick={onOpen}>
+                                            Connect Your First Account
+                                        </GradientButton>
+                                    </VStack>
+                                </Box>
+                            )}
+                        </>
                     )}
                 </Box>
 

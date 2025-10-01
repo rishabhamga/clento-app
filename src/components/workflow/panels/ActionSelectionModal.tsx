@@ -25,6 +25,12 @@ const ActionSelectionModal: React.FC<ActionSelectionModalProps> = ({
   });
 
   const handleActionSelect = (actionType: string) => {
+    console.log('🎯 ACTION MODAL DEBUG - Selected action:', {
+      actionType,
+      actionLabel: actionDefinitions.find(a => a.type === actionType)?.label,
+      hasConditionalBranching: actionDefinitions.find(a => a.type === actionType)?.hasConditionalBranching,
+      pathType
+    });
     onSelectAction(actionType);
     onClose();
     setSearchTerm('');

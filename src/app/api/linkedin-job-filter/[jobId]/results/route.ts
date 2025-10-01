@@ -27,7 +27,7 @@ export async function GET(
     // Get authenticated user
     const { userId, orgId } = await auth();
     
-    if (!userId) {
+    if (!userId || !orgId) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -67,8 +67,8 @@ export async function GET(
       .from('job_filter_requests')
       .select('*')
       .eq('job_id', jobId)
-      .eq('user_id', userData.id)
-      .eq('organization_id', orgData.id)
+      .eq('user_id', (userData as any)?.id)
+      .eq('organization_id', (orgData as any)?.id)
       .single();
 
     if (requestError || !jobRequest) {
@@ -78,10 +78,11 @@ export async function GET(
       );
     }
 
-    // Check if job is completed
-    if (jobRequest.processing_status !== 'completed') {
+    // Check if job is completed  
+    const jobData = jobRequest as any;
+    if (jobData.processing_status !== 'completed') {
       return NextResponse.json(
-        { error: "Job is not yet completed", status: jobRequest.processing_status },
+        { error: "Job is not yet completed", status: jobData.processing_status },
         { status: 400 }
       );
     }
@@ -101,7 +102,7 @@ export async function GET(
     }
 
     // Process results
-    const results: CompanyJobResult[] = companyJobs.map(job => ({
+    const results: CompanyJobResult[] = companyJobs.map((job: any) => ({
       companyName: job.company_name,
       companyWebsite: job.company_website || undefined,
       linkedinUrl: job.linkedin_url,
@@ -119,19 +120,19 @@ export async function GET(
     
     // Calculate total processing time
     const processingTimes = companyJobs
-      .map(job => job.job_data?.processing_time_ms || 0)
+      .map((job: any) => job.job_data?.processing_time_ms || 0)
       .filter(time => time > 0);
     const totalProcessingTime = processingTimes.reduce((sum, time) => sum + time, 0);
 
     // If CSV format is requested, return CSV file
     if (format === 'csv') {
-      return generateCSVResponse(results, jobRequest.original_filename);
+      return generateCSVResponse(results, (jobRequest as any).original_filename);
     }
 
     // Prepare JSON response
     const response: JobFilterResultsResponse = {
       jobId,
-      status: jobRequest.processing_status as any,
+      status: (jobRequest as any).processing_status,
       results,
       summary: {
         totalCompanies: results.length,
@@ -140,7 +141,7 @@ export async function GET(
         averageMatchesPerCompany: Math.round(averageMatchesPerCompany * 100) / 100,
         processingTime: totalProcessingTime
       },
-      errorMessage: jobRequest.error_message || undefined
+      errorMessage: (jobRequest as any).error_message || undefined
     };
 
     return NextResponse.json(response);
@@ -208,7 +209,7 @@ export async function DELETE(
     // Get authenticated user
     const { userId, orgId } = await auth();
     
-    if (!userId) {
+    if (!userId || !orgId) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -248,7 +249,7 @@ export async function DELETE(
       .from('company_active_jobs')
       .delete()
       .eq('job_id', jobId)
-      .eq('user_id', userData.id);
+      .eq('user_id', (userData as any).id);
 
     if (deleteJobsError) {
       return NextResponse.json(
@@ -262,7 +263,7 @@ export async function DELETE(
       .from('job_filter_requests')
       .delete()
       .eq('job_id', jobId)
-      .eq('user_id', userData.id);
+      .eq('user_id', (userData as any).id);
 
     if (deleteRequestError) {
       return NextResponse.json(

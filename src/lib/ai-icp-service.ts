@@ -982,16 +982,22 @@ Respond with valid JSON only.`;
         throw new Error('No pages found to analyze');
       }
 
-      // Step 2: Fetch content without browser
+      // Step 2: Fetch content without browser (with memory management)
       console.log('📄 Step 2: Fetching content without browser...');
-      const pageContents = await this.fetchPagesNoBrowser(pages);
+      console.log(`🧠 Memory optimization: Processing ${pages.length} pages in batches`);
+      
+      const pageContents = await this.fetchPagesNoBrowserBatched(pages);
       
       console.log(`📊 Successfully fetched ${pageContents.length} pages out of ${pages.length} discovered`);
       
-      // Log content details for debugging
-      pageContents.forEach((page, index) => {
+      // Log content details for debugging (limit to first few pages to save memory)
+      pageContents.slice(0, Math.min(3, pageContents.length)).forEach((page, index) => {
         console.log(`📝 Page ${index + 1}: ${page.url} - ${page.content.length} chars, title: "${page.title}"`);
       });
+      
+      if (pageContents.length > 3) {
+        console.log(`📝 ... and ${pageContents.length - 3} more pages (content details omitted to save memory)`);
+      }
       
       // Step 3: Handle different content scenarios
       if (pageContents.length === 0) {
@@ -1375,6 +1381,108 @@ Respond with valid JSON only.`;
     } catch (error) {
       console.error('Error extracting links without browser:', error);
     }
+  }
+
+  // Memory-optimized batched page fetching for cloud environments
+  private async fetchPagesNoBrowserBatched(urls: string[]): Promise<Array<{url: string, content: string, title: string}>> {
+    const urlsToFetch = urls.slice(0, Math.min(this.maxPages, 6)); // Further limit pages for memory
+    
+    console.log(`🧠 Memory-optimized fetching: ${urlsToFetch.length} pages with content size limits`);
+    
+    // Always prioritize homepage
+    const homepage = urlsToFetch[0];
+    const otherPages = urlsToFetch.slice(1);
+    
+    let homepageResult: {url: string, content: string, title: string} | null = null;
+    
+    try {
+      console.log(`🏠 Fetching homepage (priority): ${homepage}`);
+      homepageResult = await this.fetchSinglePageNoBrowser(homepage, { retryCount: 1, timeout: 15000 });
+      
+      // Limit homepage content size
+      if (homepageResult && homepageResult.content.length > 30000) {
+        homepageResult.content = homepageResult.content.substring(0, 30000) + '... (truncated for memory)';
+        console.log(`✂️ Truncated homepage content: 30000 chars`);
+      }
+      
+      if (homepageResult && homepageResult.content.length > 100) {
+        console.log(`✅ Homepage successfully fetched: ${homepageResult.content.length} chars`);
+      }
+    } catch (error) {
+      console.error(`❌ Homepage fetch failed:`, error);
+      homepageResult = {
+        url: homepage,
+        title: 'Homepage',
+        content: `Website: ${homepage} - Content could not be fetched due to memory constraints`
+      };
+    }
+    
+    // Process other pages one at a time to minimize memory usage
+    const otherResults: Array<{url: string, content: string, title: string} | null> = [];
+    
+    for (let i = 0; i < otherPages.length; i++) {
+      const url = otherPages[i];
+      console.log(`📄 Fetching page ${i + 1}/${otherPages.length}: ${url}`);
+      
+      try {
+        const result = await this.fetchSinglePageNoBrowser(url, { retryCount: 1, timeout: 12000 });
+        
+        if (result) {
+          // Aggressive content size limits for non-homepage pages
+          if (result.content.length > 20000) {
+            result.content = result.content.substring(0, 20000) + '... (truncated for memory)';
+            console.log(`✂️ Truncated content for ${url}: 20000 chars`);
+          }
+          
+          otherResults.push(result);
+          console.log(`✅ Page ${i + 1} fetched: ${result.content.length} chars`);
+        } else {
+          otherResults.push(null);
+        }
+        
+        // Force garbage collection after each page if available
+        if (global.gc && i % 2 === 0) {
+          global.gc();
+        }
+        
+        // Delay between pages to allow memory cleanup
+        if (i < otherPages.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+        
+      } catch (error) {
+        console.warn(`⚠️ Failed to fetch ${url}:`, error);
+        otherResults.push(null);
+      }
+    }
+
+    // Combine results
+    const allResults: Array<{url: string, content: string, title: string}> = [];
+    
+    if (homepageResult) {
+      allResults.push(homepageResult);
+    }
+    
+    const validOtherResults = otherResults.filter((result): result is {url: string, content: string, title: string} => 
+      result !== null && result.content.length > 30
+    );
+    
+    allResults.push(...validOtherResults);
+
+    const failedCount = otherResults.filter(r => r === null).length;
+    console.log(`🧠 Memory-optimized results: ${allResults.length} successful, ${failedCount} failed`);
+
+    // Ensure we return at least the homepage
+    if (allResults.length === 0) {
+      console.error(`🚨 No pages could be fetched!`);
+      return [{
+        url: homepage,
+        title: 'Homepage - Fetch Failed',
+        content: `Unable to fetch content from ${homepage} due to memory constraints.`
+      }];
+    }
+
+    return allResults;
   }
 
   // Fetch pages using simple HTTP requests

@@ -1,27 +1,26 @@
 'use client'
 
+import { Enhanced3DStepper } from '@/components/ui/Enhanced3DStepper'
+import { GradientButton } from '@/components/ui/GradientButton'
 import {
+    Badge,
     Box,
-    Container,
-    VStack,
-    HStack,
-    Text,
     Card,
     CardBody,
-    Badge,
-    useColorModeValue,
-    Spinner,
+    Container,
     Grid,
+    Spinner,
+    Text,
+    useColorModeValue,
     useToast,
+    VStack
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
-import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { GradientButton } from '@/components/ui/GradientButton'
-import { Enhanced3DStepper } from '@/components/ui/Enhanced3DStepper'
-import { LeadListWithAccount } from '../../../types/database'
-import { LeadListCard } from '../../lead-lists/page'
+import { useEffect, useState } from 'react'
+import LeadListCard from '../../../components/LeadListCard'
 import { createCustomToast } from '../../../lib/utils/custom-toast'
+import { LeadListWithAccount } from '../../../types/database'
 
 // Enhanced animations
 const float = keyframes`

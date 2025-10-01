@@ -19,6 +19,7 @@ import {
   // Eye, // TODO: Re-enable when Website Visitors page is ready
   // Inbox, // TODO: Re-enable when Inbox page is ready
   Megaphone,
+  Mail,
   // Clock, // TODO: Re-enable when Pending Messages page is ready
   // Send // TODO: Re-enable when Senders page is ready
 } from 'lucide-react'
@@ -120,6 +121,7 @@ export default function Sidebar() {
     { icon: BarChart3, label: 'Analytics', href: '/analytics' },
     // { icon: Settings, label: 'Integrations', href: '/integrations' }, // TODO: Re-enable when ready
     { icon: Users, label: 'Leads', href: '/leads' },
+    { icon: Mail, label: 'Email Leads', href: '/email-leads' },
     { icon: Database, label: 'Lead Lists', href: '/lead-lists' },
     { icon: UserPlus, label: 'Accounts', href: '/accounts' },
     // { icon: Eye, label: 'Website Visitors', href: '/website-visitors' }, // TODO: Re-enable when ready

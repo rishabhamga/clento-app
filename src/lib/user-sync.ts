@@ -88,7 +88,7 @@ export async function getOrCreateUserByClerkId(clerkUserId: string): Promise<{ i
       .single()
 
     if (existingUser && !userError) {
-      console.log('Found existing user:', existingUser.id)
+      console.log('Found existing user:', (existingUser as any).id)
       return existingUser
     }
 
@@ -115,7 +115,7 @@ export async function getOrCreateUserByClerkId(clerkUserId: string): Promise<{ i
     console.log('Users table is accessible, proceeding with user creation')
 
     // Create the user
-    const { data: newUser, error: createError } = await supabaseAdmin
+    const { data: newUser, error: createError } = await (supabaseAdmin as any)
       .from('users')
       .insert({
         clerk_id: clerkUserId,
@@ -140,7 +140,7 @@ export async function getOrCreateUserByClerkId(clerkUserId: string): Promise<{ i
           .single()
 
         if (retryUser && !retryError) {
-          console.log('Found user created by another process:', retryUser.id)
+          console.log('Found user created by another process:', (retryUser as any).id)
           return retryUser
         }
 
@@ -169,7 +169,7 @@ export async function getOrCreateUserByClerkId(clerkUserId: string): Promise<{ i
       throw new Error('User creation verification failed')
     }
 
-    console.log('User creation verified successfully:', verifyUser.id)
+    console.log('User creation verified successfully:', (verifyUser as any).id)
     return verifyUser
 
   } catch (error) {
@@ -189,7 +189,7 @@ export async function enrichUserFromClerk(): Promise<{ id: string } | null> {
     }
 
     // Check if user exists and update with enriched data
-    const { data: updatedUser, error } = await supabaseAdmin
+    const { data: updatedUser, error } = await (supabaseAdmin as any)
       .from('users')
       .upsert({
         clerk_id: clerkUser.id,

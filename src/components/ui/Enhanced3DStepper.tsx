@@ -93,8 +93,8 @@ interface Enhanced3DStepperProps {
   animated?: boolean
 }
 
-const MotionBox = motion(Box)
-const MotionCard = motion(Card)
+const MotionBox = motion.create(Box)
+const MotionCard = motion.create(Card)
 
 export function Enhanced3DStepper({ 
   currentStep, 

@@ -1,25 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
+import axios from 'axios';
+import { syndieBaseUrl } from '../../../lib/utils';
 
 const supabase = createClient(
   process.env.PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+const getAccounts = async (tokenData: { api_token: string }) => {
+    try {
+        const res = await axios.get(syndieBaseUrl + '/api/linkedin/seats', {
+            headers: {
+                'Authorization': `Bearer ${tokenData.api_token}`,
+                'Content-Type': 'application/json',
+            }
+        })
+
+        if (!res.data) {
+            console.log('No Seats Found')
+            return
+        }
+
+        return res?.data?.data?.seats
+    } catch (err) {
+        console.log(JSON.stringify(err, null, 4));
+        return
+    }
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId, orgId } = await auth();
+
+    const {data: organizationData, error: orgError} = await supabase.from('organizations').select("*").eq('clerk_org_id', orgId).single();
+
+    if(!organizationData || orgError){
+        return NextResponse.json({error: 'An Error Occured', status: 400})
+    }
 
     if (!userId) {
-      console.log('❌ Accounts API: Unauthorized - no userId')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get organization context from query parameters
-    const { searchParams } = new URL(request.url)
-    const organizationId = searchParams.get('organizationId')
-    console.log('👤 Accounts API: userId:', userId, 'organizationId:', organizationId)
+    const organizationId = orgId;
+
+    //GET the token of the syndie
+    const {data: tokenData, error: tokenError} = await supabase.from('syndie_access_tokens').select('*').eq('organization_id', organizationData.id).single();
+
+    if(!tokenError && tokenData){
+        console.log('Token H Fetching the data from syndie');
+        const accounts = await getAccounts(tokenData)
+        return NextResponse.json({message: "Accounts Fetched Successfully", syndieSeats: true, accounts}, {status: 200})
+    }
 
     // Get user's ID from the users table
     const { data: userData, error: userError } = await supabase
@@ -29,20 +63,17 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (userError || !userData) {
-      console.error('👤 Accounts API: Error fetching user:', userError)
+      console.error('Error fetching user:', userError)
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       )
     }
 
-    console.log('👤 Accounts API: Found user:', userData.id)
-
     let orgDbId = null
 
     // If organizationId is provided, get the corresponding database ID
     if (organizationId) {
-      console.log('👤 Looking up organization for accounts list:', organizationId)
 
       const { data: orgData, error: orgError } = await supabase
         .from('organizations')
@@ -54,7 +85,6 @@ export async function GET(request: NextRequest) {
         console.warn(`👤 ⚠️ Organization ${organizationId} not found in database:`, orgError)
       } else {
         orgDbId = orgData.id
-        console.log('👤 Found organization for accounts:', { clerk_id: organizationId, db_id: orgDbId, name: orgData.name })
       }
     }
 
@@ -77,19 +107,16 @@ export async function GET(request: NextRequest) {
         .eq('connection_status', 'connected')
     }
 
-    console.log('👤 Executing accounts query with context:', { orgDbId, isOrgContext: !!organizationId })
     const { data: accounts, error: accountsError } = await accountsQuery
 
     if (accountsError) {
-      console.error('👤 Error fetching accounts:', accountsError)
+      console.error('Error fetching accounts:', accountsError)
       return NextResponse.json(
         { error: 'Failed to fetch accounts' },
         { status: 500 }
       )
     }
 
-    console.log('👤 Found accounts:', accounts?.length || 0)
-    console.log('👤 Account IDs:', accounts?.map(a => `${a.id} (${a.provider})`).join(', ') || 'none')
 
     // Get account statistics
     let stats: any[] = []
