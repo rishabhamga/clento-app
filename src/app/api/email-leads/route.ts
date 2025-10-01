@@ -94,8 +94,13 @@ export async function GET(request: Request) {
             return await getCampaign(campaignId, validPage, perPagePerCampaign)
         }))
 
-        // Combine all leads from all campaigns
-        const allLeads = results.flatMap(result => result.leads)
+        // Combine all leads from all campaigns and add campaign_id
+        const allLeads = results.flatMap((result, index) =>
+            result.leads.map((lead: any) => ({
+                ...lead,
+                campaign_id: campaignIds[index] // Add the campaign_id to each lead
+            }))
+        )
 
         // Deduplicate leads based on lead.lead.id
         // Using a Map to preserve the first occurrence of each unique lead

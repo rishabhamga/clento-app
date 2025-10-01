@@ -1,10 +1,15 @@
 'use client'
 
-import { Box, Heading, HStack, Text, VStack, Button, Spinner, useToast, SimpleGrid, Card, Icon, useColorModeValue, Th, Tr, Thead, Tbody, TableContainer, Td, Table, Spacer, Avatar, Badge } from "@chakra-ui/react"
+import {
+    Box, Heading, HStack, Text, VStack, Button, Spinner, useToast, SimpleGrid, Card,
+    Icon, useColorModeValue, Th, Tr, Thead, Tbody, TableContainer, Td, Table, Spacer,
+    Avatar, Badge, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter,
+    ModalBody, ModalCloseButton, useDisclosure, Divider
+} from "@chakra-ui/react"
 import { Container } from "@chakra-ui/react"
 import DashboardLayout from "../../components/layout/DashboardLayout"
 import { useState, useEffect } from "react"
-import { MailOpen, Mail, Reply, SendToBackIcon, Droplet, Mails } from "lucide-react"
+import { MailOpen, Mail, Reply, SendToBackIcon, Droplet, Mails, Clock } from "lucide-react"
 import { MousePointerClick } from "lucide-react"
 
 interface Analytics {
@@ -19,6 +24,7 @@ interface Analytics {
 
 interface Lead {
     campaign_lead_map_id: string,
+    campaign_id: string,
     lead_category_id: string,
     status: string,
     created_at: string,
@@ -41,10 +47,28 @@ interface Lead {
     }
 }
 
+interface MessageHistory {
+    stats_id: string
+    from: string
+    to: string
+    type: string
+    message_id: string
+    time: string
+    email_body: string
+    subject: string
+    email_seq_number: string
+    open_count: number
+    click_count: number
+    click_details: Record<string, any>
+}
+
 const EmailLeads = () => {
     const [leads, setLeads] = useState<Lead[]>([])
     const [analytics, setAnalytics] = useState<Analytics>();
     const [loading, setLoading] = useState(false)
+    const [loadingHistory, setLoadingHistory] = useState(false)
+    const [selectedLead, setSelectedLead] = useState<any>(null)
+    const [messageHistory, setMessageHistory] = useState<MessageHistory[]>([])
     const [pagination, setPagination] = useState({
         page: 1,
         perPage: 10,
@@ -52,10 +76,12 @@ const EmailLeads = () => {
         totalPages: 0
     })
     const toast = useToast()
+    const { isOpen, onOpen, onClose } = useDisclosure()
 
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.8)', 'rgba(26, 32, 44, 0.8)')
     const glassBg = useColorModeValue('rgba(255, 255, 255, 0.1)', 'rgba(26, 32, 44, 0.1)')
     const borderColor = useColorModeValue('rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)')
+    const subjectBg = useColorModeValue('purple.50', 'purple.900')
 
     const fetchData = async (page: number = 1, perPage: number = 10) => {
         setLoading(true)
@@ -97,16 +123,47 @@ const EmailLeads = () => {
         fetchData(1, newPerPage) // Reset to page 1 when changing items per page
     }
 
-    const handleSelectLead = async(email: string, leadId: string, campaignId: string) => {
-        try{
-            const res = await fetch(`/api/email-leads/${leadId}`, {
-                method: 'POST',
-                body: JSON.stringify({ email, campaignId })
-            })
+    const handleSelectLead = async (lead: Lead) => {
+        setLoadingHistory(true)
+        // Set the lead info immediately (we already have it from the table)
+        setSelectedLead(lead.lead)
+        onOpen() // Open modal right away
+
+        console.log('Selected lead:', {
+            campaign_id: lead.campaign_id,
+            lead_id: lead.lead.id,
+            campaign_lead_map_id: lead.campaign_lead_map_id
+        })
+
+        try {
+            const url = `/api/email-leads/${lead.campaign_lead_map_id}?campaign_id=${lead.campaign_id}&lead_id=${lead.lead.id}`
+            console.log('Fetching message history from URL:', url)
+            const res = await fetch(url)
             const data = await res.json()
-            console.log(data);
-        }catch(err){
-            console.log(err);
+
+            if (data.success) {
+                setMessageHistory(data.data.messageHistory || [])
+                console.log('Message history loaded:', data.data.messageHistory?.length || 0, 'messages')
+            } else {
+                toast({
+                    title: 'Error',
+                    description: data.error || 'Failed to load email history',
+                    status: 'error',
+                    duration: 3000,
+                })
+                setMessageHistory([])
+            }
+        } catch (err: any) {
+            console.error('Error loading lead history:', err);
+            toast({
+                title: 'Error',
+                description: err.message || 'Failed to load email history',
+                status: 'error',
+                duration: 3000,
+            })
+            setMessageHistory([])
+        } finally {
+            setLoadingHistory(false)
         }
     }
 
@@ -301,7 +358,7 @@ const EmailLeads = () => {
                                                         transition: 'background 0.8s cubic-bezier(0.4,0,0.2,1)'
                                                     }}
                                                     transition="all 0.2s ease"
-                                                    onClick={() => handleSelectLead(lead.lead.email, lead.lead.id, lead.campaign_lead_map_id)}
+                                                    onClick={() => handleSelectLead(lead)}
                                                 >
                                                     <Td>
                                                         <HStack spacing={3}>
@@ -382,6 +439,199 @@ const EmailLeads = () => {
                                 </HStack>
                             </HStack>
                         )}
+
+                        {/* Message History Modal */}
+                        <Modal isOpen={isOpen} onClose={onClose} size="4xl" scrollBehavior="inside">
+                            <ModalOverlay backdropFilter="blur(10px)" />
+                            <ModalContent>
+                                <ModalHeader>
+                                    <VStack align="start" spacing={2}>
+                                        <HStack spacing={3}>
+                                            <Avatar
+                                                size="md"
+                                                name={selectedLead ? `${selectedLead.first_name} ${selectedLead.last_name}` : ''}
+                                            />
+                                            <VStack align="start" spacing={0}>
+                                                <Text fontSize="lg" fontWeight="bold">
+                                                    {selectedLead?.first_name} {selectedLead?.last_name}
+                                                </Text>
+                                                <Text fontSize="sm" color="gray.500">
+                                                    {selectedLead?.email}
+                                                </Text>
+                                            </VStack>
+                                        </HStack>
+                                        <Text fontSize="sm" color="gray.600">
+                                            {selectedLead?.company_name} • {selectedLead?.location}
+                                        </Text>
+                                    </VStack>
+                                </ModalHeader>
+                                <ModalCloseButton />
+                                <ModalBody>
+                                    {loadingHistory ? (
+                                        <VStack spacing={4} py={8}>
+                                            <Spinner size="lg" color="purple.500" />
+                                            <Text color="gray.600">Loading message history...</Text>
+                                        </VStack>
+                                    ) : messageHistory.length > 0 ? (
+                                        <VStack spacing={4} align="stretch">
+                                            {messageHistory.map((message: MessageHistory, index: number) => {
+                                                const isFromLead = message.from === selectedLead?.email
+                                                const isReply = message.type === 'replied'
+
+                                                return (
+                                                    <Card
+                                                        key={message.message_id || index}
+                                                        bg={cardBg}
+                                                        backdropFilter="blur(10px)"
+                                                        border="2px solid"
+                                                        borderColor={isFromLead ? 'green.200' : 'blue.200'}
+                                                        borderRadius="xl"
+                                                        p={5}
+                                                        boxShadow="md"
+                                                    >
+                                                        <VStack align="stretch" spacing={3}>
+                                                            {/* Header with From/To and Type */}
+                                                            <HStack justify="space-between" align="start">
+                                                                <VStack align="start" spacing={1}>
+                                                                    <HStack spacing={2}>
+                                                                        <Badge
+                                                                            colorScheme={isFromLead ? 'green' : 'blue'}
+                                                                            fontSize="xs"
+                                                                            px={3}
+                                                                            py={1}
+                                                                            borderRadius="full"
+                                                                        >
+                                                                            {isFromLead ? '📨 FROM LEAD' : '📤 TO LEAD'}
+                                                                        </Badge>
+                                                                        <Badge
+                                                                            colorScheme={isReply ? 'purple' : 'gray'}
+                                                                            variant="outline"
+                                                                            fontSize="xs"
+                                                                        >
+                                                                            {message.type.toUpperCase()}
+                                                                        </Badge>
+                                                                        <Badge
+                                                                            colorScheme="orange"
+                                                                            variant="subtle"
+                                                                            fontSize="xs"
+                                                                        >
+                                                                            Sequence #{message.email_seq_number}
+                                                                        </Badge>
+                                                                    </HStack>
+                                                                    <HStack spacing={2} fontSize="xs" color="gray.600">
+                                                                        <Text fontWeight="semibold">From:</Text>
+                                                                        <Text>{message.from}</Text>
+                                                                        <Text mx={2}>→</Text>
+                                                                        <Text fontWeight="semibold">To:</Text>
+                                                                        <Text>{message.to}</Text>
+                                                                    </HStack>
+                                                                </VStack>
+                                                                <VStack align="end" spacing={1}>
+                                                                    <HStack spacing={2} color="gray.500" fontSize="xs">
+                                                                        <Icon as={Clock} boxSize={3} />
+                                                                        <Text fontWeight="medium">
+                                                                            {new Date(message.time).toLocaleString('en-US', {
+                                                                                month: 'short',
+                                                                                day: 'numeric',
+                                                                                year: 'numeric',
+                                                                                hour: '2-digit',
+                                                                                minute: '2-digit'
+                                                                            })}
+                                                                        </Text>
+                                                                    </HStack>
+                                                                </VStack>
+                                                            </HStack>
+
+                                                            {/* Subject Line */}
+                                                            {message.subject && (
+                                                                <Box
+                                                                    bg={subjectBg}
+                                                                    p={3}
+                                                                    borderRadius="md"
+                                                                >
+                                                                    <Text fontSize="sm" fontWeight="bold" color="purple.700">
+                                                                        📧 {message.subject}
+                                                                    </Text>
+                                                                </Box>
+                                                            )}
+
+                                                            <Divider />
+
+                                                            {/* Email Body */}
+                                                            <Box
+                                                                fontSize="sm"
+                                                                color="gray.700"
+                                                                lineHeight="1.6"
+                                                                dangerouslySetInnerHTML={{ __html: message.email_body || 'No content' }}
+                                                                sx={{
+                                                                    'p': { mb: 2 },
+                                                                    'a': { color: 'blue.500', textDecoration: 'underline' }
+                                                                }}
+                                                            />
+
+                                                            {/* Engagement Stats */}
+                                                            <Divider />
+                                                            <SimpleGrid columns={2} spacing={3}>
+                                                                <HStack spacing={2} p={2} bg={glassBg} borderRadius="md">
+                                                                    <Icon as={MailOpen} boxSize={4} color="blue.500" />
+                                                                    <VStack align="start" spacing={0}>
+                                                                        <Text fontSize="xs" color="gray.500">Opens</Text>
+                                                                        <Text fontSize="md" fontWeight="bold">{message.open_count}</Text>
+                                                                    </VStack>
+                                                                </HStack>
+                                                                <HStack spacing={2} p={2} bg={glassBg} borderRadius="md">
+                                                                    <Icon as={MousePointerClick} boxSize={4} color="purple.500" />
+                                                                    <VStack align="start" spacing={0}>
+                                                                        <Text fontSize="xs" color="gray.500">Clicks</Text>
+                                                                        <Text fontSize="md" fontWeight="bold">{message.click_count}</Text>
+                                                                    </VStack>
+                                                                </HStack>
+                                                            </SimpleGrid>
+
+                                                            {/* Click Details */}
+                                                            {message.click_count > 0 && Object.keys(message.click_details || {}).length > 0 && (
+                                                                <Box mt={2}>
+                                                                    <Text fontSize="xs" color="gray.500" mb={2}>Links Clicked:</Text>
+                                                                    <VStack align="stretch" spacing={1}>
+                                                                        {Object.entries(message.click_details).map(([url, count]: [string, any]) => (
+                                                                            <HStack
+                                                                                key={url}
+                                                                                fontSize="xs"
+                                                                                p={2}
+                                                                                bg={glassBg}
+                                                                                borderRadius="md"
+                                                                                justify="space-between"
+                                                                            >
+                                                                                <Text noOfLines={1} flex={1} color="blue.600">
+                                                                                    {url}
+                                                                                </Text>
+                                                                                <Badge colorScheme="purple" size="sm">
+                                                                                    {count}x
+                                                                                </Badge>
+                                                                            </HStack>
+                                                                        ))}
+                                                                    </VStack>
+                                                                </Box>
+                                                            )}
+                                                        </VStack>
+                                                    </Card>
+                                                )
+                                            })}
+                                        </VStack>
+                                    ) : (
+                                        <Box textAlign="center" py={12}>
+                                            <Icon as={Mail} boxSize={12} color="gray.300" mb={4} />
+                                            <Text color="gray.500" fontSize="lg">
+                                                No message history available
+                                            </Text>
+                                        </Box>
+                                    )}
+                                </ModalBody>
+                                <ModalFooter>
+                                    <Button onClick={onClose}>Close</Button>
+                                </ModalFooter>
+                            </ModalContent>
+                        </Modal>
                     </Box>
                 </Container>
             </DashboardLayout>
