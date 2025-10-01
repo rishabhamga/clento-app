@@ -9,7 +9,7 @@ import {
 import { Container } from "@chakra-ui/react"
 import DashboardLayout from "../../components/layout/DashboardLayout"
 import { useState, useEffect } from "react"
-import { MailOpen, Mail, Reply, SendToBackIcon, Droplet, Mails, Clock } from "lucide-react"
+import { MailOpen, Mail, Reply, SendToBackIcon, Droplet, Mails, Clock, RefreshCw } from "lucide-react"
 import { MousePointerClick } from "lucide-react"
 
 interface Analytics {
@@ -327,7 +327,7 @@ const EmailLeads = () => {
                             </>
                         )}
 
-                        {/* Leads Display - You can add your lead cards/table here */}
+                        {/* Leads Display */}
                         {!loading && leads.length > 0 && (
                             <Card
                                 bg={cardBg}
@@ -397,6 +397,46 @@ const EmailLeads = () => {
                                         </Tbody>
                                     </Table>
                                 </TableContainer>
+                            </Card>
+                        )}
+
+                        {/* Empty State */}
+                        {!loading && leads.length === 0 && (
+                            <Card
+                                bg={cardBg}
+                                backdropFilter="blur(10px)"
+                                border="1px solid"
+                                borderColor={borderColor}
+                                borderRadius="xl"
+                                p={12}
+                            >
+                                <VStack spacing={6}>
+                                    <Box
+                                        p={6}
+                                        bg={glassBg}
+                                        borderRadius="full"
+                                    >
+                                        <Icon as={Mail} boxSize={16} color="purple.300" />
+                                    </Box>
+                                    <VStack spacing={2}>
+                                        <Heading size="md" color="gray.700">
+                                            No Email Leads Found
+                                        </Heading>
+                                        <Text color="gray.500" textAlign="center" maxW="md">
+                                            There are no email leads to display at the moment. Start your email campaigns to see leads appear here.
+                                        </Text>
+                                    </VStack>
+                                    <HStack spacing={3}>
+                                        <Button
+                                            colorScheme="purple"
+                                            variant="outline"
+                                            leftIcon={<RefreshCw size={16} />}
+                                            onClick={() => fetchData(pagination.page, pagination.perPage)}
+                                        >
+                                            Refresh
+                                        </Button>
+                                    </HStack>
+                                </VStack>
                             </Card>
                         )}
 
