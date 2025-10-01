@@ -1,23 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
+import axios from 'axios';
+import { syndieBaseUrl } from '../../../lib/utils';
 
 const supabase = createClient(
   process.env.PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+const getAccounts = async (tokenData: { api_token: string }) => {
+    try {
+        const res = await axios.get(syndieBaseUrl + '/api/linkedin/seats', {
+            headers: {
+                'Authorization': `Bearer ${tokenData.api_token}`,
+                'Content-Type': 'application/json',
+            }
+        })
+
+        if (!res.data) {
+            console.log('No Seats Found')
+            return
+        }
+
+        return res?.data?.data?.seats
+    } catch (err) {
+        console.log(JSON.stringify(err, null, 4));
+        return
+    }
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { userId, orgId } = await auth();
+
+    const {data: organizationData, error: orgError} = await supabase.from('organizations').select("*").eq('clerk_org_id', orgId).single();
+
+    if(!organizationData || orgError){
+        return NextResponse.json({error: 'An Error Occured', status: 400})
+    }
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get organization context from query parameters
-    const { searchParams } = new URL(request.url)
-    const organizationId = searchParams.get('organizationId')
+    const organizationId = orgId;
+
+    //GET the token of the syndie
+    const {data: tokenData, error: tokenError} = await supabase.from('syndie_access_tokens').select('*').eq('organization_id', organizationData.id).single();
+
+    if(!tokenError && tokenData){
+        console.log('Token H Fetching the data from syndie');
+        const accounts = await getAccounts(tokenData)
+        return NextResponse.json({message: "Accounts Fetched Successfully", syndieSeats: true, accounts}, {status: 200})
+    }
 
     // Get user's ID from the users table
     const { data: userData, error: userError } = await supabase
