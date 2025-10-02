@@ -40,7 +40,6 @@ CREATE TABLE public.campaigns (
   name text NOT NULL,
   description text,
   status text DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'active'::text, 'paused'::text, 'completed'::text])),
-  sequence_template text DEFAULT 'email_first'::text,
   settings jsonb DEFAULT '{}'::jsonb,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
@@ -48,9 +47,14 @@ CREATE TABLE public.campaigns (
   smartlead_campaign_id character varying,
   syndie_campaign_ids ARRAY,
   workflow_json_file text CHECK (workflow_json_file IS NULL OR workflow_json_file ~ '^workflows/[a-zA-Z0-9_-]+\.json$'::text),
+  lead_list_id uuid,
+  account_id uuid,
+  workflow_id text,
+  schedule jsonb DEFAULT '{}'::jsonb,
   CONSTRAINT campaigns_pkey PRIMARY KEY (id),
-  CONSTRAINT campaigns_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT campaigns_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+  CONSTRAINT campaigns_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.user_accounts(id),
+  CONSTRAINT campaigns_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT campaigns_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.company_active_jobs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -72,24 +76,8 @@ CREATE TABLE public.company_active_jobs (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT company_active_jobs_pkey PRIMARY KEY (id),
-  CONSTRAINT company_active_jobs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-  CONSTRAINT company_active_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
-);
-CREATE TABLE public.icp_filter_profiles (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid,
-  organization_id uuid,
-  profile_name character varying NOT NULL,
-  description text,
-  filters jsonb NOT NULL DEFAULT '{}'::jsonb,
-  search_type character varying DEFAULT 'people'::character varying,
-  usage_count integer DEFAULT 0,
-  last_used_at timestamp with time zone,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT icp_filter_profiles_pkey PRIMARY KEY (id),
-  CONSTRAINT icp_filter_profiles_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-  CONSTRAINT icp_filter_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+  CONSTRAINT company_active_jobs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT company_active_jobs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.job_filter_requests (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -134,11 +122,12 @@ CREATE TABLE public.lead_lists (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   campaign_id uuid,
+  icpData json,
   CONSTRAINT lead_lists_pkey PRIMARY KEY (id),
-  CONSTRAINT lead_lists_connected_account_id_fkey FOREIGN KEY (connected_account_id) REFERENCES public.user_accounts(id),
-  CONSTRAINT lead_lists_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT lead_lists_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id),
   CONSTRAINT lead_lists_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT lead_lists_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id)
+  CONSTRAINT lead_lists_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT lead_lists_connected_account_id_fkey FOREIGN KEY (connected_account_id) REFERENCES public.user_accounts(id)
 );
 CREATE TABLE public.leads (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -177,9 +166,9 @@ CREATE TABLE public.leads (
   lead_list_id uuid,
   user_id uuid,
   CONSTRAINT leads_pkey PRIMARY KEY (id),
-  CONSTRAINT leads_lead_list_id_fkey FOREIGN KEY (lead_list_id) REFERENCES public.lead_lists(id),
   CONSTRAINT leads_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT leads_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+  CONSTRAINT leads_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT leads_lead_list_id_fkey FOREIGN KEY (lead_list_id) REFERENCES public.lead_lists(id)
 );
 CREATE TABLE public.organization_members (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -194,9 +183,9 @@ CREATE TABLE public.organization_members (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT organization_members_pkey PRIMARY KEY (id),
-  CONSTRAINT organization_members_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES public.users(id),
   CONSTRAINT organization_members_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-  CONSTRAINT organization_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+  CONSTRAINT organization_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT organization_members_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES public.users(id)
 );
 CREATE TABLE public.organizations (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -265,8 +254,8 @@ CREATE TABLE public.user_accounts (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT user_accounts_pkey PRIMARY KEY (id),
-  CONSTRAINT user_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
-  CONSTRAINT user_accounts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+  CONSTRAINT user_accounts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT user_accounts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
 );
 CREATE TABLE public.user_profile (
   user_id uuid NOT NULL,
@@ -281,8 +270,8 @@ CREATE TABLE public.user_profile (
   linkedin_accounts_connected integer DEFAULT 0,
   organization_id uuid,
   CONSTRAINT user_profile_pkey PRIMARY KEY (user_id),
-  CONSTRAINT user_profile_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT user_profile_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id)
+  CONSTRAINT user_profile_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id),
+  CONSTRAINT user_profile_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.users (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

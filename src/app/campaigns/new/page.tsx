@@ -16,6 +16,7 @@ import {
     VStack
 } from '@chakra-ui/react'
 import { keyframes } from '@emotion/react'
+import { useOrganization, useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import LeadListCard from '../../../components/LeadListCard'
@@ -53,6 +54,8 @@ export default function NewCampaignPage() {
     const [loading, setLoading] = useState<boolean>(false);
     const [lists, setLists] = useState<LeadListWithAccount[]>();
     const [selectedList, setSelectedList] = useState<string>();
+    const { user, isLoaded } = useUser()
+    const { organization } = useOrganization()
 
     // Enhanced color mode values with 3D styling
     const cardBg = useColorModeValue('rgba(255, 255, 255, 0.9)', 'rgba(26, 32, 44, 0.9)')
@@ -98,10 +101,17 @@ export default function NewCampaignPage() {
 
     useEffect(() => {
         const fetchLists = async () => {
+            if (!user || !isLoaded) return
+            
             // Fetch lead lists
             setLoading(true);
             try {
-                const leadListsUrl = `/api/lead-lists`;
+                const params = new URLSearchParams()
+                if (organization?.id) {
+                    params.append('organizationId', organization.id)
+                }
+                
+                const leadListsUrl = `/api/lead-lists${params.toString() ? `?${params.toString()}` : ''}`;
                 const leadListsResponse = await fetch(leadListsUrl);
 
                 if (!leadListsResponse.ok) {
@@ -117,7 +127,7 @@ export default function NewCampaignPage() {
             }
         }
         fetchLists();
-    }, [])
+    }, [isLoaded, user, organization?.id])
 
     return (
         <Box

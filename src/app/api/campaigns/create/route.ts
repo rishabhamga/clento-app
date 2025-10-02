@@ -157,15 +157,10 @@ export async function POST(request: NextRequest) {
         name: campaignName,
         description: pitch?.offeringDescription || '',
         status: launch?.autopilot ? 'active' : 'draft',
-        sequence_template: workflow?.templateId || 'custom',
         workflow_json_file: workflowFileName, // Store GCS file path
+        workflow_id: workflow?.templateId || null,
         settings: {
           autopilot: launch?.autopilot || false,
-          dailyLimit: launch?.dailyLimit || 50,
-          timezone: launch?.timezone || 'UTC',
-          startDate: launch?.startDate || new Date().toISOString().split('T')[0],
-          reviewRequired: launch?.reviewRequired !== false,
-          trackingEnabled: launch?.trackingEnabled !== false,
           doNotContact: launch?.doNotContact || [],
           targeting,
           pitch,
@@ -178,7 +173,15 @@ export async function POST(request: NextRequest) {
           country: targeting?.filters?.locations?.[0] || 'US',
           language: outreach?.campaignLanguage || 'English (United States)'
         },
-        lead_list_id: leadListId
+        schedule: {
+          dailyLimit: launch?.dailyLimit || 50,
+          timezone: launch?.timezone || 'UTC',
+          startDate: launch?.startDate || new Date().toISOString().split('T')[0],
+          reviewRequired: launch?.reviewRequired !== false,
+          trackingEnabled: launch?.trackingEnabled !== false
+        },
+        lead_list_id: leadListId,
+        account_id: null // Will be set later when linking social accounts
       }])
       .select()
       .single()
