@@ -5,13 +5,13 @@ import { Clock } from 'lucide-react';
 import { FlowEdge } from '../types/WorkflowTypes';
 import { FlowUtils } from '../utils/FlowUtils';
 
-const CustomEdge = memo(({ 
-  id, 
-  sourceX, 
-  sourceY, 
-  targetX, 
-  targetY, 
-  sourcePosition, 
+const CustomEdge = memo(({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
   targetPosition,
   data,
   selected
@@ -23,11 +23,29 @@ const CustomEdge = memo(({
     targetX,
     targetY,
     targetPosition,
+    curvature: 0.25, // Add some curvature to make the curve more visible
   });
 
-  // Calculate center position for delay label
-  const centerX = (sourceX + targetX) / 2;
-  const centerY = (sourceY + targetY) / 2;
+  // Use React Flow's built-in label positioning but shift slightly left
+  const labelPosition = {
+    x: labelX - 45, // Move labels 15px to the left
+    y: labelY
+  };
+
+  // Calculate offset for conditional labels to avoid overlap with delay labels
+  const getConditionalLabelOffset = () => {
+    const deltaX = targetX - sourceX;
+    const deltaY = targetY - sourceY;
+
+    // Simple vertical offset for conditional labels
+    // Position them above the delay labels
+    return {
+      x: 0,
+      y: -35 // Move up to avoid overlap with delay labels
+    };
+  };
+
+  const conditionalOffset = getConditionalLabelOffset();
 
   const delayData = data?.delayData as { delay: number; unit: 'd' | 'm' | 'h' } | undefined;
   const isConditional = data?.isConditionalPath;
@@ -52,8 +70,8 @@ const CustomEdge = memo(({
   const handleDelayClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     // Emit custom event to edit delay
-    window.dispatchEvent(new CustomEvent('editEdgeDelay', { 
-      detail: { edgeId: id, currentDelay: delayData } 
+    window.dispatchEvent(new CustomEvent('editEdgeDelay', {
+      detail: { edgeId: id, currentDelay: delayData }
     }));
   };
 
@@ -66,7 +84,7 @@ const CustomEdge = memo(({
         style={getEdgeStyle()}
         markerEnd="url(#arrowhead)"
       />
-      
+
       {/* Delay Label */}
       <EdgeLabelRenderer>
         <motion.div
@@ -74,8 +92,8 @@ const CustomEdge = memo(({
           animate={{ opacity: 1, scale: 1 }}
           className="absolute pointer-events-auto z-10"
           style={{
-            left: centerX,
-            top: centerY,
+            left: labelPosition.x,
+            top: labelPosition.y,
             transform: 'translate(-50%, -50%)',
           }}
         >
@@ -105,15 +123,15 @@ const CustomEdge = memo(({
             animate={{ opacity: 1, scale: 1 }}
             className="absolute pointer-events-none z-10"
             style={{
-              left: centerX,
-              top: centerY - 25,
+              left: labelPosition.x + conditionalOffset.x,
+              top: labelPosition.y + conditionalOffset.y,
               transform: 'translate(-50%, -50%)',
             }}
           >
             <div className={`
               px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg border-2
-              ${isPositive 
-                ? 'bg-green-50 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-200 dark:border-green-700' 
+              ${isPositive
+                ? 'bg-green-50 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-200 dark:border-green-700'
                 : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-900/50 dark:text-red-200 dark:border-red-700'
               }
             `}>

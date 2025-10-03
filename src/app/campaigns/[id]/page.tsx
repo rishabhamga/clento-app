@@ -60,6 +60,7 @@ import { GradientButton } from '@/components/ui/GradientButton'
 import { CampaignStepper } from '@/components/ui/CampaignStepper'
 import { FiBookOpen, FiGift, FiSettings, FiStar, FiTrendingUp, FiUsers } from 'react-icons/fi'
 import { CheckCircleIcon, UpDownIcon, WarningIcon } from '@chakra-ui/icons'
+import WorkflowViewer from '../../../components/workflow/WorkflowViewer'
 
 // Enhanced animations matching campaign creation pages
 const float = keyframes`
@@ -149,8 +150,6 @@ export default function CampaignDetailPage() {
                 if (!response.ok) throw new Error('Failed to fetch campaign')
 
                 const data = await response.json()
-                console.log('🔍 Campaign Data from API:', data)
-                console.log('🔍 Campaign Settings:', data.campaignData?.settings)
                 setCampaign(data.campaignData)
             } catch (error) {
                 console.error('Error fetching campaign:', error)
@@ -1304,7 +1303,7 @@ export default function CampaignDetailPage() {
     }
 
     const renderWorkflowContent = () => {
-        const workflow = campaign?.settings?.workflow || {}
+        const workflow = campaign?.settings?.workflow?.flowData || {}
         const sequence = campaign?.settings?.sequence || {}
 
         return (
@@ -1325,7 +1324,13 @@ export default function CampaignDetailPage() {
                         </Text>
                     </VStack>
 
-                    {/* Sequence Details */}
+                    <Box h="600px" border="1px solid" borderColor="gray.300" borderRadius="md">
+                        <WorkflowViewer
+                            workflowData={workflow}
+                            className="w-full h-full"
+                        />
+                    </Box>
+                    {/* Sequence Details
                     <Card
                         bg={glassBg}
                         borderRadius="2xl"
@@ -1397,7 +1402,7 @@ export default function CampaignDetailPage() {
                                 </Box>
                             </SimpleGrid>
                         </CardBody>
-                    </Card>
+                    </Card> */}
                 </VStack>
             </Container>
         )

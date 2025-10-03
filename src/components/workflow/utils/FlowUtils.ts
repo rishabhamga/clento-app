@@ -93,7 +93,7 @@ export class FlowUtils {
       'h': delayData.delay === 1 ? 'hour' : 'hours',
       'd': delayData.delay === 1 ? 'day' : 'days'
     };
-    
+
     return `${delayData.delay} ${unitMap[delayData.unit]}`;
   }
 
@@ -103,7 +103,7 @@ export class FlowUtils {
     if (!match) {
       return { delay: 15, unit: 'm' };
     }
-    
+
     return {
       delay: parseInt(match[1]),
       unit: match[2] as 'm' | 'h' | 'd'
@@ -126,12 +126,12 @@ export class FlowUtils {
       return { x: 100, y: 0 };
     }
 
-    const baseY = sourceNode.position.y + 150;
-    
+    const baseY = sourceNode.position.y + 300; // Increased from 200 to 300
+
     if (pathType === 'accepted') {
-      return { x: sourceNode.position.x + 200, y: baseY };
+      return { x: sourceNode.position.x + 400, y: baseY }; // Increased from 300 to 400
     } else if (pathType === 'not-accepted') {
-      return { x: sourceNode.position.x - 200, y: baseY };
+      return { x: sourceNode.position.x - 400, y: baseY }; // Increased from 300 to 400
     } else {
       // Standard sequential flow
       return { x: sourceNode.position.x, y: baseY };
@@ -159,12 +159,12 @@ export class FlowUtils {
     // Don't allow deletion if it would create orphaned nodes
     const outgoingEdges = this.getOutgoingEdges(nodeId, edges);
     const incomingEdges = this.getIncomingEdges(nodeId, edges);
-    
+
     // If this node has both incoming and outgoing edges, deletion would break the flow
     if (incomingEdges.length > 0 && outgoingEdges.length > 0) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -174,36 +174,36 @@ export class FlowUtils {
     const layoutNodes = [...nodes];
     const visited = new Set<string>();
     const positioned = new Map<string, { x: number; y: number }>();
-    
+
     // Find root nodes (no incoming edges)
-    const rootNodes = layoutNodes.filter(node => 
+    const rootNodes = layoutNodes.filter(node =>
       !edges.some(edge => edge.target === node.id)
     );
-    
+
     let currentY = 0;
-    const nodeSpacing = 150;
-    
+    const nodeSpacing = 300; // Increased from 200 to 300
+
     const layoutBranch = (nodeId: string, x: number, y: number) => {
       if (visited.has(nodeId)) return;
-      
+
       visited.add(nodeId);
       positioned.set(nodeId, { x, y });
-      
+
       const outgoingEdges = this.getOutgoingEdges(nodeId, edges);
       const childNodes = outgoingEdges.map(edge => edge.target);
-      
+
       childNodes.forEach((childId, index) => {
-        const childX = x + (index - (childNodes.length - 1) / 2) * 250;
+        const childX = x + (index - (childNodes.length - 1) / 2) * 500; // Increased from 350 to 500
         const childY = y + nodeSpacing;
         layoutBranch(childId, childX, childY);
       });
     };
-    
+
     // Layout each root node
     rootNodes.forEach((rootNode, index) => {
-      layoutBranch(rootNode.id, index * 300, currentY);
+      layoutBranch(rootNode.id, index * 600, currentY); // Increased from 400 to 600
     });
-    
+
     // Apply positions
     return layoutNodes.map(node => ({
       ...node,
@@ -227,7 +227,7 @@ export class FlowUtils {
     const startPosition = { x: 100, y: 50 };
 
     // Find root nodes (nodes with no incoming edges)
-    const rootNodes = layoutNodes.filter(node => 
+    const rootNodes = layoutNodes.filter(node =>
       !edges.some(edge => edge.target === node.id)
     );
 
@@ -246,15 +246,15 @@ export class FlowUtils {
 
     // BFS to assign levels
     const queue = rootNodes.map(node => ({ id: node.id, level: 0 }));
-    
+
     while (queue.length > 0) {
       const { id, level } = queue.shift()!;
-      
+
       if (positioned.has(id)) continue;
-      
+
       levels[id] = level;
       positioned.add(id);
-      
+
       // Add children to queue
       if (adjacencyList[id]) {
         adjacencyList[id].forEach(childId => {
@@ -279,12 +279,12 @@ export class FlowUtils {
     Object.keys(nodesByLevel).forEach(levelStr => {
       const level = parseInt(levelStr);
       const nodesAtLevel = nodesByLevel[level];
-      
+
       // Handle conditional branching (accepted/not-accepted paths)
-      const acceptedNodes = nodesAtLevel.filter(node => 
+      const acceptedNodes = nodesAtLevel.filter(node =>
         node.data.pathType === 'accepted' || !node.data.pathType
       );
-      const notAcceptedNodes = nodesAtLevel.filter(node => 
+      const notAcceptedNodes = nodesAtLevel.filter(node =>
         node.data.pathType === 'not-accepted'
       );
 
@@ -292,7 +292,7 @@ export class FlowUtils {
       acceptedNodes.forEach((node, index) => {
         const totalWidth = (acceptedNodes.length - 1) * nodeSpacing.x;
         const startX = startPosition.x - totalWidth / 2;
-        
+
         node.position = {
           x: startX + index * nodeSpacing.x,
           y: startPosition.y + level * nodeSpacing.y
@@ -327,57 +327,57 @@ export class FlowUtils {
   } {
     const errors: string[] = [];
     const warnings: string[] = [];
-    
+
     // Check for orphaned nodes
     const connectedNodeIds = new Set([
       ...edges.map(e => e.source),
       ...edges.map(e => e.target)
     ]);
-    
-    const orphanedNodes = nodes.filter(node => 
+
+    const orphanedNodes = nodes.filter(node =>
       node.type === 'action' && !connectedNodeIds.has(node.id) && nodes.length > 1
     );
-    
+
     if (orphanedNodes.length > 0) {
       warnings.push(`Found ${orphanedNodes.length} orphaned node(s)`);
     }
-    
+
     // Check for unconfigured nodes
-    const unconfiguredNodes = nodes.filter(node => 
+    const unconfiguredNodes = nodes.filter(node =>
       node.type === 'action' && !(node.data as ActionNodeData).isConfigured
     );
-    
+
     if (unconfiguredNodes.length > 0) {
       warnings.push(`Found ${unconfiguredNodes.length} unconfigured node(s)`);
     }
-    
+
     // Check for circular dependencies
     const visited = new Set<string>();
     const recursionStack = new Set<string>();
-    
+
     const hasCycle = (nodeId: string): boolean => {
       if (recursionStack.has(nodeId)) return true;
       if (visited.has(nodeId)) return false;
-      
+
       visited.add(nodeId);
       recursionStack.add(nodeId);
-      
+
       const outgoingEdges = this.getOutgoingEdges(nodeId, edges);
       for (const edge of outgoingEdges) {
         if (hasCycle(edge.target)) return true;
       }
-      
+
       recursionStack.delete(nodeId);
       return false;
     };
-    
+
     for (const node of nodes) {
       if (hasCycle(node.id)) {
         errors.push('Circular dependency detected in workflow');
         break;
       }
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors,
