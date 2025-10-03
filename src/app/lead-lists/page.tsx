@@ -47,21 +47,22 @@ import {
     LeadListWithAccount
 } from '@/types/database'
 import LeadListCard from '../../components/LeadListCard'
+import SyndieLeadListCard from '../../components/SyndieLeadListCard'
 import { useOrgPlan } from '../../hooks/useOrgPlan'
+import { SyndieLeadList } from '@/app/api/lead-lists/route';
 
 type UserAccount = DatabaseType['public']['Tables']['user_accounts']['Row']
 
 // Component that uses useSearchParams (needs to be wrapped in Suspense)
 function LeadListsPageContent() {
-    const { hasPlan } = useOrgPlan();
     const { user, isLoaded } = useUser()
     const { organization } = useOrganization()
     const router = useRouter()
-    const searchParams = useSearchParams()
     const toast = useToast()
 
     const [state, setState] = useState({
         leadLists: [] as LeadListWithAccount[],
+        syndieLeadLists: [] as SyndieLeadList[],
         accounts: [] as UserAccount[],
         campaigns: [] as any[],
         stats: null as LeadListStats | null,
@@ -98,6 +99,18 @@ function LeadListsPageContent() {
                 }
 
                 const leadListsData = await leadListsResponse.json()
+                console.log(leadListsData);
+                if (leadListsData.listType === 'syndie') {
+                    setState(prev => ({
+                        ...prev,
+                        syndieLeadLists: leadListsData.data.data || [],
+                    }))
+                } else {
+                    setState(prev => ({
+                        ...prev,
+                        leadLists: leadListsData.lead_lists || [],
+                    }))
+                }
 
                 // Fetch accounts
                 const accountsUrl = `/api/accounts${params.toString() ? `?${params.toString()}` : ''}`
@@ -121,7 +134,6 @@ function LeadListsPageContent() {
 
                 setState(prev => ({
                     ...prev,
-                    leadLists: leadListsData.lead_lists || [],
                     accounts: accountsData.accounts || [],
                     campaigns: campaignsData.campaigns || [],
                     stats: leadListsData.stats,
@@ -147,6 +159,17 @@ function LeadListsPageContent() {
 
     const handleEditList = (leadList: LeadListWithAccount) => {
         router.push(`/lead-lists/${leadList.id}/edit`)
+    }
+
+    const handleEditSyndieList = (leadList: SyndieLeadList) => {
+        // For now, just show a toast - could be updated to open Syndie editor
+        toast({
+            title: 'Edit in Syndie',
+            description: `Opening lead list ${leadList.name} in Syndie editor...`,
+            status: 'info',
+            duration: 3000,
+            isClosable: true,
+        })
     }
 
     const handleDeleteList = async (id: string) => {
@@ -230,6 +253,15 @@ function LeadListsPageContent() {
         return matchesSearch && matchesStatus
     })
 
+    const filteredSyndieLeadLists = state.syndieLeadLists.filter(list => {
+        const matchesSearch = list.name.toLowerCase().includes(state.searchQuery.toLowerCase())
+
+        // For Syndie lists, we can filter by searchUrlType instead of status
+        const matchesStatus = !state.statusFilter || list.searchUrlType === state.statusFilter
+
+        return matchesSearch && matchesStatus
+    })
+
     if (!isLoaded || state.loading) {
         return (
             <DashboardLayout>
@@ -278,14 +310,16 @@ function LeadListsPageContent() {
                         >
                             Sample CSV
                         </Button>
-                        <GradientButton
-                            leftIcon={<Plus size={16} />}
-                            variant="primary"
-                            size="lg"
-                            onClick={() => router.push('/lead-lists/create')}
-                        >
-                            Create Lead List
-                        </GradientButton>
+                        {!state.syndieLeadLists && (
+                            <GradientButton
+                                leftIcon={<Plus size={16} />}
+                                variant="primary"
+                                size="lg"
+                                onClick={() => router.push('/lead-lists/create')}
+                            >
+                                Create Lead List
+                            </GradientButton>
+                        )}
                     </HStack>
                 </HStack>
 
@@ -309,8 +343,9 @@ function LeadListsPageContent() {
                             }}
                         />
                     </InputGroup>
+                    {!state.syndieLeadLists && (
                     <Select
-                        placeholder="All statuses"
+                        placeholder="All types"
                         value={state.statusFilter}
                         onChange={(e) => setState(prev => ({ ...prev, statusFilter: e.target.value }))}
                         maxW="200px"
@@ -323,31 +358,35 @@ function LeadListsPageContent() {
                         <option value="processing">Processing</option>
                         <option value="completed">Completed</option>
                         <option value="failed">Failed</option>
-                    </Select>
+                        <option value="linkedin">LinkedIn</option>
+                        <option value="apollo">Apollo</option>
+                        <option value="sales_navigator">Sales Navigator</option>
+                        </Select>
+                    )}
                 </HStack>
 
                 {/* Stats Cards */}
-                {state.stats && (
-                    <SimpleGrid columns={{ base: 2, md:2 }} spacing={6}>
-                        <Card
-                            bg={cardBg}
-                            backdropFilter="blur(10px)"
-                            border="1px solid"
-                            borderColor={cardBorder}
-                            borderRadius="xl"
-                            p={4}
-                            _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                            transition="all 0.2s ease"
-                        >
-                            <VStack spacing={1}>
-                                <Icon as={Database} boxSize={5} color="purple.500" />
-                                <Text fontSize="2xl" fontWeight="bold">
-                                    {state.stats.total_lists}
-                                </Text>
-                                <Text fontSize="xs" color="gray.600">Total Lists</Text>
-                            </VStack>
-                        </Card>
+                <SimpleGrid columns={{ base: 2, md: state.syndieLeadLists ? 1 : 2 }} spacing={6}>
+                    <Card
+                        bg={cardBg}
+                        backdropFilter="blur(10px)"
+                        border="1px solid"
+                        borderColor={cardBorder}
+                        borderRadius="xl"
+                        p={4}
+                        _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                        transition="all 0.2s ease"
+                    >
+                        <VStack spacing={1}>
+                            <Icon as={Database} boxSize={5} color="purple.500" />
+                            <Text fontSize="2xl" fontWeight="bold">
+                                {state.stats?.total_lists || state.leadLists.length || state.syndieLeadLists.length}
+                            </Text>
+                            <Text fontSize="xs" color="gray.600">Total Lists</Text>
+                        </VStack>
+                    </Card>
 
+                    {!state.syndieLeadLists && (
                         <Card
                             bg={cardBg}
                             backdropFilter="blur(10px)"
@@ -361,58 +400,69 @@ function LeadListsPageContent() {
                             <VStack spacing={1}>
                                 <Icon as={Users} boxSize={5} color="blue.500" />
                                 <Text fontSize="2xl" fontWeight="bold">
-                                    {state.stats.total_leads.toLocaleString()}
+                                    {state.stats?.total_leads?.toLocaleString() || state.leadLists.reduce((sum, list) => sum + list.total_leads, 0).toLocaleString()}
                                 </Text>
                                 <Text fontSize="xs" color="gray.600">Total Leads</Text>
                             </VStack>
                         </Card>
-                    </SimpleGrid>
+                    )}
+                </SimpleGrid>
+
+                {/* Syndie Lead Lists Section */}
+                {state.syndieLeadLists.length > 0 && (
+                    <Box>
+                        <Heading size="md" mb={4} color="purple.500">
+                            Lead Lists
+                        </Heading>
+                        <Grid
+                            templateColumns="repeat(auto-fill, minmax(350px, 1fr))"
+                            gap={6}
+                            w="100%"
+                            mb={8}
+                        >
+                            {filteredSyndieLeadLists.map((leadList) => (
+                                <SyndieLeadListCard
+                                    key={leadList.id}
+                                    leadList={leadList}
+                                    isLoading={state.deletingListId === leadList.id}
+                                />
+                            ))}
+                        </Grid>
+                    </Box>
                 )}
 
-                {/* Lead Lists Grid */}
-                <Box>
-                    <Grid
-                        templateColumns="repeat(auto-fill, minmax(350px, 1fr))"
-                        gap={6}
-                        w="100%"
-                    >
-                        {filteredLeadLists.map((leadList) => (
-                            <LeadListCard
-                                key={leadList.id}
-                                leadList={leadList}
-                                onView={handleViewList}
-                                onEdit={handleEditList}
-                                onDelete={handleDeleteList}
-                                isLoading={state.deletingListId === leadList.id}
-                            />
-                        ))}
-                    </Grid>
+                {/* Lead Lists Section */}
+                {!state.syndieLeadLists && (
+                    <Box>
+                        <Heading size="md" mb={4} color="purple.500">
+                            Lead Lists
+                        </Heading>
+                        <Grid
+                            templateColumns="repeat(auto-fill, minmax(350px, 1fr))"
+                            gap={6}
+                            w="100%"
+                        >
+                            {filteredLeadLists.map((leadList) => (
+                                <LeadListCard
+                                    key={leadList.id}
+                                    leadList={leadList}
+                                    onView={handleViewList}
+                                    onEdit={handleEditList}
+                                    onDelete={handleDeleteList}
+                                    isLoading={state.deletingListId === leadList.id}
+                                />
+                            ))}
+                        </Grid>
 
-                    {filteredLeadLists.length === 0 && state.searchQuery && (
-                        <Box textAlign="center" py={12}>
-                            <Text color="gray.500" fontSize="lg">
-                                No lead lists found matching &quot;{state.searchQuery}&quot;
-                            </Text>
-                        </Box>
-                    )}
-
-                    {state.leadLists.length === 0 && (
-                        <Box textAlign="center" py={12}>
-                            <VStack spacing={4}>
-                                <Icon as={Database} boxSize={16} color="gray.400" />
+                        {filteredLeadLists.length === 0 && filteredSyndieLeadLists.length === 0 && state.searchQuery && (
+                            <Box textAlign="center" py={12}>
                                 <Text color="gray.500" fontSize="lg">
-                                    {organization
-                                        ? `No lead lists created yet in ${organization.name}. Create your first list to get started!`
-                                        : "No lead lists created yet. Create your first list to get started!"
-                                    }
+                                    No lead lists found matching &quot;{state.searchQuery}&quot;
                                 </Text>
-                                <GradientButton onClick={() => router.push('/lead-lists/create')}>
-                                    Create Your First Lead List
-                                </GradientButton>
-                            </VStack>
-                        </Box>
-                    )}
-                </Box>
+                            </Box>
+                        )}
+                    </Box>
+                )}
             </VStack>
         </DashboardLayout>
     )
