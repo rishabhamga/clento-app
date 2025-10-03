@@ -50,7 +50,6 @@ export async function GET(request: NextRequest) {
     const {data: tokenData, error: tokenError} = await supabase.from('syndie_access_tokens').select('*').eq('organization_id', organizationData.id).single();
 
     if(!tokenError && tokenData){
-        console.log('Token H Fetching the data from syndie');
         const accounts = await getAccounts(tokenData)
         return NextResponse.json({message: "Accounts Fetched Successfully", syndieSeats: true, accounts}, {status: 200})
     }
