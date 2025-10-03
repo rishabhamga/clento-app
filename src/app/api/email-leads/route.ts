@@ -3,7 +3,6 @@ import { supabase } from "../../../lib/supabase";
 import { NextResponse } from "next/server";
 import axios from 'axios';
 
-// @yash todo mkae this api
 const orgToSmartLeadCampaignMap = {
     '6f462221-2f14-48a3-91d1-b60ba824caf9': [//Revenue sage
         '2510990',
