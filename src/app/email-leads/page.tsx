@@ -12,7 +12,7 @@ import { useState, useEffect } from "react"
 import { MailOpen, Mail, Reply, SendToBackIcon, Droplet, Mails, Clock, RefreshCw } from "lucide-react"
 import { MousePointerClick } from "lucide-react"
 
-interface Analytics {
+export interface emailAnalytics {
     sentCount: number
     openCount: number
     clickCount: number
@@ -64,7 +64,7 @@ interface MessageHistory {
 
 const EmailLeads = () => {
     const [leads, setLeads] = useState<Lead[]>([])
-    const [analytics, setAnalytics] = useState<Analytics>();
+    const [analytics, setAnalytics] = useState<emailAnalytics>();
     const [loading, setLoading] = useState(false)
     const [loadingHistory, setLoadingHistory] = useState(false)
     const [selectedLead, setSelectedLead] = useState<any>(null)

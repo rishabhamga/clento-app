@@ -1,10 +1,10 @@
-import { 
-  Box, 
-  VStack, 
-  HStack, 
-  Text, 
-  Badge, 
-  Switch, 
+import {
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Badge,
+  Switch,
   Icon,
   useColorModeValue,
   Menu,
@@ -29,9 +29,9 @@ interface CampaignCardProps {
   id: string
   name: string
   type: 'Standard' | 'Watchtower' | 'Local'
-  leads: {
-    current: number
-    total: number
+  leads?: {
+    current?: number
+    total?: number
   }
   createdAt: string
   onClick?: () => void
@@ -135,8 +135,8 @@ export default function CampaignCard({
       <VStack spacing={4} align="stretch">
         {/* Header */}
         <HStack justify="space-between" align="start">
-          <Badge 
-            colorScheme={getTypeColor(type)} 
+          <Badge
+            colorScheme={getTypeColor(type)}
             variant="subtle"
             fontSize="xs"
             px={2}
@@ -164,7 +164,7 @@ export default function CampaignCard({
               borderRadius="md"
               zIndex={1500}
             >
-              <MenuItem 
+              <MenuItem
                 icon={<Icon as={Eye} boxSize={4} />}
                 onClick={(e) => {
                   e.stopPropagation()
@@ -173,7 +173,7 @@ export default function CampaignCard({
               >
                 View Campaign
               </MenuItem>
-              <MenuItem 
+              <MenuItem
                 icon={<Icon as={Copy} boxSize={4} />}
                 onClick={(e) => {
                   e.stopPropagation()
@@ -182,7 +182,7 @@ export default function CampaignCard({
               >
                 Duplicate Campaign
               </MenuItem>
-              <MenuItem 
+              <MenuItem
                 icon={<Icon as={Trash2} boxSize={4} />}
                 color="red.500"
                 onClick={(e) => {
@@ -200,7 +200,7 @@ export default function CampaignCard({
         <VStack spacing={2} align="stretch">
           <HStack justify="space-between">
             <Text fontSize="sm" color={textColor}>
-              {leads.current} / {leads.total.toLocaleString()}
+              {leads?.current || 0} / {leads?.total?.toLocaleString() || '0'}
             </Text>
             <Icon as={Sparkles} boxSize={4} color="purple.500" />
           </HStack>
@@ -246,9 +246,9 @@ export default function CampaignCard({
               <Button ref={cancelRef} onClick={onClose}>
                 Cancel
               </Button>
-              <Button 
-                colorScheme="red" 
-                onClick={handleDelete} 
+              <Button
+                colorScheme="red"
+                onClick={handleDelete}
                 ml={3}
                 isLoading={isDeleting}
                 loadingText="Deleting..."
@@ -261,4 +261,4 @@ export default function CampaignCard({
       </AlertDialog>
     </Box>
   )
-} 
+}

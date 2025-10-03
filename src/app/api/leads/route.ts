@@ -4,7 +4,7 @@ import axios from 'axios';
 import { NextRequest, NextResponse } from 'next/server';
 import { syndieBaseUrl } from '../../../lib/utils';
 
-const getCampaigns = async (tokenData: { api_token: string }) => {
+export const getCampaigns = async (tokenData: { api_token: string }) => {
     try {
         const res = await axios.get(syndieBaseUrl + '/api/campaigns' + '?includeAnalytics=true&includeDetailedActions=true', {
             headers: {
@@ -27,7 +27,7 @@ const getCampaigns = async (tokenData: { api_token: string }) => {
     }
 }
 
-const getLeads = async (tokenData: { api_token: string }, campaignIds: string[], page: string, limit: string, status?: string, search?: string) => {
+export const getLeads = async (tokenData: { api_token: string }, campaignIds: string[], page: string, limit: string, status?: string, search?: string) => {
     try {
         const paramsObj: Record<string, string> = { page, limit };
         if (status !== undefined) {
@@ -52,15 +52,22 @@ const getLeads = async (tokenData: { api_token: string }, campaignIds: string[],
     }
 }
 
-const getStats = async (campaignsArray: any) => {
+export const getStats = async (campaignsArray: any) => {
+    // Ensure campaignsArray is an array
+    if (!Array.isArray(campaignsArray)) {
+        console.error('getStats: campaignsArray is not an array:', campaignsArray);
+        return {};
+    }
+
     const allStats = campaignsArray.map((it: any) => it.stats)
     const totals = allStats.reduce((acc: any, curr: any) => {
-        Object.keys(curr).forEach((key) => {
-            acc[key] = (acc[key] || 0) + curr[key];
-        });
+        if (curr && typeof curr === 'object') {
+            Object.keys(curr).forEach((key) => {
+                acc[key] = (acc[key] || 0) + curr[key];
+            });
+        }
         return acc;
     }, {} as Record<string, number>);
-    console.log(totals);
     return totals
 }
 
