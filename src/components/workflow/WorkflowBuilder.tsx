@@ -16,11 +16,11 @@ import {
   MarkerType
 } from '@xyflow/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Download, 
-  Upload, 
-  Save, 
-  RotateCcw, 
+import {
+  Download,
+  Upload,
+  Save,
+  RotateCcw,
   Play,
   AlertCircle,
   CheckCircle,
@@ -167,7 +167,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
         const flowData = FlowUtils.exportFlow(nodes as FlowNode[], edges as FlowEdge[]);
         await onSave(flowData);
         console.log('Workflow auto-saved');
-        
+
         // Show saved indicator briefly
         setShowSavedIndicator(true);
         setTimeout(() => setShowSavedIndicator(false), 2000);
@@ -185,7 +185,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
   useEffect(() => {
     const actionNodes = nodes.filter(node => node.type === 'action') as FlowNode[];
     const addStepNodes = nodes.filter(node => node.type === 'addStep') as FlowNode[];
-    
+
     // Find terminal nodes (nodes with no outgoing edges)
     const terminalNodes = actionNodes.filter(node => {
       const hasOutgoingEdges = edges.some(edge => edge.source === node.id);
@@ -194,10 +194,10 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
 
     // Check if each terminal node has an Add Step node after it
     const missingAddSteps: FlowNode[] = [];
-    
+
     terminalNodes.forEach(terminalNode => {
       const hasAddStepAfter = addStepNodes.some(addStepNode => {
-        return edges.some(edge => 
+        return edges.some(edge =>
           edge.source === terminalNode.id && edge.target === addStepNode.id
         );
       });
@@ -207,9 +207,9 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
         const pathType = (terminalNode.data as ActionNodeData).pathType;
         const addStepPosition = {
           x: terminalNode.position.x,
-          y: terminalNode.position.y + 150
+          y: terminalNode.position.y + 300
         };
-        
+
         const newAddStepNode = FlowUtils.createAddStepNode(addStepPosition, pathType);
         missingAddSteps.push(newAddStepNode);
 
@@ -221,7 +221,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
           pathType === 'accepted' || pathType === 'not-accepted',
           pathType === 'accepted'
         );
-        
+
         setEdges(edges => [...edges, connectingEdge] as Edge[]);
       }
     });
@@ -290,7 +290,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
 
   const handleActionSelect = useCallback((actionType: string) => {
     const { sourceNodeId, pathType, replaceAddStep } = actionModalContext;
-    
+
     console.log('🎯 ACTION SELECT DEBUG:', {
       actionType,
       sourceNodeId,
@@ -298,7 +298,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
       replaceAddStep,
       actionModalContext
     });
-    
+
     // Handle empty state case - create first action node directly
     if (sourceNodeId === 'empty-state') {
       const newActionNode = FlowUtils.createActionNode(
@@ -306,9 +306,9 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
         { x: 400, y: 200 }, // Center position
         pathType
       );
-      
+
       setNodes([newActionNode]);
-      
+
       // Check if this action has conditional branching and add appropriate Add Step nodes
       const actionDef = actionDefinitions.find(a => a.type === actionType);
       const hasConditionalBranching = actionDef?.hasConditionalBranching;
@@ -317,11 +317,11 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
         // Create two Add Step nodes for conditional branching (accepted/not-accepted)
         const acceptedPosition = {
           x: newActionNode.position.x + 200, // Right side for accepted
-          y: newActionNode.position.y + 150
+          y: newActionNode.position.y + 300
         };
         const notAcceptedPosition = {
           x: newActionNode.position.x - 200, // Left side for not-accepted
-          y: newActionNode.position.y + 150
+          y: newActionNode.position.y + 300
         };
 
         const acceptedAddStepNode = FlowUtils.createAddStepNode(acceptedPosition, 'accepted');
@@ -356,7 +356,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
         // Regular action - create single Add Step node
         const nextPosition = {
           x: newActionNode.position.x,
-          y: newActionNode.position.y + 150
+          y: newActionNode.position.y + 300
         };
         const newAddStepNode = FlowUtils.createAddStepNode(nextPosition, pathType);
         setNodes(nodes => [...nodes, newAddStepNode]);
@@ -371,35 +371,35 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
         );
         setEdges([connectingEdge]);
       }
-      
+
       return; // Exit early for empty state case
     }
-    
+
     if (replaceAddStep && sourceNodeId) {
       // Replace the add step node with the selected action (existing logic)
       console.log('🔄 REPLACING ADD STEP NODE:', { sourceNodeId, replaceAddStep });
-      
+
       const addStepNode = nodes.find(n => n.id === sourceNodeId);
-      console.log('🔍 FOUND ADD STEP NODE:', { 
-        addStepNode: addStepNode ? { id: addStepNode.id, type: addStepNode.type, position: addStepNode.position } : null 
+      console.log('🔍 FOUND ADD STEP NODE:', {
+        addStepNode: addStepNode ? { id: addStepNode.id, type: addStepNode.type, position: addStepNode.position } : null
       });
-      
+
       if (addStepNode) {
         const newActionNode = FlowUtils.createActionNode(
           actionType,
           addStepNode.position,
           pathType
         );
-        
+
         console.log('🔄 CREATING NEW ACTION NODE:', {
           newActionNodeId: newActionNode.id,
           newActionType: newActionNode.data.type,
           position: newActionNode.position
         });
-        
+
         // Replace the add step node
         setNodes(nodes => {
-          const updatedNodes = nodes.map(node => 
+          const updatedNodes = nodes.map(node =>
             node.id === sourceNodeId ? newActionNode : node
           );
           console.log('📝 NODES AFTER REPLACEMENT:', updatedNodes.length, 'nodes');
@@ -426,7 +426,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
         // Check if this action has conditional branching (like Connection Request)
         const actionDef = actionDefinitions.find(a => a.type === actionType);
         const hasConditionalBranching = actionDef?.hasConditionalBranching;
-        
+
         console.log('🔀 CONDITIONAL BRANCHING DEBUG:', {
           actionType,
           actionDef: actionDef?.label,
@@ -440,11 +440,11 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
           // Create two Add Step nodes for conditional branching (accepted/not-accepted)
           const acceptedPosition = {
             x: newActionNode.position.x + 200, // Right side for accepted
-            y: newActionNode.position.y + 150
+            y: newActionNode.position.y + 300
           };
           const notAcceptedPosition = {
             x: newActionNode.position.x - 200, // Left side for not-accepted
-            y: newActionNode.position.y + 150
+            y: newActionNode.position.y + 300
           };
 
           const acceptedAddStepNode = FlowUtils.createAddStepNode(acceptedPosition, 'accepted');
@@ -484,7 +484,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
           // Regular action - create single Add Step node
           const nextPosition = {
             x: newActionNode.position.x,
-            y: newActionNode.position.y + 150
+            y: newActionNode.position.y + 300
           };
           const newAddStepNode = FlowUtils.createAddStepNode(nextPosition, pathType);
           setNodes(nodes => [...nodes, newAddStepNode]);
@@ -493,7 +493,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
           // Inherit conditional styling from the path type
           const isConditional = pathType === 'accepted' || pathType === 'not-accepted';
           const isPositive = pathType === 'accepted';
-          
+
           const connectingEdge = FlowUtils.createEdge(
             newActionNode.id,
             newAddStepNode.id,
@@ -508,7 +508,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
       // This should not happen - all "Add Step" clicks should come from AddStep nodes
       console.warn('Add Step clicked from non-AddStep node:', sourceNodeId);
     }
-    
+
     // Close modal after any action selection
     setIsActionModalOpen(false);
     setActionModalContext({});
@@ -550,7 +550,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
 
   const handleSave = useCallback(async () => {
     if (!onSave) return;
-    
+
     setIsSaving(true);
     try {
       const flowData = FlowUtils.exportFlow(nodes as FlowNode[], edges as FlowEdge[]);
@@ -566,9 +566,9 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
     const flowData = FlowUtils.exportFlow(nodes as FlowNode[], edges as FlowEdge[]);
     const dataStr = JSON.stringify(flowData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
+
     const exportFileDefaultName = `workflow-${new Date().toISOString().split('T')[0]}.json`;
-    
+
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
@@ -596,7 +596,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
       }
     };
     reader.readAsText(file);
-    
+
     // Reset input
     event.target.value = '';
   }, [setNodes, setEdges]);
@@ -613,10 +613,10 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
   // Handle Add First Step from empty state - directly show action selection modal
   const handleAddFirstStep = useCallback(() => {
     // Instead of creating AddStep node first, directly show the action selection modal
-    setActionModalContext({ 
-      sourceNodeId: 'empty-state', 
-      pathType: undefined, 
-      replaceAddStep: true 
+    setActionModalContext({
+      sourceNodeId: 'empty-state',
+      pathType: undefined,
+      replaceAddStep: true
     });
     setIsActionModalOpen(true);
   }, []);
@@ -649,7 +649,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
       >
         <Background color="#aaa" gap={16} />
         <Controls />
-        
+
         {/* Custom Layout Controls */}
         <Panel position="top-right" className="space-x-2">
           <button
@@ -660,8 +660,8 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
             📐 Layout
           </button>
         </Panel>
-        
-        <MiniMap 
+
+        <MiniMap
           nodeStrokeColor={(n) => {
             const nodeData = n.data as ActionNodeData;
             return workflowTheme.nodeColors[nodeData.type] || '#6B7280';
@@ -684,7 +684,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
               <Upload size={16} />
               <span>Import</span>
             </button>
-            
+
             <button
               onClick={handleExport}
               className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
@@ -752,7 +752,7 @@ const WorkflowBuilderContent: React.FC<WorkflowBuilderProps> = ({
                   </span>
                 </>
               )}
-              
+
               {validationResult.warnings.length > 0 && (
                 <span className="text-xs text-yellow-600 dark:text-yellow-400">
                   {validationResult.warnings.length} Warning(s)
