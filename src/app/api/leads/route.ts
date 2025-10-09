@@ -2,74 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { auth } from '@clerk/nextjs/server';
 import axios from 'axios';
 import { NextRequest, NextResponse } from 'next/server';
-import { syndieBaseUrl } from '../../../lib/utils';
-
-export const getCampaigns = async (tokenData: { api_token: string }) => {
-    try {
-        const res = await axios.get(syndieBaseUrl + '/api/campaigns' + '?includeAnalytics=true&includeDetailedActions=true', {
-            headers: {
-                'Authorization': `Bearer ${tokenData.api_token}`,
-                'Content-Type': 'application/json',
-            }
-        })
-
-        if (!res.data) {
-            console.log('No Campaigns Found')
-            return
-        }
-        const campaignsArray: any[] = res.data.data
-        // console.log(JSON.stringify(res.data.data, null, 4))
-
-        return campaignsArray.filter(it => it.status !== 'paused' && it.status !== 'draft')
-    } catch (err) {
-        console.log(JSON.stringify(err, null, 4));
-        return
-    }
-}
-
-export const getLeads = async (tokenData: { api_token: string }, campaignIds: string[], page: string, limit: string, status?: string, search?: string) => {
-    try {
-        const paramsObj: Record<string, string> = { page, limit };
-        if (status !== undefined) {
-            paramsObj.status = status;
-        }
-        if (search !== undefined) {
-            paramsObj.search = search;
-        }
-        const params = new URLSearchParams(paramsObj);
-        console.log(params)
-        campaignIds.forEach(id => params.append('campaignId', id));
-        const res = await axios.get(`${syndieBaseUrl}/api/leads?${params.toString()}`, {
-            headers: {
-                'Authorization': `Bearer ${tokenData.api_token}`,
-                'Content-Type': 'application/json',
-            }
-        });
-        return res.data;
-    } catch (err) {
-        console.log(err);
-        return;
-    }
-}
-
-export const getStats = async (campaignsArray: any) => {
-    // Ensure campaignsArray is an array
-    if (!Array.isArray(campaignsArray)) {
-        console.error('getStats: campaignsArray is not an array:', campaignsArray);
-        return {};
-    }
-
-    const allStats = campaignsArray.map((it: any) => it.stats)
-    const totals = allStats.reduce((acc: any, curr: any) => {
-        if (curr && typeof curr === 'object') {
-            Object.keys(curr).forEach((key) => {
-                acc[key] = (acc[key] || 0) + curr[key];
-            });
-        }
-        return acc;
-    }, {} as Record<string, number>);
-    return totals
-}
+import { getCampaigns, getLeads, getStats } from '../../../helpers/helpers';
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
@@ -117,7 +50,7 @@ export async function GET(request: NextRequest) {
                 { success: true, data: statsData }
             )
         }
-        const filteredCampaigns = campaignsArray.filter(it => it.status === 'active')
+        const filteredCampaigns = campaignsArray.filter(it => it.status === 'active' || 'paused')
         const campaignIds = filteredCampaigns.map(it => it.id);
 
         const leads = await getLeads(tokenData, campaignIds, page, limit, status, searchTerm);

@@ -3,9 +3,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
 import { supabase } from "../../../lib/supabase";
-import { getCampaigns, getStats } from "../leads/route";
 import axios from "axios";
-import { orgToSmartLeadCampaignMap } from "../email-leads/route";
+import { getStats, orgToSmartLeadCampaignMap, getCampaigns } from "../../../helpers/helpers";
 
 const getEmailCampaignAnalytics = async (campaignId: string) => {
     const campaignData = await axios.get(`https://server.smartlead.ai/api/v1/campaigns/${campaignId}/analytics`, {
