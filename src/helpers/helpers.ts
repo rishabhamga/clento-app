@@ -1,3 +1,5 @@
+import { syndieBaseUrl } from "../lib/utils"
+import axios from 'axios';
 
 export const orgToSmartLeadCampaignMap = {
     '6f462221-2f14-48a3-91d1-b60ba824caf9': [//Revenue sage
@@ -23,4 +25,71 @@ export const orgToSmartLeadCampaignMap = {
         '2440699'
     ],
     // @todo graphketing
+}
+
+export const getCampaigns = async (tokenData: { api_token: string }) => {
+    try {
+        const res = await axios.get(syndieBaseUrl + '/api/campaigns' + '?includeAnalytics=true&includeDetailedActions=true', {
+            headers: {
+                'Authorization': `Bearer ${tokenData.api_token}`,
+                'Content-Type': 'application/json',
+            }
+        })
+
+        if (!res.data) {
+            console.log('No Campaigns Found')
+            return
+        }
+        const campaignsArray: any[] = res.data.data
+        // console.log(JSON.stringify(res.data.data, null, 4))
+
+        return campaignsArray
+    } catch (err) {
+        console.log(JSON.stringify(err, null, 4));
+        return
+    }
+}
+
+export const getLeads = async (tokenData: { api_token: string }, campaignIds: string[], page: string, limit: string, status?: string, search?: string) => {
+    try {
+        const paramsObj: Record<string, string> = { page, limit };
+        if (status !== undefined) {
+            paramsObj.status = status;
+        }
+        if (search !== undefined) {
+            paramsObj.search = search;
+        }
+        const params = new URLSearchParams(paramsObj);
+        console.log(params)
+        campaignIds.forEach(id => params.append('campaignId', id));
+        const res = await axios.get(`${syndieBaseUrl}/api/leads?${params.toString()}`, {
+            headers: {
+                'Authorization': `Bearer ${tokenData.api_token}`,
+                'Content-Type': 'application/json',
+            }
+        });
+        return res.data;
+    } catch (err) {
+        console.log(err);
+        return;
+    }
+}
+
+export const getStats = async (campaignsArray: any) => {
+    // Ensure campaignsArray is an array
+    if (!Array.isArray(campaignsArray)) {
+        console.error('getStats: campaignsArray is not an array:', campaignsArray);
+        return {};
+    }
+
+    const allStats = campaignsArray.map((it: any) => it.stats)
+    const totals = allStats.reduce((acc: any, curr: any) => {
+        if (curr && typeof curr === 'object') {
+            Object.keys(curr).forEach((key) => {
+                acc[key] = (acc[key] || 0) + curr[key];
+            });
+        }
+        return acc;
+    }, {} as Record<string, number>);
+    return totals
 }
