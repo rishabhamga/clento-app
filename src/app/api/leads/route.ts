@@ -20,7 +20,7 @@ export const getCampaigns = async (tokenData: { api_token: string }) => {
         const campaignsArray: any[] = res.data.data
         // console.log(JSON.stringify(res.data.data, null, 4))
 
-        return campaignsArray.filter(it => it.status !== 'paused' && it.status !== 'draft')
+        return campaignsArray
     } catch (err) {
         console.log(JSON.stringify(err, null, 4));
         return
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
                 { success: true, data: statsData }
             )
         }
-        const filteredCampaigns = campaignsArray.filter(it => it.status === 'active')
+        const filteredCampaigns = campaignsArray.filter(it => it.status === 'active' || 'paused')
         const campaignIds = filteredCampaigns.map(it => it.id);
 
         const leads = await getLeads(tokenData, campaignIds, page, limit, status, searchTerm);
