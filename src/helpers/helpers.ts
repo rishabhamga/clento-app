@@ -24,6 +24,23 @@ export const orgToSmartLeadCampaignMap = {
         '2440779',
         '2440699'
     ],
+    // metalok
+    '72cb3b4b-38e8-4b67-aa7d-cb11e55272a7': [
+        '2660952',
+    ],
+    // vestbox
+    'd7e55c80-49cb-4fe0-918d-7d03c0b66319':[
+        '2660969',
+        '2660965'
+    ],
+    // innovateBooks
+    '8dfdfb11-2b19-4085-ae6f-fae304527d55': [
+        '2660971'
+    ],
+    //  open leaf tech
+    '9c6534ef-bdf2-48b1-b6be-e4f944565faf': [
+        '2660981'
+    ]
     // @todo graphketing
 }
 
