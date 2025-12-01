@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
       stepsCount: payload.steps?.length || 0
     })
 
+    console.log('full json', JSON.stringify(payload));
+
     // Validate required fields
     if (!payload.id) {
       return NextResponse.json(
