@@ -9,6 +9,8 @@ interface ICrmProps {
     country?: string;
     mobileNumber?: string;
     linkedIn?: string;
+    linkedInTitle?: string;
+    campaignName?: string;
     email: string
     source: string
 }
@@ -29,7 +31,7 @@ const ValidateEmail = (email: string) => {
     }
 }
 
-export const entryToCrm = async({ companyName, firstName, lastName, country, mobileNumber, email, source, linkedIn }: ICrmProps) => {
+export const entryToCrm = async({ companyName, firstName, lastName, country, mobileNumber, email, source, linkedIn, linkedInTitle, campaignName }: ICrmProps) => {
     const client_id = process.env.ZOHO_CLIENT_ID;
     const client_secret = process.env.ZOHO_CLIENT_SECRET;
     const refreshToken = process.env.ZOHO_REFRESH_TOKEN;
@@ -62,10 +64,14 @@ export const entryToCrm = async({ companyName, firstName, lastName, country, mob
                     "Country": country ?? 'Not Provided',
                     "Lead_Status": "Open",
                     "Lead_Source": source ?? 'unknown',
-                    ...(linkedIn ? { "Linkedin": linkedIn ?? 'unknown' } : {})
+                    ...(linkedIn ? { "Linkedin": linkedIn ?? 'unknown' } : {}),
+                    ...(linkedInTitle ? { "Designation": linkedInTitle?.slice(0, 100) ?? 'unknown' } : {}),
+                    ...(campaignName ? { 'campaign_name': campaignName ?? 'unknown' } : {})
+
                 }
             ]
         }
+        console.log(reqBody);
         try {
             const req = await axios.post(crmUrl, reqBody, { headers })
             console.log(req.data, "CRM RESPONSE");

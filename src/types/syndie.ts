@@ -42,31 +42,74 @@ export interface SyndieSeatInfo {
 }
 
 export interface SyndieWebhookPayload {
-    id: string; // This maps to syndie_lead_id in database
+  id: string;
+  firstName: string;
+  lastName: string;
+  linkedinUrl: string;
+  connectionStatus: string;
+  customStatus: string;
+  location: string;
+  company: string;
+  headline: string;
+  phone: string;
+  jobtitle: string;
+  email: string;
+  createdAt: string;
+  steps: SyndieWebhookPayloadStep[];
+  campaign: SyndieWebhookPayloadCampaign;
+}
+
+export interface SyndieWebhookPayloadStep {
+  stepNodeId: string;
+  timestamp: string;
+  success: boolean;
+
+  // optional fields depending on step type
+  metadata?: {
+    automationResults: {
+      total: number;
+      successful: number;
+      failed: number;
+    };
+  };
+
+  details?: {
+    failedCount: number;
+    successCount: number;
+    comments: {
+      post: string;
+      comment: string | null;
+      commentedAt: string | null;
+      success: boolean;
+      reason: string;
+    }[];
+  };
+}
+
+export interface SyndieWebhookPayloadCampaign {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  fromTime: string;
+  toTime: string;
+  status: string;
+
+  seat: {
+    id: string;
+    providerId: string;
     firstName: string;
     lastName: string;
-    headline?: string;
-    location?: string;
-    company: string;
-    linkedinUrl: string;
-    connectionStatus: LinkedInConnectionStatus;
-    email?: string;
-    phone?: string;
-    createdAt: string;
-    updatedAt?: string;
-    steps: SyndieLeadStep[];
-    campaign: {
-        id: string;
-        name: string;
-        description?: string;
-        status: string;
-        seat: SyndieSeatInfo;
-        leadList?: {
-            id: string;
-            name: string;
-            // leadList details typically not stored in our database
-        };
-    };
+    publicIdentifier: string;
+    accountType: string;
+  };
+
+  leadList: {
+    id: string;
+    name: string;
+    listType: string;
+  };
 }
 
 // Extended Lead interface that includes Syndie fields

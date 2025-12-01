@@ -1,15 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { headers } from 'next/headers'
 import { supabaseAdmin } from '@/lib/supabase'
-import {
-  SyndieWebhookPayload,
-  WebhookProcessingResult,
-  LinkedInConnectionStatus,
-  SyndieLeadStep,
-  SyndieCampaignInfo,
-  SyndieSeatInfo
-} from '@/types/syndie'
 import { Database } from '@/types/database'
+import {
+  SyndieLeadStep,
+  SyndieWebhookPayload,
+  WebhookProcessingResult
+} from '@/types/syndie'
+import { NextRequest, NextResponse } from 'next/server'
 import { entryToCrm } from '../../../../lib/utils'
 
 // Environment variables for webhook validation
@@ -95,6 +91,17 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
       .contains('syndie_campaign_ids', [payload.campaign?.id])
       .single()
 
+    const syndieData = {
+      companyName: payload.company || undefined,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      email: payload.email || "not nope",
+      source: "LINKEDIN_REPLY",
+      linkedIn: payload.linkedinUrl || undefined,
+      linkedInTitle:payload.jobtitle,
+      campaignName: payload.campaign.name
+    }
+
     const leadData = mapSyndiePayloadToLead(payload, existingLead, (clentoCampaign as any)?.id, (clentoCampaign as any)?.organization_id)
 
     let result: WebhookProcessingResult
@@ -107,7 +114,7 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
           if((existingLead as any).crm_entry === 0){
               console.log("entrying into the db and crm")
               try {
-                  await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "LINKEDIN_REPLY", linkedIn: leadData.linkedin_url || undefined })
+                  await entryToCrm(syndieData)
                   console.log("crm done")
                   await (supabaseAdmin as any)
                     .from('leads')
@@ -159,7 +166,7 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
 
       if(leadData.linkedin_connection_status === "replied"){
             console.log('inside')
-              await entryToCrm({ companyName: leadData.company || undefined, firstName: leadData.full_name?.split(" ")[0], lastName: leadData.full_name?.split(" ")[1], email: leadData.email || "not nope", source: "SYNDIE_REPLY", linkedIn: leadData.linkedin_url || undefined })
+              await entryToCrm(syndieData)
               await (supabaseAdmin as any)
                 .from('leads')
                 .update({ crm_entry: 1 })
@@ -212,10 +219,10 @@ function mapSyndiePayloadToLead(
     full_name: `${payload.firstName} ${payload.lastName}`.trim(),
     email: payload.email || null,
     linkedin_url: payload.linkedinUrl || null,
-    company: payload.company || null,
-    title: payload.headline || null,
+    company: payload?.company || null,
+    title: payload?.jobtitle || null,
     location: payload.location || null,
-    phone: payload.phone || null,
+    phone: payload?.phone || null,
     source: 'syndie',
     syndie_campaign_id: payload.campaign?.id || null,
     clento_campaign_id: clentoCampaignId || null,
@@ -223,7 +230,7 @@ function mapSyndiePayloadToLead(
 
     // Syndie-specific fields
     syndie_lead_id: payload.id,
-    linkedin_connection_status: payload.connectionStatus,
+    linkedin_connection_status: payload.connectionStatus as any,
     steps: (payload.steps || []) as unknown as Record<string, unknown>[],
     campaign_info: payload.campaign ? {
       id: payload.campaign.id,
