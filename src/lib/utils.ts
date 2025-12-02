@@ -117,7 +117,7 @@ export const entryToCrmClient = async({ companyName, firstName, lastName, countr
                     ...(linkedIn ? { "Linkedin": linkedIn ?? 'unknown' } : {}),
                     ...(linkedInTitle ? { "Designation": linkedInTitle?.slice(0, 100) ?? 'unknown' } : {}),
                     ...(campaignName ? { 'Campaign_Name': campaignName ?? 'unknown' } : {}),
-                    ...(seatName ? { 'Seat_Name': campaignName ?? 'unknown' } : {})
+                    ...(seatName ? { 'Seat_Name': seatName ?? 'unknown' } : {})
                 }
             ]
         }
