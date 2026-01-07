@@ -119,7 +119,7 @@ async function processLeadWebhook(payload: SyndieWebhookPayload): Promise<Webhoo
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                text: `Reply received for lead: ${payload.firstName} ${payload.lastName} (${payload.email || 'no email'})\nLinkedIn: ${payload.linkedinUrl || 'N/A'}\nCompany: ${payload.company || 'N/A'}\nJob Title: ${payload.jobtitle || 'N/A'}\nCampaign: ${payload.campaign?.name || 'N/A'}\n`
+                text: `Reply received for lead: ${payload.firstName} ${payload.lastName} (${payload.email || 'no email'})\nLinkedIn: ${payload.linkedinUrl || 'N/A'}\nCompany: ${payload.company || 'N/A'}\nJob Title: ${payload.jobtitle || 'N/A'}\nCampaign: ${payload.campaign?.name || 'N/A'}\n\nReply Message: ${payload?.reply?.message || 'N/A'}`
               })
             })
           } catch (err) {

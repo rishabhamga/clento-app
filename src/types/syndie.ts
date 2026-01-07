@@ -57,6 +57,9 @@ export interface SyndieWebhookPayload {
   createdAt: string;
   steps: SyndieWebhookPayloadStep[];
   campaign: SyndieWebhookPayloadCampaign;
+  reply: {
+    message: string;
+  }
 }
 
 export interface SyndieWebhookPayloadStep {
