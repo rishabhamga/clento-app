@@ -35,7 +35,8 @@ export const orgToSmartLeadCampaignMap = {
     ],
     // innovateBooks
     '8dfdfb11-2b19-4085-ae6f-fae304527d55': [
-        '2660971'
+        '2660971',
+        '695cd32ddea4bb582b302420'
     ],
     //  open leaf tech
     '9c6534ef-bdf2-48b1-b6be-e4f944565faf': [
