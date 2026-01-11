@@ -245,7 +245,7 @@ function LeadListsPageContent() {
     }
 
     const filteredLeadLists = state.leadLists.filter(list => {
-        const matchesSearch = list.name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+        const matchesSearch = list?.name?.toLowerCase()?.includes(state.searchQuery.toLowerCase()) ||
             (list.description && list.description.toLowerCase().includes(state.searchQuery.toLowerCase()))
 
         const matchesStatus = !state.statusFilter || list.status === state.statusFilter
@@ -254,7 +254,7 @@ function LeadListsPageContent() {
     })
 
     const filteredSyndieLeadLists = state.syndieLeadLists.filter(list => {
-        const matchesSearch = list.name.toLowerCase().includes(state.searchQuery.toLowerCase())
+        const matchesSearch = list?.name?.toLowerCase()?.includes(state.searchQuery.toLowerCase())
 
         // For Syndie lists, we can filter by searchUrlType instead of status
         const matchesStatus = !state.statusFilter || list.searchUrlType === state.statusFilter
